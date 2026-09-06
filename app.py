@@ -23,8 +23,17 @@ defaults = {
     "page": "splash",
     "logged_in": False,
     "username": "",
+    "email": "",
     "auth_mode": "login",
     "current_tab": "Home",
+    "settings_page": "menu",
+    "privacy_step": 0,
+    "post_visibility": "Friends",
+    "searchable": True,
+    "two_factor": False,
+    "login_alerts": False,
+    "feed_sort": "Most Recent",
+    "show_stories": True,
     "likes": {},
     "comments": {},
     "room_code": "",
@@ -32,7 +41,7 @@ defaults = {
     "dice": 0,
     "coins": 550,
     "display_name": "Hoor Jannat",
-    "bio": "Building my premium minimalist layer apps.",
+    "bio": "Living life one post at a time.",
     "withdraw_msg": "",
     "social_msg": "",
     "clear_cmt": "",
@@ -41,8 +50,10 @@ defaults = {
     "help_msg": "",
     "blocked": [],
     "reports": [],
+    "tx_history": [],
     "dark_mode": False,
     "language": "English",
+    "region": "Worldwide",
     "private_account": False,
     "activity_status": True,
     "notif": {
@@ -56,6 +67,33 @@ defaults = {
 for k, v in defaults.items():
     if k not in SS:
         SS[k] = v
+
+
+# ---------- HELPERS ----------
+def settings_back(key):
+    if st.button("← Back to Settings", key=key):
+        SS.settings_page = "menu"
+        SS.privacy_step = 0
+        safe_rerun()
+
+
+def do_withdrawal():
+    if SS.coins >= 100:
+        SS.coins = SS.coins - 100
+        entry = {
+            "type": "Withdrawal Payout",
+            "amount": "-100 coins",
+            "time": "Just now",
+        }
+        SS.tx_history.insert(0, entry)
+        SS.withdraw_msg = (
+            "✅ Withdrawal request submitted! 100 coins deducted - "
+            "processing within 3-5 business days."
+        )
+    else:
+        SS.withdraw_msg = (
+            "⚠️ Minimum 100 coins required for withdrawal!"
+        )
 
 
 # ---------- FEED DATA ----------
@@ -121,6 +159,8 @@ def build_main_css(dark):
     .stApp {{ background-color:{APPBG} !important; }}
     header[data-testid="stHeader"], #MainMenu, footer {{
         visibility:hidden !important; }}
+    [data-testid="stToolbar"] {{ visibility:hidden !important; }}
+    [data-testid="stStatusWidget"] {{ visibility:hidden !important; }}
 
     .block-container, [data-testid="block-container"] {{
         max-width:460px;
@@ -280,6 +320,25 @@ def build_main_css(dark):
         color:{TXT1};
         margin:14px 0 4px;
     }}
+    .sec-label {{
+        font-size:12px;
+        font-weight:800;
+        letter-spacing:1px;
+        color:{TXT2};
+        margin:18px 6px 8px;
+    }}
+    .privacy-card {{
+        display:flex;
+        gap:14px;
+        align-items:center;
+        background:rgba(0,176,116,0.10);
+        border:1px solid #00B074;
+        border-radius:14px;
+        padding:14px 16px;
+        margin:10px 0 4px;
+    }}
+    .privacy-card b {{ color:{TXT1}; font-size:15px; }}
+    .privacy-card p {{ margin:2px 0 0; font-size:12px; color:{TXT2}; }}
     .member-chip {{
         display:inline-block;
         background:{CARDBG};
@@ -289,6 +348,15 @@ def build_main_css(dark):
         margin:3px;
         font-size:12px;
         color:{TXT2};
+    }}
+    .session-row {{
+        display:flex;
+        align-items:center;
+        gap:12px;
+        padding:10px 4px;
+        border-bottom:1px solid {BORDERC};
+        font-size:13px;
+        color:{TXT1};
     }}
 
     div[data-testid="stButton"] > button, div.stButton > button {{
@@ -319,14 +387,6 @@ def build_main_css(dark):
         [data-testid="stRadio"] label p {{
             color:#e5e9e5 !important;
         }}
-        [data-testid="stExpander"] {{
-            background:#1b1e1b !important;
-            border:1px solid #2a2e2a !important;
-            border-radius:10px;
-        }}
-        [data-testid="stExpander"] summary p {{
-            color:#fff !important;
-        }}
         [data-baseweb="select"] > div {{
             background:#242824 !important;
             color:#fff !important;
@@ -350,6 +410,8 @@ if SS.page == "splash":
         header[data-testid="stHeader"], #MainMenu, footer {
             visibility:hidden !important;
         }
+        [data-testid="stToolbar"] { visibility:hidden !important; }
+        [data-testid="stStatusWidget"] { visibility:hidden !important; }
         .mid {
             display:flex;
             flex-direction:column;
@@ -421,6 +483,8 @@ elif SS.page == "auth":
         header[data-testid="stHeader"], #MainMenu, footer {
             visibility:hidden !important;
         }
+        [data-testid="stToolbar"] { visibility:hidden !important; }
+        [data-testid="stStatusWidget"] { visibility:hidden !important; }
         .badge {
             background:linear-gradient(135deg,#00B074,#056839);
             display:inline-block;
@@ -475,7 +539,9 @@ elif SS.page == "auth":
     username = st.text_input("Username", placeholder="Enter username")
 
     if is_signup:
-        st.text_input("Email", placeholder="Enter email")
+        email = st.text_input("Email", placeholder="Enter email")
+    else:
+        email = SS.email
 
     password = st.text_input(
         "Password",
@@ -487,10 +553,12 @@ elif SS.page == "auth":
         if username and password:
             SS.logged_in = True
             SS.username = username
+            if email:
+                SS.email = email
             SS.page = "app"
             safe_rerun()
         else:
-            st.error("Username aur password dono likhein!")
+            st.error("Please enter both username and password!")
 
     if st.button(switch_txt):
         if is_signup:
@@ -507,15 +575,15 @@ elif SS.page == "auth":
     g, s, f = st.columns(3)
 
     if g.button("Google", use_container_width=True):
-        SS.social_msg = "Google sign-in Module 10 mein OAuth se add hoga."
+        SS.social_msg = "Google sign-in will be available soon."
         safe_rerun()
 
     if s.button("Snapchat", use_container_width=True):
-        SS.social_msg = "Snapchat login agli modules mein add hoga."
+        SS.social_msg = "Snapchat login will be available soon."
         safe_rerun()
 
     if f.button("Facebook", use_container_width=True):
-        SS.social_msg = "Facebook OAuth setup Module 10 mein add hoga."
+        SS.social_msg = "Facebook login will be available soon."
         safe_rerun()
 
     if SS.social_msg:
@@ -536,30 +604,30 @@ elif SS.page == "app" and SS.logged_in:
     """
     st.markdown(topbar, unsafe_allow_html=True)
 
-    # ---------- QUICK ICON ROW (Settings + Heart + Mail) ----------
+    # ---------- QUICK ICON ROW ----------
     q1, q2, q3, q4, q5 = st.columns([0.6, 0.6, 0.6, 0.6, 1.6])
 
     if q1.button("⚙️", key="top_set", use_container_width=True,
-                 help="Settings kholein"):
+                 help="Open Settings"):
         SS.current_tab = "Settings"
         safe_rerun()
 
     if q2.button("🔔", key="top_bell", use_container_width=True,
                  help="Notifications"):
-        st.toast("🔔 3 new notifications hain!")
+        st.toast("You have 3 new notifications!")
 
     if q3.button("✉️", key="top_mail", use_container_width=True,
                  help="Messages"):
-        st.toast("✉️ 2 new messages hain!")
+        st.toast("You have 2 new messages!")
 
     if q4.button("🌙", key="top_dark", use_container_width=True,
-                 help="Dark Mode on/off"):
+                 help="Toggle Dark Mode"):
         SS.dark_mode = not SS.dark_mode
         safe_rerun()
 
     if SS.current_tab == "Settings":
         q5.markdown(
-            "<b style='color:#00B074;'>⚙️ Settings khuli hain</b>",
+            "<b style='color:#00B074;'>⚙️ Settings</b>",
             unsafe_allow_html=True,
         )
 
@@ -568,35 +636,36 @@ elif SS.page == "app" and SS.logged_in:
     # ================= TAB: HOME =================
     if SS.current_tab == "Home":
 
-        stories_html = """
-        <div class="stories-container">
-            <div class="story-card">
-                <div class="story-ring" style="background:#6b7280;">
-                    <div class="story-img"
-                         style="background-color:#056839;color:#fff;">+
+        if SS.show_stories:
+            stories_html = """
+            <div class="stories-container">
+                <div class="story-card">
+                    <div class="story-ring" style="background:#6b7280;">
+                        <div class="story-img"
+                             style="background-color:#056839;color:#fff;">+
+                        </div>
                     </div>
+                    <div class="story-name">Your Story</div>
                 </div>
-                <div class="story-name">Your Story</div>
+                <div class="story-card">
+                    <div class="story-ring"><div class="story-img">HJ</div></div>
+                    <div class="story-name">hoor_jannat</div>
+                </div>
+                <div class="story-card">
+                    <div class="story-ring"><div class="story-img">FM</div></div>
+                    <div class="story-name">farrukh_m</div>
+                </div>
+                <div class="story-card">
+                    <div class="story-ring"><div class="story-img">ZX</div></div>
+                    <div class="story-name">zara_x</div>
+                </div>
+                <div class="story-card">
+                    <div class="story-ring"><div class="story-img">HA</div></div>
+                    <div class="story-name">hamza</div>
+                </div>
             </div>
-            <div class="story-card">
-                <div class="story-ring"><div class="story-img">HJ</div></div>
-                <div class="story-name">hoor_jannat</div>
-            </div>
-            <div class="story-card">
-                <div class="story-ring"><div class="story-img">FM</div></div>
-                <div class="story-name">farrukh_m</div>
-            </div>
-            <div class="story-card">
-                <div class="story-ring"><div class="story-img">ZX</div></div>
-                <div class="story-name">zara_x</div>
-            </div>
-            <div class="story-card">
-                <div class="story-ring"><div class="story-img">HA</div></div>
-                <div class="story-name">hamza</div>
-            </div>
-        </div>
-        """
-        st.markdown(stories_html, unsafe_allow_html=True)
+            """
+            st.markdown(stories_html, unsafe_allow_html=True)
 
         if SS.block_msg:
             st.success(SS.block_msg)
@@ -607,12 +676,21 @@ elif SS.page == "app" and SS.logged_in:
             if p["user"].lower() not in SS.blocked:
                 visible_posts.append(p)
 
+        if SS.feed_sort == "Top Posts":
+            visible_posts = sorted(
+                visible_posts,
+                key=lambda x: x["likes"],
+                reverse=True,
+            )
+        else:
+            visible_posts = list(reversed(visible_posts))
+
         hidden = len(POSTS) - len(visible_posts)
 
         if hidden > 0:
             st.info(
                 "🚫 " + str(hidden) +
-                " blocked member ki post(s) chhupa di gayi hain."
+                " post(s) from blocked members are hidden."
             )
 
         if SS.clear_cmt:
@@ -655,14 +733,14 @@ elif SS.page == "app" and SS.logged_in:
                 key="cm_" + p["id"],
                 use_container_width=True,
             ):
-                st.info("Neeche comment box se apna comment likhein.")
+                st.info("Type your comment in the box below.")
 
             if a3.button(
                 "✈️",
                 key="sh_" + p["id"],
                 use_container_width=True,
             ):
-                st.info("Post link copy ho gaya (demo)!")
+                st.info("Post link copied!")
 
             if a4.button(
                 "🚫",
@@ -671,8 +749,8 @@ elif SS.page == "app" and SS.logged_in:
             ):
                 SS.blocked.append(p["user"].lower())
                 SS.block_msg = (
-                    "✅ @" + p["user"] + " block ho gaya - "
-                    "ab uski posts feed mein nahi dikhengi."
+                    "✅ @" + p["user"] + " has been blocked - "
+                    "their posts will no longer appear in your feed."
                 )
                 safe_rerun()
 
@@ -703,7 +781,7 @@ elif SS.page == "app" and SS.logged_in:
                     SS.clear_cmt = "cmt_" + p["id"]
                     safe_rerun()
                 else:
-                    st.warning("Comment khali hai!")
+                    st.warning("Comment cannot be empty!")
 
             for c in SS.comments.get(p["id"], []):
                 cmt_html = (
@@ -735,7 +813,7 @@ elif SS.page == "app" and SS.logged_in:
         if SS.room_code:
             room_txt = (
                 "Room Code: **" + SS.room_code +
-                "** - is code se dost room join karenge!"
+                "** - share this code with your friends!"
             )
             st.success(room_txt)
 
@@ -748,23 +826,29 @@ elif SS.page == "app" and SS.logged_in:
 
         if SS.joined:
             st.info(
-                "✅ Aap + 3 players table par join ho gaye. "
-                "Real game Module 7 mein aayega."
+                "✅ You and 3 players have joined the table. "
+                "Full multiplayer mode coming soon!"
             )
 
         if st.button("🎲 Roll Dice", use_container_width=True):
             SS.dice = random.randint(1, 6)
             if SS.dice == 6:
                 SS.coins = SS.coins + 5
+                entry = {
+                    "type": "Ludo Dice Bonus",
+                    "amount": "+5 coins",
+                    "time": "Just now",
+                }
+                SS.tx_history.insert(0, entry)
             safe_rerun()
 
         if SS.dice:
             extra = ""
             if SS.dice == 6:
-                extra = " - Chhakka! +5 coins milay"
+                extra = " - Six! +5 coins earned"
             dice_txt = (
                 "<h3 style='text-align:center; color:#00B074;'>"
-                "🎯 Aapne " + str(SS.dice) + " nikala" + extra +
+                "🎯 You rolled " + str(SS.dice) + extra +
                 "</h3>"
             )
             st.markdown(dice_txt, unsafe_allow_html=True)
@@ -802,19 +886,11 @@ elif SS.page == "app" and SS.logged_in:
         st.success(bal)
 
         if st.button(
-            "💳 Request Withdrawal Cashout",
+            "💳 Request Withdrawal",
+            key="prof_wd",
             use_container_width=True,
         ):
-            if SS.coins >= 100:
-                SS.coins = SS.coins - 100
-                SS.withdraw_msg = (
-                    "✅ Withdrawal request submit! 100 coins kat gaye - "
-                    "3-5 din mein process hoga."
-                )
-            else:
-                SS.withdraw_msg = (
-                    "⚠️ Withdrawal ke liye kam se kam 100 coins chahiye!"
-                )
+            do_withdrawal()
             safe_rerun()
 
         if SS.withdraw_msg:
@@ -823,11 +899,13 @@ elif SS.page == "app" and SS.logged_in:
                 + SS.withdraw_msg + "</p>"
             )
             st.markdown(wm, unsafe_allow_html=True)
+            SS.withdraw_msg = ""
 
         p1, p2 = st.columns(2)
 
-        if p1.button("⚙️ Settings kholein", use_container_width=True):
+        if p1.button("⚙️ Open Settings", use_container_width=True):
             SS.current_tab = "Settings"
+            SS.settings_page = "menu"
             safe_rerun()
 
         if p2.button("🚪 Logout", use_container_width=True):
@@ -836,26 +914,181 @@ elif SS.page == "app" and SS.logged_in:
             SS.current_tab = "Home"
             safe_rerun()
 
-    # ================= TAB: SETTINGS =================
+    # ================= TAB: SETTINGS & PRIVACY =================
     elif SS.current_tab == "Settings":
 
-        st.markdown(
-            '<div class="panel-header">⚙️ Settings</div>',
-            unsafe_allow_html=True,
-        )
-        st.caption("@" + SS.username + " - HMF book Settings")
+        # ---------- SETTINGS MENU ----------
+        if SS.settings_page == "menu":
 
-        if SS.block_msg:
-            st.success(SS.block_msg)
-            SS.block_msg = ""
+            st.markdown(
+                '<div class="panel-header">⚙️ Settings & Privacy</div>',
+                unsafe_allow_html=True,
+            )
+            st.caption("@" + SS.username + " - Manage your account")
 
-        if SS.report_msg:
-            st.success(SS.report_msg)
-            SS.report_msg = ""
+            # Privacy Checkup banner
+            st.markdown(
+                """
+                <div class='privacy-card'>
+                    <div style='font-size:28px;'>🛡️</div>
+                    <div>
+                        <b>Privacy Checkup</b>
+                        <p>Review who can see your posts
+                        and manage your privacy settings.</p>
+                    </div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+            if st.button(
+                "🛡️ Get Started",
+                key="privacy_start",
+                use_container_width=True,
+            ):
+                SS.settings_page = "privacy"
+                SS.privacy_step = 0
+                safe_rerun()
 
-        # ---------- ACCOUNT ----------
-        with st.expander("👤 Account", expanded=True):
+            # ----- ACCOUNT -----
+            st.markdown(
+                "<p class='sec-label'>ACCOUNT</p>",
+                unsafe_allow_html=True,
+            )
+            if st.button(
+                "📋 Personal and Account Information   ›",
+                key="m_personal",
+                use_container_width=True,
+            ):
+                SS.settings_page = "personal"
+                safe_rerun()
 
+            if st.button(
+                "🔐 Password and Security   ›",
+                key="m_password",
+                use_container_width=True,
+            ):
+                SS.settings_page = "password"
+                safe_rerun()
+
+            if st.button(
+                "💰 Payments and Wallet   ›",
+                key="m_payments",
+                use_container_width=True,
+            ):
+                SS.settings_page = "payments"
+                safe_rerun()
+
+            # ----- PREFERENCES -----
+            st.markdown(
+                "<p class='sec-label'>PREFERENCES</p>",
+                unsafe_allow_html=True,
+            )
+            if st.button(
+                "📰 News Feed   ›",
+                key="m_feed",
+                use_container_width=True,
+            ):
+                SS.settings_page = "feed"
+                safe_rerun()
+
+            if st.button(
+                "🔔 Notifications   ›",
+                key="m_notif",
+                use_container_width=True,
+            ):
+                SS.settings_page = "notifications"
+                safe_rerun()
+
+            if st.button(
+                "🌐 Language and Region   ›",
+                key="m_lang",
+                use_container_width=True,
+            ):
+                SS.settings_page = "language"
+                safe_rerun()
+
+            # ----- PRIVACY -----
+            st.markdown(
+                "<p class='sec-label'>PRIVACY</p>",
+                unsafe_allow_html=True,
+            )
+            if st.button(
+                "🚫 Blocked Members   ›",
+                key="m_blocked",
+                use_container_width=True,
+            ):
+                SS.settings_page = "blocked"
+                safe_rerun()
+
+            if st.button(
+                "⚠️ Your Reports   ›",
+                key="m_reports",
+                use_container_width=True,
+            ):
+                SS.settings_page = "reports"
+                safe_rerun()
+
+            # ----- SUPPORT -----
+            st.markdown(
+                "<p class='sec-label'>SUPPORT</p>",
+                unsafe_allow_html=True,
+            )
+            if st.button(
+                "❓ Help Center   ›",
+                key="m_help",
+                use_container_width=True,
+            ):
+                SS.settings_page = "help"
+                safe_rerun()
+
+            if st.button(
+                "ℹ️ About   ›",
+                key="m_about",
+                use_container_width=True,
+            ):
+                SS.settings_page = "about"
+                safe_rerun()
+
+            # ----- LOGOUT -----
+            st.markdown(
+                "<div style='height:12px;'></div>",
+                unsafe_allow_html=True,
+            )
+            if st.button(
+                "🚪 Logout",
+                key="m_logout",
+                use_container_width=True,
+            ):
+                SS.logged_in = False
+                SS.page = "auth"
+                SS.current_tab = "Home"
+                safe_rerun()
+
+        # ---------- SUB-PAGE: PERSONAL INFO ----------
+        elif SS.settings_page == "personal":
+
+            settings_back("bk_personal")
+            st.markdown(
+                '<div class="panel-header">📋 Personal and Account Information</div>',
+                unsafe_allow_html=True,
+            )
+
+            st.markdown(
+                "<p class='set-label'>Account Details</p>",
+                unsafe_allow_html=True,
+            )
+
+            st.text_input(
+                "Username",
+                value=SS.username,
+                disabled=True,
+                key="pi_user",
+            )
+            st.text_input(
+                "Email",
+                value=SS.email if SS.email else "user@hmfbook.com",
+                key="pi_email",
+            )
             dn = st.text_input(
                 "Display Name",
                 value=SS.display_name,
@@ -870,7 +1103,7 @@ elif SS.page == "app" and SS.logged_in:
             ):
                 SS.display_name = dn
                 SS.bio = bio
-                st.success("Profile saved ✅")
+                st.success("Profile saved successfully!")
 
             st.markdown("---")
             st.markdown(
@@ -879,7 +1112,7 @@ elif SS.page == "app" and SS.logged_in:
             )
 
             del_chk = st.checkbox(
-                "Main apna account delete karna chahta hoon",
+                "I want to delete my account",
                 key="del_chk",
             )
 
@@ -894,26 +1127,19 @@ elif SS.page == "app" and SS.logged_in:
                     SS.username = ""
                     safe_rerun()
 
-        # ---------- PRIVACY & SECURITY ----------
-        with st.expander("🔒 Privacy & Security", expanded=True):
+        # ---------- SUB-PAGE: PASSWORD & SECURITY ----------
+        elif SS.settings_page == "password":
 
-            SS.private_account = st.checkbox(
-                "🔒 Private Account - sirf followers posts dekh sakte hain",
-                value=SS.private_account,
-                key="priv_chk",
-            )
-            SS.activity_status = st.checkbox(
-                "🟢 Activity Status dikhayein (Online status)",
-                value=SS.activity_status,
-                key="act_chk",
-            )
-
-            st.markdown("---")
+            settings_back("bk_password")
             st.markdown(
-                "<p class='set-label'>🔐 Change Password</p>",
+                '<div class="panel-header">🔐 Password and Security</div>',
                 unsafe_allow_html=True,
             )
 
+            st.markdown(
+                "<p class='set-label'>Change Password</p>",
+                unsafe_allow_html=True,
+            )
             cur_pw = st.text_input(
                 "Current Password",
                 type="password",
@@ -924,6 +1150,11 @@ elif SS.page == "app" and SS.logged_in:
                 type="password",
                 key="new_pw",
             )
+            conf_pw = st.text_input(
+                "Confirm New Password",
+                type="password",
+                key="conf_pw",
+            )
 
             if st.button(
                 "🔐 Update Password",
@@ -931,14 +1162,150 @@ elif SS.page == "app" and SS.logged_in:
                 use_container_width=True,
             ):
                 if cur_pw and new_pw:
-                    st.success(
-                        "Password update ho gaya! (Real hashing Module 10 mein)"
-                    )
+                    if new_pw == conf_pw:
+                        st.success("Password updated successfully!")
+                    else:
+                        st.warning("New passwords do not match!")
                 else:
-                    st.warning("Dono fields bharin!")
+                    st.warning("Please fill in the password fields!")
 
-        # ---------- NOTIFICATIONS ----------
-        with st.expander("🔔 Notifications", expanded=True):
+            st.markdown(
+                "<p class='set-label'>Security Settings</p>",
+                unsafe_allow_html=True,
+            )
+            SS.two_factor = st.checkbox(
+                "🔑 Two-Factor Authentication (2FA)",
+                value=SS.two_factor,
+                key="tf_chk",
+            )
+            SS.login_alerts = st.checkbox(
+                "📩 Login Alerts - notify me on new logins",
+                value=SS.login_alerts,
+                key="la_chk",
+            )
+
+            st.markdown(
+                "<p class='set-label'>Where You're Logged In</p>",
+                unsafe_allow_html=True,
+            )
+            st.markdown(
+                """
+                <div class="session-row">💻 <div>
+                <b>Windows PC</b> - Chrome<br>
+                <span style="color:#00B074;">Active now</span></div></div>
+                """,
+                unsafe_allow_html=True,
+            )
+            st.markdown(
+                """
+                <div class="session-row">📱 <div>
+                <b>Samsung Galaxy</b> - HMF app<br>
+                <span style="color:#9ca3af;">2 hours ago</span></div></div>
+                """,
+                unsafe_allow_html=True,
+            )
+            if st.button(
+                "🚪 Log Out of All Sessions",
+                key="logout_all",
+                use_container_width=True,
+            ):
+                st.success("You have been logged out of other sessions!")
+
+        # ---------- SUB-PAGE: PAYMENTS & WALLET ----------
+        elif SS.settings_page == "payments":
+
+            settings_back("bk_payments")
+            st.markdown(
+                '<div class="panel-header">💰 Payments and Wallet</div>',
+                unsafe_allow_html=True,
+            )
+
+            bal = "💰 Current Balance: **" + str(SS.coins) + " Coins**"
+            st.success(bal)
+
+            if st.button(
+                "💳 Request Payout",
+                key="pay_wd",
+                use_container_width=True,
+            ):
+                do_withdrawal()
+                safe_rerun()
+
+            if SS.withdraw_msg:
+                st.info(SS.withdraw_msg)
+                SS.withdraw_msg = ""
+
+            st.markdown(
+                "<p class='set-label'>📜 Transaction History</p>",
+                unsafe_allow_html=True,
+            )
+            if SS.tx_history:
+                for i, t in enumerate(SS.tx_history):
+                    h1, h2, h3 = st.columns([0.5, 0.3, 0.2])
+                    h1.markdown("<b>" + t["type"] + "</b>",
+                                unsafe_allow_html=True)
+                    h2.markdown(t["amount"])
+                    h3.caption(t["time"])
+            else:
+                st.caption(
+                    "No transactions yet. "
+                    "Play games and withdraw to see history here."
+                )
+
+            st.markdown(
+                "<p class='set-label'>➕ Add Coins</p>",
+                unsafe_allow_html=True,
+            )
+            st.caption(
+                "Coin purchases coming soon. "
+                "Earn coins by playing games and winning matches!"
+            )
+
+        # ---------- SUB-PAGE: NEWS FEED ----------
+        elif SS.settings_page == "feed":
+
+            settings_back("bk_feed")
+            st.markdown(
+                '<div class="panel-header">📰 News Feed Preferences</div>',
+                unsafe_allow_html=True,
+            )
+
+            st.markdown(
+                "<p class='set-label'>Feed Order</p>",
+                unsafe_allow_html=True,
+            )
+            SS.feed_sort = st.radio(
+                "Sort your feed by:",
+                ["Most Recent", "Top Posts"],
+                index=0 if SS.feed_sort == "Most Recent" else 1,
+                key="feed_sort_radio",
+            )
+
+            st.markdown(
+                "<p class='set-label'>Feed Content</p>",
+                unsafe_allow_html=True,
+            )
+            SS.show_stories = st.checkbox(
+                "📱 Show Stories row",
+                value=SS.show_stories,
+                key="stories_chk",
+            )
+
+            info = (
+                "🚫 Posts from " + str(len(SS.blocked)) +
+                " blocked member(s) are hidden from your feed."
+            )
+            st.caption(info)
+            st.caption("Changes are saved automatically.")
+
+        # ---------- SUB-PAGE: NOTIFICATIONS ----------
+        elif SS.settings_page == "notifications":
+
+            settings_back("bk_notif")
+            st.markdown(
+                '<div class="panel-header">🔔 Notifications</div>',
+                unsafe_allow_html=True,
+            )
 
             SS.notif["likes"] = st.checkbox(
                 "❤️ Likes",
@@ -973,33 +1340,181 @@ elif SS.page == "app" and SS.logged_in:
                 if on:
                     joined = ", ".join(on)
                     st.info(
-                        "🔔 Demo: '@hoor_jannat ne aapki post like ki!' "
+                        "🔔 Demo: '@hoor_jannat liked your post!' "
                         "(On: " + joined + ")"
                     )
                 else:
-                    st.warning("Sab notifications off hain!")
+                    st.warning("All notifications are off!")
 
-        # ---------- BLOCKED MEMBERS ----------
-        with st.expander(
-            "🚫 Blocked Members - Tang karne walon ko block karein",
-            expanded=True,
-        ):
+        # ---------- SUB-PAGE: LANGUAGE & REGION ----------
+        elif SS.settings_page == "language":
 
+            settings_back("bk_lang")
             st.markdown(
-                "<p class='set-label'>Members ki IDs (check kar ke exact ID likhein):</p>",
+                '<div class="panel-header">🌐 Language and Region</div>',
                 unsafe_allow_html=True,
             )
 
+            lang = st.radio(
+                "App Language:",
+                ["English", "Urdu"],
+                index=0 if SS.language == "English" else 1,
+                key="lang_radio",
+            )
+            SS.language = lang
+
+            regions = [
+                "Worldwide",
+                "Pakistan",
+                "United Arab Emirates",
+                "United Kingdom",
+                "United States",
+                "Saudi Arabia",
+            ]
+            if SS.region in regions:
+                r_index = regions.index(SS.region)
+            else:
+                r_index = 0
+            SS.region = st.selectbox(
+                "Region:",
+                regions,
+                index=r_index,
+                key="region_sel",
+            )
+            st.caption("Language and region are saved automatically.")
+
+        # ---------- SUB-PAGE: PRIVACY CHECKUP ----------
+        elif SS.settings_page == "privacy":
+
+            settings_back("bk_privacy")
+            st.markdown(
+                '<div class="panel-header">🛡️ Privacy Checkup</div>',
+                unsafe_allow_html=True,
+            )
+
+            prog = min(SS.privacy_step / 4, 1.0)
+            st.progress(prog)
+
+            if SS.privacy_step == 0:
+                st.markdown(
+                    "Take a minute to review your key privacy settings "
+                    "and make sure you share only what you want."
+                )
+                st.info("🔒 Your data is private by default.")
+                if st.button(
+                    "🚀 Get Started",
+                    key="pc_start",
+                    use_container_width=True,
+                ):
+                    SS.privacy_step = 1
+                    safe_rerun()
+
+            elif SS.privacy_step == 1:
+                st.markdown(
+                    "<p class='set-label'>Step 1 of 3 - Who can see your posts?</p>",
+                    unsafe_allow_html=True,
+                )
+                options = ["Public", "Friends", "Only Me"]
+                SS.post_visibility = st.radio(
+                    "Post visibility:",
+                    options,
+                    index=options.index(SS.post_visibility),
+                    key="vis_radio",
+                )
+                if st.button(
+                    "Next →",
+                    key="pc_next1",
+                    use_container_width=True,
+                ):
+                    SS.privacy_step = 2
+                    safe_rerun()
+
+            elif SS.privacy_step == 2:
+                st.markdown(
+                    "<p class='set-label'>Step 2 of 3 - Review blocked members</p>",
+                    unsafe_allow_html=True,
+                )
+                if SS.blocked:
+                    for u in SS.blocked:
+                        st.markdown("🚫 **@" + u + "**")
+                else:
+                    st.caption("No one is blocked. Great job!")
+                if st.button(
+                    "Next →",
+                    key="pc_next2",
+                    use_container_width=True,
+                ):
+                    SS.privacy_step = 3
+                    safe_rerun()
+
+            elif SS.privacy_step == 3:
+                st.markdown(
+                    "<p class='set-label'>Step 3 of 3 - How people can find you</p>",
+                    unsafe_allow_html=True,
+                )
+                SS.searchable = st.checkbox(
+                    "Allow people to search for your profile",
+                    value=SS.searchable,
+                    key="search_chk",
+                )
+                SS.activity_status = st.checkbox(
+                    "Show your online status",
+                    value=SS.activity_status,
+                    key="act_chk2",
+                )
+                if st.button(
+                    "Finish Checkup ✓",
+                    key="pc_finish",
+                    use_container_width=True,
+                ):
+                    SS.privacy_step = 4
+                    safe_rerun()
+
+            else:
+                st.success("🎉 Privacy Checkup complete!")
+                srch = "Yes" if SS.searchable else "No"
+                act = "Visible" if SS.activity_status else "Hidden"
+                st.markdown(
+                    "✅ Post visibility: **" + SS.post_visibility + "**\n\n"
+                    "✅ Blocked members: **" + str(len(SS.blocked)) + "**\n\n"
+                    "✅ Searchable: **" + srch + "**\n\n"
+                    "✅ Activity status: **" + act + "**"
+                )
+                if st.button(
+                    "Done",
+                    key="pc_done",
+                    use_container_width=True,
+                ):
+                    SS.settings_page = "menu"
+                    SS.privacy_step = 0
+                    safe_rerun()
+
+        # ---------- SUB-PAGE: BLOCKED MEMBERS ----------
+        elif SS.settings_page == "blocked":
+
+            settings_back("bk_blocked")
+            st.markdown(
+                '<div class="panel-header">🚫 Blocked Members</div>',
+                unsafe_allow_html=True,
+            )
+
+            if SS.block_msg:
+                st.success(SS.block_msg)
+                SS.block_msg = ""
+
+            st.markdown(
+                "<p class='set-label'>Member IDs (copy the exact ID):</p>",
+                unsafe_allow_html=True,
+            )
             chips = ""
             for m in KNOWN_MEMBERS:
                 chips += "<span class='member-chip'>👤 @" + m + "</span>"
             st.markdown(chips, unsafe_allow_html=True)
 
             st.markdown(
-                "<p class='set-label'>Block karne ke liye username/ID likhein:</p>",
+                "<p class='set-label'>Enter username/ID to block:</p>",
                 unsafe_allow_html=True,
             )
-
             block_input = st.text_input(
                 "Username / ID",
                 key="block_input",
@@ -1012,18 +1527,17 @@ elif SS.page == "app" and SS.logged_in:
                 use_container_width=True,
             ):
                 u = block_input.strip().lower()
-
                 if not u:
-                    st.warning("Pehle ID likhein!")
+                    st.warning("Please enter an ID first!")
                 elif u == SS.username.lower():
-                    st.warning("Apni khud ki ID block nahi kar sakte!")
+                    st.warning("You cannot block your own ID!")
                 elif u in SS.blocked:
-                    st.warning("Ye member pehle se blocked hai!")
+                    st.warning("This member is already blocked!")
                 else:
                     SS.blocked.append(u)
                     SS.block_msg = (
-                        "✅ @" + u + " block kar diya gaya - "
-                        "ab uski posts/comments feed mein nahi dikhenge."
+                        "✅ @" + u + " has been blocked - "
+                        "their posts and comments will no longer appear."
                     )
                     safe_rerun()
 
@@ -1031,12 +1545,10 @@ elif SS.page == "app" and SS.logged_in:
                 "<p class='set-label'>🚫 Blocked List:</p>",
                 unsafe_allow_html=True,
             )
-
             if SS.blocked:
                 for i, u in enumerate(SS.blocked):
                     bc1, bc2 = st.columns([0.65, 0.35])
                     bc1.markdown("**🚫 @" + u + "**")
-
                     if bc2.button(
                         "✅ Unblock",
                         key="ub_" + str(i),
@@ -1044,40 +1556,45 @@ elif SS.page == "app" and SS.logged_in:
                     ):
                         SS.blocked.remove(u)
                         SS.block_msg = (
-                            "@" + u + " unblock ho gaya - "
-                            "ab uski posts wapas feed mein dikhengi."
+                            "@" + u + " has been unblocked - "
+                            "their posts will reappear in your feed."
                         )
                         safe_rerun()
             else:
                 st.caption(
-                    "Abhi koi member blocked nahi hai. "
-                    "Feed par 🚫 button se bhi block kar sakte hain."
+                    "No members are blocked yet. "
+                    "You can also block directly from the feed."
                 )
 
-        # ---------- REPORT MEMBER ----------
-        with st.expander(
-            "⚠️ Report a Member - Complaint karein",
-            expanded=True,
-        ):
+        # ---------- SUB-PAGE: REPORTS ----------
+        elif SS.settings_page == "reports":
+
+            settings_back("bk_reports")
+            st.markdown(
+                '<div class="panel-header">⚠️ Report a Member</div>',
+                unsafe_allow_html=True,
+            )
+
+            if SS.report_msg:
+                st.success(SS.report_msg)
+                SS.report_msg = ""
 
             rep_id = st.text_input(
-                "Jis member ki shikayat hai uski ID",
+                "Member ID to report",
                 key="rep_id",
                 placeholder="e.g. bilal_plays",
             )
-
             reasons = [
-                "Tang karna / Harassment",
-                "Gali / Abusive language",
-                "Spam ya fake posts",
-                "Fake account",
+                "Harassment / Bullying",
+                "Abusive Language",
+                "Spam or Fake Posts",
+                "Fake Account",
                 "Scam / Fraud",
                 "Other",
             ]
             reason = st.selectbox("Reason", reasons, key="rep_reason")
-
             rep_detail = st.text_area(
-                "Detail likhein (optional)",
+                "Details (optional)",
                 key="rep_detail",
                 height=80,
             )
@@ -1096,16 +1613,16 @@ elif SS.page == "app" and SS.logged_in:
                     }
                     SS.reports.append(report)
                     SS.report_msg = (
-                        "✅ Report against @" + r + " submit ho gayi - "
-                        "admin 24 ghante mein review karega."
+                        "✅ Report against @" + r + " submitted - "
+                        "our team will review it within 24 hours."
                     )
                     safe_rerun()
                 else:
-                    st.warning("Member ki ID likhein!")
+                    st.warning("Please enter a member ID!")
 
             if SS.reports:
                 st.markdown(
-                    "<p class='set-label'>📋 Aapki Reports:</p>",
+                    "<p class='set-label'>📋 Your Reports:</p>",
                     unsafe_allow_html=True,
                 )
                 for i, r in enumerate(SS.reports):
@@ -1116,56 +1633,25 @@ elif SS.page == "app" and SS.logged_in:
                     )
                     st.markdown(line, unsafe_allow_html=True)
 
-        # ---------- APPEARANCE ----------
-        with st.expander("🌙 Appearance", expanded=True):
+        # ---------- SUB-PAGE: HELP CENTER ----------
+        elif SS.settings_page == "help":
 
-            new_dark = st.checkbox(
-                "🌙 Dark Mode on karein",
-                value=SS.dark_mode,
-                key="dark_chk",
-            )
-
-            if new_dark != SS.dark_mode:
-                SS.dark_mode = new_dark
-                safe_rerun()
-
-            st.caption(
-                "Instagram jaisa dark theme - poori app ka rang badal jata hai!"
-            )
-
-        # ---------- LANGUAGE ----------
-        with st.expander("🌐 Language", expanded=True):
-
-            lang = st.radio(
-                "Apni pasand ki zaban chunein:",
-                ["English", "Urdu"],
-                index=0 if SS.language == "English" else 1,
-                key="lang_radio",
-                horizontal=True,
-            )
-
-            if lang == "English":
-                SS.language = "English"
-                st.caption("English selected.")
-            else:
-                SS.language = "Urdu"
-                st.caption(
-                    "Urdu select ho gayi - translation agli module mein aayegi."
-                )
-
-        # ---------- HELP & SUPPORT ----------
-        with st.expander("❓ Help & Support", expanded=True):
-
-            st.markdown("**❓ Common Questions:**")
+            settings_back("bk_help")
             st.markdown(
-                "• **Coins kaise kamayein?** - Ludo khelen, daily login, games jeeten\n"
-                "• **Withdrawal kaise hoti hai?** - 100+ coins par Profile se\n"
-                "• **Koi tang kare to?** - Settings → Blocked Members se ID block karein\n"
-                "• **Report kaise karein?** - Settings → Report a Member"
+                '<div class="panel-header">❓ Help Center</div>',
+                unsafe_allow_html=True,
+            )
+
+            st.markdown("**❓ Frequently Asked Questions:**")
+            st.markdown(
+                "• **How do I earn coins?** - Play games, daily login, and win matches\n"
+                "• **How do withdrawals work?** - Request from Payments with 100+ coins\n"
+                "• **Someone is bothering me?** - Privacy → Blocked Members\n"
+                "• **How do I report someone?** - Privacy → Your Reports"
             )
 
             bug = st.text_area(
-                "🐞 Bug ya masla likhein:",
+                "🐞 Describe the bug or issue:",
                 key="bug_txt",
                 height=80,
             )
@@ -1177,41 +1663,30 @@ elif SS.page == "app" and SS.logged_in:
             ):
                 if bug.strip():
                     SS.help_msg = (
-                        "✅ Aapka message support team ko chala gaya - "
-                        "24-48 ghante mein jawab milega."
+                        "✅ Your message has been sent to our support team - "
+                        "you will receive a reply within 24-48 hours."
                     )
                 else:
-                    SS.help_msg = "⚠️ Pehle apna masla likhein."
+                    SS.help_msg = "⚠️ Please describe your issue first."
                 safe_rerun()
 
             if SS.help_msg:
                 st.info(SS.help_msg)
                 SS.help_msg = ""
 
-        # ---------- ABOUT ----------
-        with st.expander("ℹ️ About", expanded=True):
+        # ---------- SUB-PAGE: ABOUT ----------
+        elif SS.settings_page == "about":
 
+            settings_back("bk_about")
             st.markdown(
-                "**HMF book** v1.1.0 🟢\n\n"
+                '<div class="panel-header">ℹ️ About</div>',
+                unsafe_allow_html=True,
+            )
+            st.markdown(
+                "**HMF book** v1.3.0 🟢\n\n"
                 "Social feed • Games • Coins • Live streaming (coming soon)\n\n"
                 "© 2025 HMF - All rights reserved."
             )
-
-        # ---------- LOGOUT ----------
-        st.markdown(
-            "<div style='height:10px;'></div>",
-            unsafe_allow_html=True,
-        )
-
-        if st.button(
-            "🚪 Logout",
-            key="set_logout",
-            use_container_width=True,
-        ):
-            SS.logged_in = False
-            SS.page = "auth"
-            SS.current_tab = "Home"
-            safe_rerun()
 
     # ---------- BOTTOM NAVIGATION ----------
     hr_html = (
@@ -1236,6 +1711,7 @@ elif SS.page == "app" and SS.logged_in:
 
     if n4.button("⚙️ Settings", use_container_width=True):
         SS.current_tab = "Settings"
+        SS.settings_page = "menu"
         safe_rerun()
 
 
