@@ -1,255 +1,192 @@
-import 'package:flutter/material.dart';
+import streamlit as st
 
-class SignUpScreen extends StatefulWidget {
-  const SignUpScreen({super.key});
+# ⚠️ set_page_config hamesha FIRST Streamlit command hona chahiye
+st.set_page_config(page_title="HMF book", page_icon="🟢", layout="centered")
 
-  @override
-  State<SignUpScreen> createState() => _SignUpScreenState();
-}
+# ---- Navigation state (page switch ke liye) ----
+if "page" not in st.session_state:
+    st.session_state.page = "splash"
 
-class _SignUpScreenState extends State<SignUpScreen> {
-  final _formKey = GlobalKey<FormState>();
-  final _usernameController = TextEditingController();
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
-  bool _obscurePassword = true;
 
-  @override
-  void dispose() {
-    _usernameController.dispose();
-    _emailController.dispose();
-    _passwordController.dispose();
-    super.dispose();
-  }
+# ============================================================
+#                  PAGE 1: SPLASH SCREEN
+# ============================================================
+if st.session_state.page == "splash":
 
-  @override
-  Widget build(BuildContext context) {
-    final screenHeight = MediaQuery.of(context).size.height;
+    st.markdown("""
+        <style>
+        .stApp {
+            background: linear-gradient(135deg, #00B074 0%, #056839 100%) !important;
+        }
+        /* Streamlit header, menu, footer hide */
+        header[data-testid="stHeader"], #MainMenu, footer {
+            visibility: hidden;
+        }
+        .main-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 70vh;
+            text-align: center;
+        }
+        .logo-text {
+            font-size: 90px;
+            font-weight: 900;
+            margin: 0;
+            letter-spacing: 4px;
+            color: white;
+            text-shadow: 0 4px 12px rgba(0,0,0,0.25);
+        }
+        .subtitle-text {
+            font-size: 24px;
+            font-weight: 600;
+            color: rgba(255,255,255,0.9);
+            margin: 5px 0 0 0;
+            letter-spacing: 2px;
+        }
+        div[data-testid="stButton"] > button,
+        div.stButton > button {
+            background-color: white !important;
+            color: #00B074 !important;
+            font-size: 18px !important;
+            font-weight: bold !important;
+            padding: 12px 45px !important;
+            border-radius: 30px !important;
+            border: none !important;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.25) !important;
+            transition: all 0.3s ease !important;
+        }
+        div[data-testid="stButton"] > button:hover,
+        div.stButton > button:hover {
+            transform: scale(1.05) !important;
+            background-color: #f0fff5 !important;
+        }
+        </style>
+    """, unsafe_allow_html=True)
 
-    return Scaffold(
-      body: Container(
-        width: double.infinity,
-        height: double.infinity,
-        // Premium Green Gradient Theme
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              Color(0xFF00B074), // Light Green
-              Color(0xFF056839), // Dark Green
-            ],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ),
-        ),
-        child: SafeArea(
-          bottom: false,
-          child: Column(
-            children: [
-              // Top Header HMF Logo (25% Height)
-              SizedBox(
-                height: screenHeight * 0.25,
-                child: const Center(
-                  child: Text(
-                    'HMF',
-                    style: TextStyle(
-                      fontSize: 64,
-                      fontWeight: FontWeight.w900,
-                      color: Colors.white,
-                      letterSpacing: 1.5,
-                    ),
-                  ),
-                ),
-              ),
+    # ✅ FIX 1: Pura HTML ab EK hi markdown call mein
+    # (pehle div/h1/p alag calls mein the is liye CSS apply nahi hoti thi)
+    st.markdown("""
+        <div class="main-container">
+            <h1 class="logo-text">HMF</h1>
+            <p class="subtitle-text">HMF book</p>
+        </div>
+    """, unsafe_allow_html=True)
 
-              // Main Input White Sheet Card (75% Height)
-              Expanded(
-                child: Container(
-                  width: double.infinity,
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(40),
-                      topRight: Radius.circular(40),
-                    ),
-                  ),
-                  child: SingleChildScrollView(
-                    physics: const BouncingScrollPhysics(),
-                    padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 32),
-                    child: Form(
-                      key: _formKey,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Create Account',
-                            style: TextStyle(
-                              fontSize: 26,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF2D3142),
-                            ),
-                          ),
-                          
-                          const SizedBox(height: 24),
+    # Center-aligned Get Started button
+    col1, col2, col3 = st.columns([1, 1.3, 1])
+    with col2:
+        if st.button("Get Started", use_container_width=True):
+            # ✅ FIX 2: Ab asli page switch hota hai
+            st.session_state.page = "signup"
+            st.rerun()
 
-                          // Username Field
-                          _buildTextField(
-                            controller: _usernameController,
-                            hint: 'Username',
-                            icon: Icons.person_outline_rounded,
-                          ),
-                          
-                          const SizedBox(height: 16),
 
-                          // Email Field
-                          _buildTextField(
-                            controller: _emailController,
-                            hint: 'Email',
-                            icon: Icons.mail_outline_rounded,
-                            keyboardType: TextInputType.emailAddress,
-                          ),
-                          
-                          const SizedBox(height: 16),
+# ============================================================
+#                  PAGE 2: SIGNUP SCREEN
+# ============================================================
+elif st.session_state.page == "signup":
 
-                          // Password Field
-                          _buildTextField(
-                            controller: _passwordController,
-                            hint: 'Password',
-                            icon: Icons.lock_outline_rounded,
-                            isPassword: true,
-                          ),
+    st.markdown("""
+        <style>
+        .stApp {
+            background: #F6FCF8 !important;
+        }
+        header[data-testid="stHeader"], #MainMenu, footer {
+            visibility: hidden;
+        }
+        .hmf-badge {
+            background: linear-gradient(135deg, #00B074, #056839);
+            display: inline-block;
+            padding: 22px 55px;
+            border-radius: 24px;
+            box-shadow: 0 6px 18px rgba(0,176,116,0.35);
+        }
+        .hmf-badge h1 {
+            color: white;
+            font-size: 40px;
+            font-weight: 900;
+            letter-spacing: 3px;
+            margin: 0;
+        }
+        .create-title {
+            color: #222;
+            font-size: 26px;
+            font-weight: 700;
+            margin-top: 28px;
+            margin-bottom: 5px;
+        }
+        .create-sub {
+            color: #888;
+            font-size: 14px;
+            margin-top: 0;
+        }
+        .or-continue {
+            text-align: center;
+            color: #999;
+            font-size: 14px;
+            margin-top: 30px;
+            margin-bottom: 15px;
+        }
+        div[data-testid="stButton"] > button,
+        div.stButton > button {
+            background: #00B074 !important;
+            color: white !important;
+            font-weight: 600 !important;
+            border: none !important;
+            border-radius: 12px !important;
+        }
+        div[data-testid="stTextInput"] input {
+            border-radius: 12px !important;
+        }
+        </style>
+    """, unsafe_allow_html=True)
 
-                          const SizedBox(height: 32),
+    # HMF header + Create Account (ek hi call mein)
+    st.markdown("""
+        <div style="text-align:center; margin-top:20px;">
+            <div class="hmf-badge"><h1>HMF</h1></div>
+            <h2 class="create-title">Create Account</h2>
+            <p class="create-sub">Sign up to continue to HMF book</p>
+        </div>
+    """, unsafe_allow_html=True)
 
-                          // Sign Up Action Button
-                          SizedBox(
-                            width: double.infinity,
-                            height: 54,
-                            child: ElevatedButton(
-                              onPressed: () {
-                                if (_formKey.currentState!.validate()) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(content: Text('Creating HMF Account...')),
-                                  );
-                                }
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF00A86B),
-                                foregroundColor: Colors.white,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(28),
-                                ),
-                              ),
-                              child: const Text(
-                                'Sign Up',
-                                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                              ),
-                            ),
-                          ),
+    # Input fields — Password mein eye icon built-in hai
+    username = st.text_input("Username", placeholder="Enter your username")
+    email = st.text_input("Email", placeholder="Enter your email")
+    password = st.text_input("Password", type="password", placeholder="Enter your password")
 
-                          const SizedBox(height: 28),
+    st.markdown("<div style='height:12px;'></div>", unsafe_allow_html=True)
 
-                          // Divider Line
-                          Row(
-                            children: const [
-                              Expanded(child: Divider(color: Color(0xFFE2E8F0), thickness: 1)),
-                              Padding(
-                                padding: EdgeInsets.symmetric(horizontal: 16),
-                                child: Text('Or continue with', style: TextStyle(color: Colors.grey, fontSize: 13)),
-                              ),
-                              Expanded(child: Divider(color: Color(0xFFE2E8F0), thickness: 1)),
-                            ],
-                          ),
+    # Sign Up button (validation ke saath)
+    if st.button("Sign Up", use_container_width=True):
+        if username and email and password:
+            st.success("Account created successfully! 🎉")
+        else:
+            st.error("Please fill in all fields!")
 
-                          const SizedBox(height: 20),
+    # Or continue with
+    st.markdown('<p class="or-continue">Or continue with</p>', unsafe_allow_html=True)
 
-                          // Spherical Social Icons
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              _socialButton('G', const Color(0xFFEA4335), Colors.white),
-                              const SizedBox(width: 20),
-                              _socialButton('S', const Color(0xFFFFFC00), Colors.black),
-                              const SizedBox(width: 20),
-                              _socialButton('f', const Color(0xFF1877F2), Colors.white),
-                            ],
-                          ),
+    c1, c2, c3 = st.columns(3)
+    with c1:
+        st.button("Google", use_container_width=True)
+    with c2:
+        st.button("Snapchat", use_container_width=True)
+    with c3:
+        st.button("Facebook", use_container_width=True)
 
-                          const SizedBox(height: 32),
-
-                          // Bottom Switch Route Option
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Text("Already have an account? ", style: TextStyle(color: Colors.grey, fontSize: 14)),
-                              GestureDetector(
-                                onTap: () {},
-                                child: const Text(
-                                  'Login',
-                                  style: TextStyle(color: Color(0xFF00A86B), fontWeight: FontWeight.bold, fontSize: 14),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTextField({
-    required TextEditingController controller,
-    required String hint,
-    required IconData icon,
-    bool isPassword = false,
-    TextInputType keyboardType = TextInputType.text,
-  }) {
-    return TextFormField(
-      controller: controller,
-      obscureText: isPassword ? _obscurePassword : false,
-      keyboardType: keyboardType,
-      decoration: InputDecoration(
-        hintText: hint,
-        prefixIcon: Icon(icon, color: Colors.grey.shade400, size: 22),
-        suffixIcon: isPassword
-            ? IconButton(
-                icon: Icon(_obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined, color: Colors.grey.shade400, size: 20),
-                onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
-              )
-            : null,
-        contentPadding: const EdgeInsets.symmetric(vertical: 18, horizontal: 16),
-        filled: true,
-        fillColor: Colors.white,
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey.shade300),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFF00A86B), width: 1.5),
-        ),
-      ),
-      validator: (value) => value == null || value.isEmpty ? 'Please enter $hint' : null,
-    );
-  }
-
-  Widget _socialButton(String label, Color bgColors, Color textColors) {
-    return Container(
-      width: 48,
-      height: 48,
-      decoration: BoxDecoration(color: bgColors, shape: BoxShape.circle),
-      child: Center(
-        child: Text(
-          label,
-          style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: textColors, fontFamily: label == 'f' ? 'Georgia' : 'sans-serif'),
-        ),
-      ),
-    );
-  }
-}
+    # Bottom: Login link + Back button
+    st.markdown("<hr style='margin-top:35px; margin-bottom:15px;'>", unsafe_allow_html=True)
+    bcol1, bcol2 = st.columns([1.5, 1])
+    with bcol1:
+        st.markdown(
+            "<p style='color:#555; font-size:15px; margin:0; padding-top:8px;'>"
+            "Already have an account? <b style='color:#00B074;'>Login</b></p>",
+            unsafe_allow_html=True,
+        )
+    with bcol2:
+        if st.button("⬅ Back"):
+            st.session_state.page = "splash"
+            st.rerun()
