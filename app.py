@@ -5,9 +5,11 @@ import json
 import os
 import time
 import uuid
+import base64
 from html import escape as esc
 
-st.set_page_config(page_title="HMF book", page_icon="🟢", layout="centered")
+st.set_page_config(page_title="HMF book", page_icon="🟢",
+                   layout="centered")
 
 try:
     from streamlit_autorefresh import st_autorefresh
@@ -15,46 +17,38 @@ try:
 except Exception:
     HAS_REFRESH = False
 
-# ---------- YOUTUBE CHANNEL CONFIG ----------
+try:
+    from streamlit_js_eval import js_eval
+    HAS_JS = True
+except Exception:
+    HAS_JS = False
+
 CHANNEL_NAME = "Color Pop Cartoons"
 CHANNEL_HANDLE = "@ColorPopCartoons83"
 CHANNEL_URL = "https://www.youtube.com/" + CHANNEL_HANDLE
-# OPTIONAL: full channel playlist ke liye channel ID yahan paste karein
-# (channel page kholein > kisi video par jayein > channel naam par click
-#  karein > URL mein /channel/UC.... dikhega > wo UC... ID neeche paste
-#  karein - playlist khud ban jayegi)
 CHANNEL_ID = ""
-UPLOADS_PLAYLIST = ""
+UPLOADS_PL = ""
 if CHANNEL_ID.startswith("UC") and len(CHANNEL_ID) > 5:
-    UPLOADS_PLAYLIST = "UU" + CHANNEL_ID[2:]
+    UPLOADS_PL = "UU" + CHANNEL_ID[2:]
 
 
 def parse_youtube_id(url):
     url = url.strip()
     if not url:
         return None
-    if len(url) == 11 and "/" not in url and "?" not in url:
+    if len(url) == 11 and "/" not in url:
         return url
     if "youtu.be/" in url:
-        part = url.split("youtu.be/")[1].split("?")[0].split("/")[0]
-        if part:
-            return part
+        return url.split("youtu.be/")[1].split("?")[0].split("/")[0] or None
     if "v=" in url:
-        part = url.split("v=")[1].split("&")[0]
-        if part:
-            return part
+        return url.split("v=")[1].split("&")[0] or None
     if "/shorts/" in url:
-        part = url.split("/shorts/")[1].split("?")[0].split("/")[0]
-        if part:
-            return part
+        return url.split("/shorts/")[1].split("?")[0].split("/")[0] or None
     if "/embed/" in url:
-        part = url.split("/embed/")[1].split("?")[0].split("/")[0]
-        if part:
-            return part
+        return url.split("/embed/")[1].split("?")[0].split("/")[0] or None
     return None
 
 
-# ---------- SAFE HELPERS ----------
 def safe_rerun():
     if hasattr(st, "rerun"):
         st.rerun()
@@ -69,7 +63,7 @@ def safe_toast(msg):
         st.info(msg)
 
 
-# ---------- SHARED DATABASE ----------
+# ---------- DATABASE ----------
 DB_FILE = "hmf_db.json"
 UPLOAD_DIR = "uploads"
 
@@ -80,12 +74,12 @@ def load_db():
             db = json.load(f)
     except Exception:
         db = {}
-    if "users" not in db:
-        db["users"] = {}
-    if "messages" not in db:
-        db["messages"] = []
-    if "posts" not in db:
-        db["posts"] = []
+    for key in ("users", "messages", "posts", "groups",
+                "notifications", "reports"):
+        if key not in db:
+            db[key] = []
+    if "follows" not in db:
+        db["follows"] = {}
     return db
 
 
@@ -98,62 +92,162 @@ def save_db(db):
         return False
 
 
+def add_notification(to_user, text):
+    if not to_user:
+        return
+    db = load_db()
+    db["notifications"].insert(0, {
+        "to": to_user, "text": text,
+        "time": time.time(), "read": False})
+    db["notifications"] = db["notifications"][:200]
+    save_db(db)
+
+
+def unread_count(user):
+    db = load_db()
+    n = 0
+    for x in db["notifications"]:
+        if x.get("to") == user and not x.get("read"):
+            n = n + 1
+    return n
+
+
+def save_upload(file_obj):
+    os.makedirs(UPLOAD_DIR, exist_ok=True)
+    ext = file_obj.name.split(".")[-1].lower()
+    if ext not in ("png", "jpg", "jpeg", "webp", "mp4", "mov", "webm"):
+        ext = "bin"
+    fname = uuid.uuid4().hex + "." + ext
+    path = os.path.join(UPLOAD_DIR, fname)
+    with open(path, "wb") as out:
+        out.write(file_obj.getbuffer())
+    return path
+
+
+def avatar_html(username, avatar_path=None, size=36):
+    if avatar_path and os.path.exists(avatar_path):
+        try:
+            data = base64.b64encode(open(avatar_path, "rb").read())
+            b64 = data.decode()
+            return ("<img src='data:image/*;base64," + b64 + "' "
+                    "style='width:" + str(size) + "px;height:" +
+                    str(size) + "px;border-radius:50%;"
+                    "object-fit:cover;margin-right:10px;'>")
+        except Exception:
+            pass
+    ini = username[:2].upper()
+    return ("<div style='width:" + str(size) + "px;height:" +
+            str(size) + "px;border-radius:50%;background:"
+            "linear-gradient(135deg,#00B074,#056839);color:#fff;"
+            "display:flex;align-items:center;justify-content:center;"
+            "font-weight:bold;margin-right:10px;font-size:" +
+            str(int(size * 0.38)) + "px;'>" + ini + "</div>")
+
+
+# ---------- JS HELPERS (screenshot + base url) ----------
+def shot_install():
+    if not HAS_JS:
+        return
+    code = ("(()=>{const w=window.parent;if(!w.hmfListenSet){"
+            "w.hmfListenSet=1;"
+            "w.addEventListener('keyup',function(e){"
+            "if(e.key==='PrintScreen'){w.hmfShotPending='print';}});"
+            "w.addEventListener('copy',function(){"
+            "w.hmfShotPending='copy';});}"
+            "return 1;})()")
+    try:
+        js_eval(code, key="shot_listen")
+    except Exception:
+        pass
+
+
+def shot_check():
+    if not HAS_JS:
+        return None
+    code = ("(()=>{const w=window.parent;const v=w.hmfShotPending;"
+            "w.hmfShotPending=null;return v;})()")
+    try:
+        return js_eval(code)
+    except Exception:
+        return None
+
+
+def get_base_url():
+    if not HAS_JS:
+        return None
+    try:
+        return js_eval(
+            "window.parent.location.origin + "
+            "window.parent.location.pathname",
+            key="base_url",
+        )
+    except Exception:
+        return None
+
+
+def clear_profile_param():
+    try:
+        qp = dict(st.query_params)
+        if "profile" in qp:
+            st.query_params.pop("profile")
+    except Exception:
+        try:
+            st.experimental_set_query_params()
+        except Exception:
+            pass
+
+
+# ---------- SEED ----------
 DB = load_db()
 
 SEED_USERS = [
-    ("demo", "demo@hmfbook.com", "1234", "Demo User"),
-    ("hoor_jannat", "hoor@hmfbook.com", "1234", "Hoor Jannat"),
-    ("farrukh_m", "farrukh@hmfbook.com", "1234", "Farrukh M"),
-    ("zara_x", "zara@hmfbook.com", "1234", "Zara X"),
+    ("demo", "demo@hmfbook.com", "1234", "Demo User", 550, 1240),
+    ("hoor_jannat", "hoor@hmfbook.com", "1234", "Hoor Jannat", 550, 1240),
+    ("farrukh_m", "farrukh@hmfbook.com", "1234", "Farrukh M", 550, 800),
+    ("zara_x", "zara@hmfbook.com", "1234", "Zara X", 550, 900),
+    ("admin", "admin@hmfbook.com", "admin123", "HMF Admin", 0, 0),
 ]
 
 changed = False
-for uname, mail, pw, name in SEED_USERS:
+for uname, mail, pw, name, coins, foll in SEED_USERS:
     if uname not in DB["users"]:
         DB["users"][uname] = {
             "email": mail, "password": pw, "display_name": name,
-            "bio": "Living life one post at a time.", "coins": 550,
-            "followers": 1240, "following": 356, "blocked": [],
+            "bio": "Living life one post at a time.",
+            "coins": coins, "followers": foll, "following": 120,
+            "blocked": [], "avatar": None,
         }
         changed = True
 
 if not DB["posts"]:
     DB["posts"] = [
         {"id": "s1", "user": "hoor_jannat", "type": "youtube",
-         "ref": "aqz-KE-bpKQ", "cap": "Big Buck Bunny - favorite animation!",
-         "likes": {}, "comments": []},
+         "ref": "aqz-KE-bpKQ", "cap": "Big Buck Bunny!",
+         "likes": {}, "comments": [], "avatar": None},
         {"id": "s2", "user": "farrukh_m", "type": "text",
          "grad": "linear-gradient(45deg,#d1fae5,#a7f3d0)",
          "txt": "🎲 Ludo Night Tournament",
          "cap": "Tonight 8 PM - winner takes all coins!",
-         "likes": {}, "comments": []},
+         "likes": {}, "comments": [], "avatar": None},
         {"id": "s4", "user": "demo", "type": "text",
          "grad": "linear-gradient(45deg,#ecfdf5,#6ee7b7)",
          "txt": "🌿 Green Vibes Only",
          "cap": "Loving this new HMF book app!",
-         "likes": {}, "comments": []},
+         "likes": {}, "comments": [], "avatar": None},
     ]
     changed = True
 
-REEL_URLS = [
+REELS = [
     ("https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4", "Fun times!"),
     ("https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4", "Fire content!"),
 ]
-
-seed_members = ["demo", "hoor_jannat"]
-for i, (url, cap) in enumerate(REEL_URLS):
+for i, (url, cap) in enumerate(REELS):
     rid = "reel_seed" + str(i)
-    exists = False
-    for p in DB["posts"]:
-        if p.get("id") == rid:
-            exists = True
-            break
-    if not exists:
+    if not any(p.get("id") == rid for p in DB["posts"]):
         DB["posts"].append({
-            "id": rid, "user": seed_members[i % len(seed_members)],
+            "id": rid, "user": ["demo", "hoor_jannat"][i % 2],
             "type": "reel", "ref": url, "cap": cap,
-            "likes": {}, "comments": [],
-        })
+            "likes": {}, "comments": [], "avatar": None})
         changed = True
 
 if changed:
@@ -168,7 +262,8 @@ defaults = {
     "auth_mode": "login", "current_tab": "Home", "settings_page": "menu",
     "privacy_step": 0, "blocked": [], "clear_cmt": "", "clear_msg": "",
     "block_msg": "", "report_msg": "", "help_msg": "", "withdraw_msg": "",
-    "social_msg": "", "data_msg": "", "pin_msg": "", "yt_msg": "",
+    "social_msg": "", "pin_msg": "", "yt_msg": "", "view_user": None,
+    "chat_partner": None, "chat_mode": "Direct", "last_shot_time": 0,
     "app_lock": False, "app_pin": "", "pin_unlocked": True,
     "pin_attempts": 0, "pin_lock_until": 0, "auto_logout": 0,
     "last_active": 0, "dark_mode": False, "language": "English",
@@ -176,17 +271,13 @@ defaults = {
     "show_stories": True, "comment_filter": True,
     "private_account": False, "activity_status": True,
     "searchable": True, "hide_last_seen": False, "profile_lock": False,
-    "friend_requests": "Everyone", "messages_privacy": "Friends",
-    "story_privacy": "Friends", "tagging_privacy": "Friends",
-    "ad_personalization": False, "strong_password": False,
+    "friend_requests": "Everyone", "strong_password": False,
     "two_factor": False, "two_fa_code": "", "login_alerts": True,
-    "post_visibility": "Friends", "reports": [], "security_log": [],
-    "login_history": [], "tx_history": [], "room_code": "",
-    "joined": False, "dice": 0,
+    "post_visibility": "Friends", "security_log": [], "tx_history": [],
+    "room_code": "", "dice": 0,
     "notif": {"likes": True, "comments": True, "follows": True,
               "messages": True},
 }
-
 for k, v in defaults.items():
     if k not in SS:
         SS[k] = v
@@ -207,53 +298,46 @@ def comment_is_clean(text):
 def password_strength(pw):
     score = 0
     if len(pw) >= 8:
-        score = score + 25
+        score += 25
     if any(c.isdigit() for c in pw):
-        score = score + 25
+        score += 25
     if any(c.isupper() for c in pw) and any(c.islower() for c in pw):
-        score = score + 25
+        score += 25
     symbols = "!@#$%^&*()-_=+[]{};:,.<>?/"
     if any(c in symbols for c in pw):
-        score = score + 25
+        score += 25
     return score
 
 
 def add_security_event(text):
-    entry = {"event": text, "time": "Just now"}
-    SS.security_log.insert(0, entry)
-    if len(SS.security_log) > 20:
-        SS.security_log = SS.security_log[:20]
+    SS.security_log.insert(0, {"event": text, "time": "Just now"})
+    SS.security_log = SS.security_log[:20]
 
 
 def security_score():
     score = 0
     tips = []
-    if SS.two_factor:
-        score = score + 20
-    else:
-        tips.append("Enable Two-Factor Authentication (+20)")
-    if SS.login_alerts:
-        score = score + 15
-    else:
-        tips.append("Enable Login Alerts (+15)")
-    if SS.app_lock:
-        score = score + 20
-    else:
-        tips.append("Set up App Lock PIN (+20)")
-    if SS.strong_password:
-        score = score + 20
-    else:
-        tips.append("Use a stronger password (+20)")
-    if SS.auto_logout > 0:
-        score = score + 10
+    checks = [
+        ("two_factor", 20, "Enable Two-Factor Authentication (+20)"),
+        ("login_alerts", 15, "Enable Login Alerts (+15)"),
+        ("app_lock", 20, "Set up App Lock PIN (+20)"),
+        ("strong_password", 20, "Use a stronger password (+20)"),
+    ]
+    for key, pts, tip in checks:
+        if SS[key]:
+            score += pts
+        else:
+            tips.append(tip)
+    if SS["auto_logout"] > 0:
+        score += 10
     else:
         tips.append("Enable Auto Logout (+10)")
-    if SS.private_account:
-        score = score + 10
+    if SS["private_account"]:
+        score += 10
     else:
         tips.append("Make your account private (+10)")
-    if SS.comment_filter:
-        score = score + 5
+    if SS["comment_filter"]:
+        score += 5
     else:
         tips.append("Turn on Comment Filter (+5)")
     return score, tips
@@ -266,64 +350,133 @@ def settings_back(key):
         safe_rerun()
 
 
+# ---------- QUERY PARAM (profile link) ----------
+PROFILE_VIEW = None
+try:
+    qp = dict(st.query_params)
+    PROFILE_VIEW = qp.get("profile")
+except Exception:
+    try:
+        qp2 = st.experimental_get_query_params() or {}
+        val = qp2.get("profile", [None])
+        PROFILE_VIEW = val[0] if val else None
+    except Exception:
+        pass
+
+
 # ---------- CSS ----------
 def build_main_css(dark):
     if dark:
-        APPBG = "#0f1110"; CARDBG = "#1b1e1b"; BORDERC = "#2a2e2a"
-        TXT1 = "#eef1ee"; TXT2 = "#9aa69a"; LOGOC = "#00e08a"
+        T = {"APPBG": "#0f1110", "CARDBG": "#1b1e1b", "BORDERC": "#2a2e2a",
+             "TXT1": "#eef1ee", "TXT2": "#9aa69a", "LOGOC": "#00e08a"}
     else:
-        APPBG = "#f0f2f5"; CARDBG = "#ffffff"; BORDERC = "#e5e7eb"
-        TXT1 = "#1f2937"; TXT2 = "#4b5563"; LOGOC = "#00B074"
+        T = {"APPBG": "#f0f2f5", "CARDBG": "#ffffff", "BORDERC": "#e5e7eb",
+             "TXT1": "#1f2937", "TXT2": "#4b5563", "LOGOC": "#00B074"}
 
-    css = f"""
+    css = """
     <style>
-    .stApp {{ background-color:{APPBG} !important; }}
-    header[data-testid="stHeader"], #MainMenu, footer {{ visibility:hidden !important; }}
-    [data-testid="stToolbar"] {{ visibility:hidden !important; }}
-    [data-testid="stStatusWidget"] {{ visibility:hidden !important; }}
-    .block-container, [data-testid="block-container"] {{ max-width:460px; margin:0 auto; background:{CARDBG}; padding-top:0 !important; padding-bottom:30px !important; min-height:100vh; box-shadow:0 0 25px rgba(0,0,0,.12); }}
-    .insta-header {{ position:sticky; top:0; z-index:100; display:flex; justify-content:space-between; align-items:center; padding:14px 18px; background:{CARDBG}; border-bottom:1px solid {BORDERC}; }}
-    .brand-logo {{ font-size:28px; font-weight:900; color:{LOGOC}; letter-spacing:-1px; }}
-    .nico {{ font-size:20px; }}
-    .stories-container {{ display:flex; gap:15px; padding:12px 15px; background:{CARDBG}; border-bottom:1px solid {BORDERC}; overflow-x:auto; }}
-    .story-card {{ display:flex; flex-direction:column; align-items:center; text-align:center; min-width:65px; }}
-    .story-ring {{ width:60px; height:60px; border-radius:50%; padding:2.5px; background:linear-gradient(135deg,#00B074 0%,#056839 100%); display:flex; align-items:center; justify-content:center; }}
-    .story-img {{ width:100%; height:100%; border-radius:50%; background:{CARDBG}; border:2px solid {CARDBG}; display:flex; align-items:center; justify-content:center; font-weight:bold; color:{TXT2}; font-size:14px; }}
-    .story-name {{ font-size:11px; color:{TXT2}; margin-top:4px; max-width:65px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }}
-    .post-card {{ background:{CARDBG}; margin-bottom:12px; border-bottom:1px solid {BORDERC}; }}
-    .post-header {{ display:flex; align-items:center; padding:12px 15px; }}
-    .post-avatar {{ width:36px; height:36px; border-radius:50%; background:#00B074; color:#fff; display:flex; align-items:center; justify-content:center; font-weight:bold; margin-right:10px; font-size:13px; }}
-    .post-username {{ font-size:14px; font-weight:700; color:{TXT1}; }}
-    .post-image-placeholder {{ width:100%; height:300px; background:#f3f4f6; display:flex; align-items:center; justify-content:center; font-size:16px; }}
-    .likes-txt {{ padding:8px 15px 2px; font-weight:600; font-size:13px; color:{TXT1}; margin:0; }}
-    .post-details {{ padding:0 15px 10px 15px; font-size:14px; color:{TXT1}; margin:0; }}
-    .panel-header {{ padding:18px; font-size:22px; font-weight:bold; color:{LOGOC}; border-bottom:1px solid {BORDERC}; text-align:center; }}
-    .set-label {{ font-weight:700; color:{TXT1}; margin:14px 0 4px; }}
-    .channel-banner {{ background:linear-gradient(135deg,#00B074,#056839); border-radius:16px; padding:20px; text-align:center; margin:12px 0; }}
-    .channel-banner h2 {{ color:#fff; margin:0 0 4px; font-size:22px; }}
-    .channel-banner p {{ color:rgba(255,255,255,.9); margin:0; font-size:13px; }}
-    .chat-me {{ background:#00B074; color:#fff; padding:8px 14px; border-radius:16px 16px 4px 16px; max-width:72%; margin:4px 0 4px auto; font-size:14px; display:block; width:fit-content; }}
-    .chat-them {{ background:{BORDERC}; color:{TXT1}; padding:8px 14px; border-radius:16px 16px 16px 4px; max-width:72%; margin:4px auto 4px 0; font-size:14px; display:block; width:fit-content; }}
-    .chat-time {{ font-size:10px; color:{TXT2}; display:block; text-align:right; }}
-    .lock-screen {{ display:flex; flex-direction:column; align-items:center; justify-content:center; height:60vh; text-align:center; }}
-    div[data-testid="stButton"] > button, div.stButton > button {{ background:#00B074 !important; color:#fff !important; font-weight:600 !important; border:none !important; border-radius:12px !important; }}
-    div[data-testid="stButton"] > button:hover, div.stButton > button:hover {{ background:#056839 !important; color:#fff !important; }}
+    .stApp { background-color:APPBG !important; }
+    header[data-testid="stHeader"], #MainMenu, footer
+        { visibility:hidden !important; }
+    [data-testid="stToolbar"] { visibility:hidden !important; }
+    [data-testid="stStatusWidget"] { visibility:hidden !important; }
+    .block-container, [data-testid="block-container"] {
+        max-width:460px; margin:0 auto; background:CARDBG;
+        padding-top:0 !important; padding-bottom:30px !important;
+        min-height:100vh; box-shadow:0 0 25px rgba(0,0,0,.12); }
+    .insta-header { position:sticky; top:0; z-index:100; display:flex;
+        justify-content:space-between; align-items:center;
+        padding:14px 18px; background:CARDBG;
+        border-bottom:1px solid BORDERC; }
+    .brand-logo { font-size:28px; font-weight:900; color:LOGOC;
+        letter-spacing:-1px; }
+    .nico { font-size:20px; }
+    .stories-container { display:flex; gap:15px; padding:12px 15px;
+        background:CARDBG; border-bottom:1px solid BORDERC;
+        overflow-x:auto; }
+    .story-card { display:flex; flex-direction:column;
+        align-items:center; text-align:center; min-width:65px; }
+    .story-ring { width:60px; height:60px; border-radius:50%;
+        padding:2.5px; background:linear-gradient(135deg,
+        #00B074 0%,#056839 100%); display:flex;
+        align-items:center; justify-content:center; }
+    .story-img { width:100%; height:100%; border-radius:50%;
+        background:CARDBG; border:2px solid CARDBG; display:flex;
+        align-items:center; justify-content:center; font-weight:bold;
+        color:TXT2; font-size:14px; }
+    .story-name { font-size:11px; color:TXT2; margin-top:4px;
+        max-width:65px; overflow:hidden; text-overflow:ellipsis;
+        white-space:nowrap; }
+    .post-card { background:CARDBG; margin-bottom:12px;
+        border-bottom:1px solid BORDERC; }
+    .post-header { display:flex; align-items:center; padding:12px 15px; }
+    .post-username { font-size:14px; font-weight:700; color:TXT1; }
+    .post-image-placeholder { width:100%; height:300px;
+        background:#f3f4f6; display:flex; align-items:center;
+        justify-content:center; font-size:16px; }
+    .likes-txt { padding:8px 15px 2px; font-weight:600; font-size:13px;
+        color:TXT1; margin:0; }
+    .post-details { padding:0 15px 10px 15px; font-size:14px;
+        color:TXT1; margin:0; }
+    .panel-header { padding:18px; font-size:22px; font-weight:bold;
+        color:LOGOC; border-bottom:1px solid BORDERC;
+        text-align:center; }
+    .set-label { font-weight:700; color:TXT1; margin:14px 0 4px; }
+    .channel-banner { background:linear-gradient(135deg,#00B074,#056839);
+        border-radius:16px; padding:20px; text-align:center;
+        margin:12px 0; }
+    .channel-banner h2 { color:#fff; margin:0 0 4px; font-size:22px; }
+    .channel-banner p { color:rgba(255,255,255,.9); margin:0;
+        font-size:13px; }
+    .chat-me { background:#00B074; color:#fff; padding:8px 14px;
+        border-radius:16px 16px 4px 16px; max-width:72%;
+        margin:4px 0 4px auto; font-size:14px; display:block;
+        width:fit-content; }
+    .chat-them { background:BORDERC; color:TXT1; padding:8px 14px;
+        border-radius:16px 16px 16px 4px; max-width:72%;
+        margin:4px auto 4px 0; font-size:14px; display:block;
+        width:fit-content; }
+    .chat-time { font-size:10px; color:TXT2; display:block;
+        text-align:right; }
+    .lock-screen { display:flex; flex-direction:column;
+        align-items:center; justify-content:center; height:60vh;
+        text-align:center; }
+    .member-chip { display:inline-block; background:CARDBG;
+        border:1px solid BORDERC; border-radius:20px; padding:4px 12px;
+        margin:3px; font-size:12px; color:TXT2; }
+    .notif-row { padding:10px 6px; border-bottom:1px solid BORDERC;
+        font-size:14px; color:TXT1; }
+    .badge-dot { background:#e53e3e; color:#fff; border-radius:50%;
+        padding:2px 8px; font-size:11px; font-weight:bold;
+        margin-left:6px; }
+    div[data-testid="stButton"] > button, div.stButton > button {
+        background:#00B074 !important; color:#fff !important;
+        font-weight:600 !important; border:none !important;
+        border-radius:12px !important; }
+    div[data-testid="stButton"] > button:hover,
+    div.stButton > button:hover { background:#056839 !important;
+        color:#fff !important; }
     </style>
     """
+    for k, v in T.items():
+        css = css.replace(k, v)
 
     if dark:
         css += """
         <style>
-        [data-testid="stTextInput"] input, [data-testid="stTextArea"] textarea {{ background:#242824 !important; color:#fff !important; border-color:#3a3f3a !important; }}
-        [data-testid="stCheckbox"] label p, [data-testid="stRadio"] label p {{ color:#e5e9e5 !important; }}
-        [data-baseweb="select"] > div {{ background:#242824 !important; color:#fff !important; }}
-        hr {{ border-color:#2a2e2a !important; }}
+        [data-testid="stTextInput"] input,
+        [data-testid="stTextArea"] textarea {
+            background:#242824 !important; color:#fff !important;
+            border-color:#3a3f3a !important; }
+        [data-testid="stCheckbox"] label p,
+        [data-testid="stRadio"] label p { color:#e5e9e5 !important; }
+        hr { border-color:#2a2e2a !important; }
         </style>
         """
     return css
 
 
-# ================= 1) SPLASH =================
+# ================= 1) SPLASH / PUBLIC PROFILE LINK =================
 if SS.page == "splash":
 
     st.markdown("""
@@ -332,34 +485,62 @@ if SS.page == "splash":
     header[data-testid="stHeader"], #MainMenu, footer { visibility:hidden !important; }
     [data-testid="stToolbar"] { visibility:hidden !important; }
     [data-testid="stStatusWidget"] { visibility:hidden !important; }
-    .mid { display:flex; flex-direction:column; align-items:center; justify-content:center; height:70vh; text-align:center; }
+    .mid { display:flex; flex-direction:column; align-items:center; justify-content:center; height:60vh; text-align:center; }
     .logo { font-size:90px; font-weight:900; color:#fff; letter-spacing:4px; text-shadow:0 4px 14px rgba(0,0,0,.25); margin:0; }
     .sub { font-size:24px; color:rgba(255,255,255,.92); margin:5px 0 0; letter-spacing:2px; }
     div[data-testid="stButton"] > button, div.stButton > button { background:#fff !important; color:#00B074 !important; font-size:18px !important; font-weight:bold !important; padding:12px 45px !important; border-radius:30px !important; border:none !important; box-shadow:0 4px 15px rgba(0,0,0,.25) !important; }
     </style>
-    <div class="mid"><h1 class="logo">HMF</h1><p class="sub">HMF book</p></div>
     """, unsafe_allow_html=True)
 
-    c1, c2, c3 = st.columns([1, 1.3, 1])
-    with c2:
-        if st.button("Get Started", use_container_width=True):
-            SS.page = "auth"
+    db = load_db()
+
+    if PROFILE_VIEW and PROFILE_VIEW in db["users"]:
+        u = db["users"][PROFILE_VIEW]
+        my_posts = [p for p in db["posts"] if p["user"] == PROFILE_VIEW]
+        st.markdown(build_main_css(False), unsafe_allow_html=True)
+        st.markdown('<div class="panel-header">👤 HMF Profile</div>',
+                    unsafe_allow_html=True)
+        st.markdown("<div style='text-align:center; margin:10px 0;'>" +
+                    avatar_html(PROFILE_VIEW, u.get("avatar"), 86) +
+                    "</div>", unsafe_allow_html=True)
+        st.markdown("<h3 style='text-align:center;'>" +
+                    esc(u.get("display_name", PROFILE_VIEW)) +
+                    "</h3><p style='text-align:center;color:#6b7280;"
+                    "font-size:13px;'>" + esc(u.get("bio", "")) +
+                    "</p><p style='text-align:center;color:#00B074;"
+                    "font-size:12px;'>" + str(len(my_posts)) +
+                    " Posts • " + str(u.get("followers", 0)) +
+                    " Followers</p>", unsafe_allow_html=True)
+        if st.button("Open HMF book App", use_container_width=True):
+            clear_profile_param()
+            if SS.logged_in:
+                SS.view_user = PROFILE_VIEW
+                SS.page = "app"
+            else:
+                SS.page = "auth"
             safe_rerun()
+    else:
+        st.markdown(
+            "<div class='mid'><h1 class='logo'>HMF</h1>"
+            "<p class='sub'>HMF book</p></div>",
+            unsafe_allow_html=True)
+        c1, c2, c3 = st.columns([1, 1.3, 1])
+        with c2:
+            if st.button("Get Started", use_container_width=True):
+                SS.page = "auth"
+                safe_rerun()
 
 
 # ================= 2) LOGIN / SIGNUP =================
 elif SS.page == "auth":
 
     is_signup = SS.auth_mode == "signup"
-
     if is_signup:
-        title = "Create Account"
-        subtitle = "Sign up to continue to HMF book"
+        title, subtitle = "Create Account", "Sign up to continue"
         btn_label = "Sign Up"
         switch_txt = "Already have an account? Login"
     else:
-        title = "Welcome Back"
-        subtitle = "Login to continue to HMF book"
+        title, subtitle = "Welcome Back", "Login to continue"
         btn_label = "Login"
         switch_txt = "New here? Create an account"
 
@@ -378,16 +559,15 @@ elif SS.page == "auth":
     <div style="text-align:center; margin-top:14px;"><div class="badge"><h1>HMF</h1></div></div>
     """, unsafe_allow_html=True)
 
-    head = f"<h2 class='title'>{title}</h2><p class='sub2'>{subtitle}</p>"
-    st.markdown(head, unsafe_allow_html=True)
+    st.markdown("<h2 class='title'>" + title + "</h2>"
+                "<p class='sub2'>" + subtitle + "</p>",
+                unsafe_allow_html=True)
 
     username = st.text_input("Username", placeholder="Enter username")
-
     if is_signup:
         email = st.text_input("Email", placeholder="Enter email")
     else:
         email = SS.email
-
     password = st.text_input("Password", type="password",
                              placeholder="Enter password")
 
@@ -397,9 +577,6 @@ elif SS.page == "auth":
         if sc >= 75:
             st.caption("Strong password - excellent!")
             SS.strong_password = True
-        elif sc >= 50:
-            st.caption("Medium password - add symbols and capitals")
-            SS.strong_password = False
         else:
             st.caption("Weak password - use 8+ chars, numbers, symbols")
             SS.strong_password = False
@@ -417,42 +594,37 @@ elif SS.page == "auth":
                     "email": email, "password": password,
                     "display_name": u.title(), "bio": "New to HMF book!",
                     "coins": 100, "followers": 0, "following": 0,
-                    "blocked": [],
-                }
+                    "blocked": [], "avatar": None}
                 save_db(db)
                 SS.logged_in = True
                 SS.username = u
                 SS.email = email
                 SS.blocked = []
                 SS.page = "app"
-                SS.pin_unlocked = not SS.app_lock
                 SS.last_active = time.time()
+                add_security_event("Account created")
                 safe_rerun()
         else:
-            if u in db["users"] and db["users"][u]["password"] == password:
+            if (u in db["users"] and
+                    db["users"][u]["password"] == password):
                 SS.logged_in = True
                 SS.username = u
                 SS.email = db["users"][u].get("email", "")
                 SS.blocked = db["users"][u].get("blocked", [])
                 SS.page = "app"
-                SS.pin_unlocked = not SS.app_lock
                 SS.last_active = time.time()
+                add_security_event("Login successful")
                 safe_rerun()
             else:
                 st.error("Invalid username or password!")
 
     if st.button(switch_txt):
-        if is_signup:
-            SS.auth_mode = "login"
-        else:
-            SS.auth_mode = "signup"
+        SS.auth_mode = "login" if is_signup else "signup"
         safe_rerun()
 
-    st.markdown(
-        "<p style='text-align:center; color:#99a; font-size:13px;'>"
-        "Demo accounts: demo / 1234, hoor_jannat / 1234</p>",
-        unsafe_allow_html=True,
-    )
+    st.markdown("<p style='text-align:center; color:#99a; font-size:13px;'>"
+                "Demo: demo / 1234 • Admin: admin / admin123</p>",
+                unsafe_allow_html=True)
 
     g, s, f = st.columns(3)
     if g.button("Google", use_container_width=True):
@@ -469,24 +641,22 @@ elif SS.page == "auth":
 
 
 # ================= 3) PIN LOCK =================
-elif SS.page == "app" and SS.logged_in and SS.app_lock and not SS.pin_unlocked:
+elif (SS.page == "app" and SS.logged_in and SS.app_lock
+      and not SS.pin_unlocked):
 
     st.markdown(build_main_css(SS.dark_mode), unsafe_allow_html=True)
-
     st.markdown("""
     <div class="lock-screen">
         <div style="font-size:60px;">🔐</div>
         <h2>App Locked</h2>
-        <p style="color:#6b7280;">Enter your PIN to unlock HMF book</p>
+        <p style="color:#6b7280;">Enter your PIN to unlock</p>
     </div>
     """, unsafe_allow_html=True)
 
     now = time.time()
-
     if SS.pin_lock_until > now:
-        remaining = int(SS.pin_lock_until - now) + 1
-        st.error("Too many wrong attempts! Locked for " +
-                 str(remaining) + " seconds.")
+        rem = int(SS.pin_lock_until - now) + 1
+        st.error("Locked for " + str(rem) + " seconds.")
     else:
         pin_in = st.text_input("Enter 4-digit PIN", type="password",
                                key="pin_in")
@@ -494,45 +664,43 @@ elif SS.page == "app" and SS.logged_in and SS.app_lock and not SS.pin_unlocked:
             if pin_in == SS.app_pin:
                 SS.pin_unlocked = True
                 SS.pin_attempts = 0
-                SS.pin_msg = ""
                 safe_rerun()
             else:
-                SS.pin_attempts = SS.pin_attempts + 1
+                SS.pin_attempts += 1
                 left = 3 - SS.pin_attempts
                 if left <= 0:
                     SS.pin_lock_until = time.time() + 30
                     SS.pin_attempts = 0
                 else:
-                    SS.pin_msg = "Wrong PIN! " + str(left) + " attempts left."
+                    SS.pin_msg = "Wrong PIN! " + str(left) + " left."
                 safe_rerun()
-
         if SS.pin_msg:
             st.error(SS.pin_msg)
             SS.pin_msg = ""
-
-        if st.button("🚪 Logout instead", key="pin_logout"):
-            SS.logged_in = False
-            SS.page = "auth"
-            SS.pin_attempts = 0
-            safe_rerun()
 
 
 # ================= 4) MAIN APP =================
 elif SS.page == "app" and SS.logged_in:
 
     st.markdown(build_main_css(SS.dark_mode), unsafe_allow_html=True)
-
     DB = load_db()
 
+    # profile link redirect
+    if PROFILE_VIEW and PROFILE_VIEW in DB["users"]:
+        SS.view_user = PROFILE_VIEW
+        clear_profile_param()
+
+    # auto logout
     now = time.time()
     if SS.auto_logout > 0 and SS.last_active > 0:
         if now - SS.last_active > SS.auto_logout * 60:
             SS.logged_in = False
             SS.page = "auth"
-            SS.pin_unlocked = not SS.app_lock
             SS.last_active = 0
             safe_rerun()
     SS.last_active = now
+
+    unread = unread_count(SS.username)
 
     # ---------- TOP BAR ----------
     st.markdown("""
@@ -542,938 +710,1115 @@ elif SS.page == "app" and SS.logged_in:
     </div>
     """, unsafe_allow_html=True)
 
-    q1, q2, q3, q4, q5 = st.columns([0.6, 0.6, 0.6, 0.6, 1.6])
-
-    if q1.button("⚙️", key="top_set", use_container_width=True,
-                 help="Open Settings"):
+    q1, q2, q3, q4, q5 = st.columns([0.7, 0.9, 0.6, 0.6, 1.4])
+    if q1.button("⚙️", key="top_set", use_container_width=True):
         SS.current_tab = "Settings"
         SS.settings_page = "menu"
         safe_rerun()
-
-    if q2.button("🔔", key="top_bell", use_container_width=True):
-        safe_toast("You have new notifications!")
-
-    if q3.button("✉️", key="top_mail", use_container_width=True,
-                 help="Messages"):
+    bell_label = "🔔"
+    if unread > 0:
+        bell_label = "🔔 " + str(unread)
+    if q2.button(bell_label, key="top_bell", use_container_width=True):
+        SS.current_tab = "Notifications"
+        safe_rerun()
+    if q3.button("✉️", key="top_mail", use_container_width=True):
         SS.current_tab = "Messages"
         safe_rerun()
-
-    if q4.button("🌙", key="top_dark", use_container_width=True,
-                 help="Toggle Dark Mode"):
+    if q4.button("🌙", key="top_dark", use_container_width=True):
         SS.dark_mode = not SS.dark_mode
         safe_rerun()
+    q5.markdown("<b style='color:#00B074;'>@" + SS.username + "</b>",
+                unsafe_allow_html=True)
 
-    if SS.current_tab == "Messages":
-        q5.markdown("<b style='color:#00B074;'>✉️ Live Messages</b>",
-                    unsafe_allow_html=True)
+    # ============ VIEW OTHER USER PROFILE ============
+    if SS.view_user and SS.view_user != SS.username:
 
-    st.markdown("<div style='height:6px;'></div>", unsafe_allow_html=True)
-
-    # ================= TAB: HOME =================
-    if SS.current_tab == "Home":
-
-        h1c, h2c, h3c = st.columns(3)
-        if h1c.button("📺 Channel", key="home_channel",
-                      use_container_width=True):
-            SS.current_tab = "Channel"
+        db = load_db()
+        vu = SS.view_user
+        if vu not in db["users"]:
+            st.warning("User not found.")
+            SS.view_user = None
             safe_rerun()
-        if h2c.button("🎬 Reels", key="home_reels",
-                      use_container_width=True):
-            SS.current_tab = "Reels"
-            safe_rerun()
-        if h3c.button("🎲 Ludo", key="home_ludo",
-                      use_container_width=True):
-            SS.current_tab = "Ludo"
-            safe_rerun()
+        else:
+            u = db["users"][vu]
+            my_posts = [p for p in db["posts"] if p["user"] == vu]
 
-        if SS.show_stories:
-            stories_html = """
-            <div class="stories-container">
-                <div class="story-card"><div class="story-ring" style="background:#6b7280;"><div class="story-img" style="background-color:#056839;color:#fff;">+</div></div><div class="story-name">Your Story</div></div>
-                <div class="story-card"><div class="story-ring"><div class="story-img">HJ</div></div><div class="story-name">hoor_jannat</div></div>
-                <div class="story-card"><div class="story-ring"><div class="story-img">FM</div></div><div class="story-name">farrukh_m</div></div>
-                <div class="story-card"><div class="story-ring"><div class="story-img">ZX</div></div><div class="story-name">zara_x</div></div>
-                <div class="story-card"><div class="story-ring"><div class="story-img">D</div></div><div class="story-name">demo</div></div>
-            </div>
-            """
-            st.markdown(stories_html, unsafe_allow_html=True)
+            st.markdown('<div class="panel-header">👤 Profile</div>',
+                        unsafe_allow_html=True)
+            st.markdown("<div style='text-align:center;margin:10px 0;'>"
+                        + avatar_html(vu, u.get("avatar"), 86) +
+                        "</div>", unsafe_allow_html=True)
+            st.markdown(
+                "<h3 style='text-align:center;'>" +
+                esc(u.get("display_name", vu)) +
+                "</h3><p style='text-align:center;color:#6b7280;"
+                "font-size:13px;'>" + esc(u.get("bio", "")) +
+                "</p><p style='text-align:center;color:#00B074;"
+                "font-size:12px;'>" + str(len(my_posts)) +
+                " Posts • " + str(u.get("followers", 0)) +
+                " Followers</p>", unsafe_allow_html=True)
+            st.caption("👁️ View only - nobody can open your account "
+                       "without your password.")
 
-        if SS.block_msg:
-            st.success(SS.block_msg)
-            SS.block_msg = ""
+            # profile link
+            base = get_base_url()
+            if base:
+                link = base + "?profile=" + vu
+                st.caption("🔗 Share this profile link:")
+                st.code(link)
 
-        visible_posts = []
-        for p in DB["posts"]:
-            if p.get("type") == "reel":
-                continue
-            if p["user"] in SS.blocked:
-                continue
-            visible_posts.append(p)
+            follows = db["follows"].get(SS.username, [])
+            is_following = vu in follows
 
-        if SS.feed_sort == "Top Posts":
-            visible_posts = sorted(
-                visible_posts,
-                key=lambda x: len(x.get("likes", {})),
-                reverse=True,
-            )
+            v1, v2 = st.columns(2)
+            if v1.button("❤️ Following" if is_following else "➕ Follow",
+                         key="vw_follow", use_container_width=True):
+                db = load_db()
+                fl = db["follows"].setdefault(SS.username, [])
+                if vu in fl:
+                    fl.remove(vu)
+                    db["users"][vu]["followers"] = max(
+                        0, db["users"][vu].get("followers", 0) - 1)
+                else:
+                    fl.append(vu)
+                    db["users"][vu]["followers"] = (
+                        db["users"][vu].get("followers", 0) + 1)
+                    add_notification(vu, "👥 @" + SS.username +
+                                     " started following you!")
+                save_db(db)
+                safe_rerun()
+            if v2.button("✉️ Message", key="vw_msg",
+                         use_container_width=True):
+                SS.chat_partner = vu
+                SS.chat_mode = "Direct"
+                SS.current_tab = "Messages"
+                SS.view_user = None
+                safe_rerun()
 
-        if not visible_posts:
-            st.info("Your feed is empty. Upload the first post!")
+            v3, v4 = st.columns(2)
+            if v3.button("🚫 Block", key="vw_block",
+                         use_container_width=True):
+                db = load_db()
+                rec = db["users"].get(SS.username)
+                if rec is not None and vu not in rec.get("blocked", []):
+                    rec["blocked"].append(vu)
+                    save_db(db)
+                    SS.blocked = list(rec["blocked"])
+                SS.view_user = None
+                st.success("@" + vu + " blocked.")
+                safe_rerun()
+            if v4.button("🚩 Report", key="vw_report",
+                         use_container_width=True):
+                db = load_db()
+                db["reports"].append({
+                    "from": SS.username, "user": vu,
+                    "reason": "From profile view", "time": time.time()})
+                save_db(db)
+                add_notification("admin", "🚩 New report against @" + vu +
+                                 " by @" + SS.username)
+                st.success("Report sent to admin!")
 
-        if SS.clear_cmt:
-            SS[SS.clear_cmt] = ""
-            SS.clear_cmt = ""
+            st.markdown("**Posts:**")
+            for p in my_posts[:6]:
+                if p.get("type") == "text":
+                    st.markdown("<div class='post-image-placeholder' "
+                                "style='background:" +
+                                p.get("grad", "#f3f4f6") +
+                                ";color:#056839;font-weight:bold;"
+                                "height:120px;'>" + p.get("txt", "") +
+                                "</div>", unsafe_allow_html=True)
+                elif p.get("type") == "youtube":
+                    yt = ('<iframe width="100%" height="180" '
+                          'src="https://www.youtube.com/embed/' +
+                          p["ref"] + '" frameborder="0" allowfullscreen>'
+                          '</iframe>')
+                    components.html(yt, height=190)
 
-        for p in visible_posts:
+            if st.button("← Back", key="vw_back",
+                         use_container_width=True):
+                SS.view_user = None
+                safe_rerun()
 
-            ptype = p.get("type", "text")
+    else:
+        if SS.view_user == SS.username:
+            SS.view_user = None
+            SS.current_tab = "Profile"
 
-            head_html = f"""
-            <div class="post-card">
-                <div class="post-header">
-                    <div class="post-avatar">{p['user'][:2].upper()}</div>
-                    <div class="post-username">{p['user']}</div>
-                </div>
-            </div>
-            """
-            st.markdown(head_html, unsafe_allow_html=True)
+        # ================= TAB: HOME =================
+        if SS.current_tab == "Home":
 
-            if ptype == "text":
-                st.markdown(f"""
-                <div class="post-image-placeholder"
-                     style="background:{p.get('grad', '#f3f4f6')};
-                            color:#056839; font-weight:bold;">
-                    {p.get('txt', '')}
+            h1c, h2c, h3c = st.columns(3)
+            if h1c.button("📺 Channel", key="home_channel",
+                          use_container_width=True):
+                SS.current_tab = "Channel"
+                safe_rerun()
+            if h2c.button("🎬 Reels", key="home_reels",
+                          use_container_width=True):
+                SS.current_tab = "Reels"
+                safe_rerun()
+            if h3c.button("🎲 Ludo", key="home_ludo",
+                          use_container_width=True):
+                SS.current_tab = "Ludo"
+                safe_rerun()
+
+            if SS.show_stories:
+                st.markdown("""
+                <div class="stories-container">
+                    <div class="story-card"><div class="story-ring" style="background:#6b7280;"><div class="story-img">+</div></div><div class="story-name">Your Story</div></div>
+                    <div class="story-card"><div class="story-ring"><div class="story-img">HJ</div></div><div class="story-name">hoor_jannat</div></div>
+                    <div class="story-card"><div class="story-ring"><div class="story-img">FM</div></div><div class="story-name">farrukh_m</div></div>
+                    <div class="story-card"><div class="story-ring"><div class="story-img">D</div></div><div class="story-name">demo</div></div>
                 </div>
                 """, unsafe_allow_html=True)
-            elif ptype == "youtube":
-                yt = ('<iframe width="100%" height="230" '
-                      'src="https://www.youtube.com/embed/' + p["ref"] +
-                      '" title="HMF video" frameborder="0" '
-                      'allow="accelerometer; autoplay; clipboard-write; '
-                      'encrypted-media; gyroscope; picture-in-picture" '
-                      'allowfullscreen></iframe>')
-                components.html(yt, height=245)
-            elif ptype == "image":
-                if os.path.exists(p["ref"]):
-                    st.image(p["ref"], use_container_width=True)
-            elif ptype == "video":
-                st.video(p["ref"])
 
-            liked = SS.username in p.get("likes", {})
+            if SS.block_msg:
+                st.success(SS.block_msg)
+                SS.block_msg = ""
 
-            a1, a2, a3, a4 = st.columns(4)
-            like_icon = "❤️" if liked else "🤍"
-            if a1.button(like_icon, key="lk_" + p["id"],
-                         use_container_width=True):
-                db = load_db()
-                for post in db["posts"]:
-                    if post["id"] == p["id"]:
-                        lk = post.setdefault("likes", {})
-                        if SS.username in lk:
-                            del lk[SS.username]
-                        else:
-                            lk[SS.username] = True
-                        break
-                save_db(db)
-                safe_rerun()
-            if a2.button("💬", key="cm_" + p["id"],
-                         use_container_width=True):
-                st.info("Type your comment in the box below.")
-            if a3.button("✈️", key="sh_" + p["id"],
-                         use_container_width=True):
-                st.info("Post link copied!")
-            if a4.button("🚫", key="bl_" + p["id"],
-                         use_container_width=True):
-                db = load_db()
-                u = db["users"].get(SS.username, {})
-                bl = u.setdefault("blocked", [])
-                if p["user"] not in bl:
-                    bl.append(p["user"])
-                save_db(db)
-                SS.blocked = list(bl)
-                SS.block_msg = "@" + p["user"] + " has been blocked."
-                safe_rerun()
-
-            n = len(p.get("likes", {}))
-            likes_html = ("<p class='likes-txt'>" + str(n) + " likes</p>"
-                          "<p class='post-details'><b>" + p["user"] +
-                          "</b> " + esc(p.get("cap", "")) + "</p>")
-            st.markdown(likes_html, unsafe_allow_html=True)
-
-            cmt = st.text_input("comment", key="cmt_" + p["id"],
-                                placeholder="Add a comment...",
-                                label_visibility="collapsed")
-
-            if st.button("Post Comment", key="pc_" + p["id"]):
-                if cmt.strip():
-                    if SS.comment_filter and not comment_is_clean(cmt):
-                        st.warning("Comment blocked by security filter!")
-                    else:
-                        db = load_db()
-                        for post in db["posts"]:
-                            if post["id"] == p["id"]:
-                                post.setdefault("comments", []).append(
-                                    {"user": SS.username, "text": cmt})
-                                break
-                        save_db(db)
-                        SS.clear_cmt = "cmt_" + p["id"]
-                        safe_rerun()
-                else:
-                    st.warning("Comment cannot be empty!")
-
-            for c in p.get("comments", []):
-                cmt_html = ("<p class='post-details' style='color:#6b7280;'>"
-                            "<b>" + esc(c["user"]) + "</b> " +
-                            esc(c["text"]) + "</p>")
-                st.markdown(cmt_html, unsafe_allow_html=True)
-
-    # ================= TAB: CHANNEL (ColorPopCartoons83) =================
-    elif SS.current_tab == "Channel":
-
-        st.markdown(f"""
-        <div class="channel-banner">
-            <h2>📺 {CHANNEL_NAME}</h2>
-            <p>{CHANNEL_HANDLE} • Videos inside HMF book</p>
-        </div>
-        """, unsafe_allow_html=True)
-
-        # Full channel playlist (agar CHANNEL_ID set ho)
-        if UPLOADS_PLAYLIST:
-            st.markdown("**▶ All Channel Videos (Playlist):**")
-            pl = ('<iframe width="100%" height="230" '
-                  'src="https://www.youtube.com/embed/videoseries?list=' +
-                  UPLOADS_PLAYLIST + '" title="Channel videos" '
-                  'frameborder="0" allow="accelerometer; autoplay; '
-                  'clipboard-write; encrypted-media; gyroscope; '
-                  'picture-in-picture" allowfullscreen></iframe>')
-            components.html(pl, height=245)
-        else:
-            st.info(
-                "💡 Tip: Code ke upar CHANNEL_ID = \"\" mein apne channel "
-                "ki ID (UC....) paste karein to channel ki SAARI videos "
-                "ek hi playlist player mein chalengi!"
-            )
-
-        st.markdown(
-            f"[🔗 Open {CHANNEL_NAME} on YouTube]({CHANNEL_URL})"
-        )
-
-        st.markdown("<div style='height:10px;'></div>",
-                    unsafe_allow_html=True)
-
-        # Quick add from channel
-        st.markdown("**➕ Add a video from this channel:**")
-        st.caption("YouTube par channel kholein > kisi video par "
-                   "right-click > Copy video URL > neeche paste karein")
-
-        if SS.yt_msg:
-            st.success(SS.yt_msg)
-            SS.yt_msg = ""
-
-        yt_link = st.text_input("Paste YouTube video link",
-                                key="ch_link",
-                                placeholder="https://www.youtube.com/watch?v=...")
-
-        if st.button("➕ Add Video to Channel", key="ch_add",
-                     use_container_width=True):
-            vid = parse_youtube_id(yt_link)
-            if vid:
-                db = load_db()
-                db["posts"].insert(0, {
-                    "id": uuid.uuid4().hex[:8],
-                    "user": SS.username,
-                    "type": "youtube",
-                    "ref": vid,
-                    "cap": "From " + CHANNEL_NAME,
-                    "likes": {},
-                    "comments": [],
-                    "channel": True,
-                })
-                save_db(db)
-                SS.yt_msg = "Video added! Feed mein bhi nazar aayegi."
-                safe_rerun()
-            else:
-                st.error("Invalid YouTube link! Sahi video URL paste karein.")
-
-        # Channel videos list
-        st.markdown("<div style='height:10px;'></div>",
-                    unsafe_allow_html=True)
-        st.markdown("**📺 Videos added from this channel:**")
-
-        channel_posts = []
-        for p in DB["posts"]:
-            if p.get("channel") and p.get("type") == "youtube":
-                channel_posts.append(p)
-        channel_posts = list(reversed(channel_posts))
-
-        if not channel_posts:
-            st.caption("Abhi koi video add nahi hui. Upar link paste "
-                       "kar ke pehli video add karein!")
-        for p in channel_posts:
-            ch_html = ("<p class='post-details'>▶ <b>" + esc(p.get("cap", ""))
-                       + "</b> - by @" + p["user"] + "</p>")
-            st.markdown(ch_html, unsafe_allow_html=True)
-            yt = ('<iframe width="100%" height="200" '
-                  'src="https://www.youtube.com/embed/' + p["ref"] +
-                  '" frameborder="0" allow="accelerometer; autoplay; '
-                  'clipboard-write; encrypted-media; gyroscope; '
-                  'picture-in-picture" allowfullscreen></iframe>')
-            components.html(yt, height=210)
-
-    # ================= TAB: REELS =================
-    elif SS.current_tab == "Reels":
-
-        st.markdown('<div class="panel-header">🎬 Reels</div>',
-                    unsafe_allow_html=True)
-
-        reels = []
-        for p in DB["posts"]:
-            if p.get("type") in ("reel", "video"):
+            visible_posts = []
+            for p in DB["posts"]:
+                if p.get("type") == "reel":
+                    continue
                 if p["user"] in SS.blocked:
                     continue
-                reels.append(p)
-        reels = list(reversed(reels))
+                visible_posts.append(p)
 
-        if not reels:
-            st.info("No reels yet. Upload a video from Create tab!")
+            if SS.feed_sort == "Top Posts":
+                visible_posts = sorted(
+                    visible_posts,
+                    key=lambda x: len(x.get("likes", {})),
+                    reverse=True)
 
-        for r in reels:
-            st.markdown(f"""
-            <div class="post-card">
-                <div class="post-header">
-                    <div class="post-avatar">{r['user'][:2].upper()}</div>
-                    <div class="post-username">{r['user']}</div>
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
-            st.video(r["ref"])
+            if not visible_posts:
+                st.info("Feed is empty. Create the first post!")
 
-            liked = SS.username in r.get("likes", {})
-            ra1, ra2 = st.columns(2)
-            if ra1.button("❤️" if liked else "🤍", key="rl_" + r["id"],
-                          use_container_width=True):
-                db = load_db()
-                for post in db["posts"]:
-                    if post["id"] == r["id"]:
-                        lk = post.setdefault("likes", {})
-                        if SS.username in lk:
-                            del lk[SS.username]
+            if SS.clear_cmt:
+                SS[SS.clear_cmt] = ""
+                SS.clear_cmt = ""
+
+            for p in visible_posts:
+
+                ptype = p.get("type", "text")
+                st.markdown("<div class='post-card'>"
+                            "<div class='post-header'>" +
+                            avatar_html(p["user"], p.get("avatar"), 36) +
+                            "<div class='post-username'>" + p["user"] +
+                            "</div></div></div>", unsafe_allow_html=True)
+
+                if ptype == "text":
+                    st.markdown("<div class='post-image-placeholder' "
+                                "style='background:" +
+                                p.get("grad", "#f3f4f6") +
+                                ";color:#056839;font-weight:bold;'>" +
+                                p.get("txt", "") + "</div>",
+                                unsafe_allow_html=True)
+                elif ptype == "youtube":
+                    yt = ('<iframe width="100%" height="230" '
+                          'src="https://www.youtube.com/embed/' + p["ref"] +
+                          '" frameborder="0" allow="autoplay; '
+                          'encrypted-media; picture-in-picture" '
+                          'allowfullscreen></iframe>')
+                    components.html(yt, height=245)
+                elif ptype == "image":
+                    if os.path.exists(p["ref"]):
+                        st.image(p["ref"], use_container_width=True)
+                elif ptype == "video":
+                    st.video(p["ref"])
+
+                liked = SS.username in p.get("likes", {})
+                vu_col, a1, a2, a3, a4 = st.columns(
+                    [1.6, 0.55, 0.55, 0.55, 0.55])
+
+                if vu_col.button("👤 " + p["user"], key="vu_" + p["id"],
+                                 use_container_width=True):
+                    SS.view_user = p["user"]
+                    safe_rerun()
+
+                if a1.button("❤️" if liked else "🤍",
+                             key="lk_" + p["id"],
+                             use_container_width=True):
+                    db = load_db()
+                    for post in db["posts"]:
+                        if post["id"] == p["id"]:
+                            lk = post.setdefault("likes", {})
+                            if SS.username in lk:
+                                del lk[SS.username]
+                            else:
+                                lk[SS.username] = True
+                                if post["user"] != SS.username:
+                                    add_notification(
+                                        post["user"], "❤️ @" +
+                                        SS.username + " liked your post!")
+                            break
+                    save_db(db)
+                    safe_rerun()
+
+                if a2.button("💬", key="cm_" + p["id"],
+                             use_container_width=True):
+                    st.info("Type your comment below.")
+                if a3.button("✈️", key="sh_" + p["id"],
+                             use_container_width=True):
+                    st.info("Post link copied!")
+                if a4.button("🚫", key="bl_" + p["id"],
+                             use_container_width=True):
+                    db = load_db()
+                    rec = db["users"].get(SS.username, {})
+                    bl = rec.setdefault("blocked", [])
+                    if p["user"] not in bl:
+                        bl.append(p["user"])
+                        save_db(db)
+                        SS.blocked = list(bl)
+                        SS.block_msg = "@" + p["user"] + " blocked."
+                    safe_rerun()
+
+                n = len(p.get("likes", {}))
+                st.markdown("<p class='likes-txt'>" + str(n) +
+                            " likes</p><p class='post-details'><b>" +
+                            p["user"] + "</b> " +
+                            esc(p.get("cap", "")) + "</p>",
+                            unsafe_allow_html=True)
+
+                cmt = st.text_input("comment", key="cmt_" + p["id"],
+                                    placeholder="Add a comment...",
+                                    label_visibility="collapsed")
+                if st.button("Post Comment", key="pc_" + p["id"]):
+                    if cmt.strip():
+                        if SS.comment_filter and not comment_is_clean(cmt):
+                            st.warning("Blocked by security filter!")
                         else:
-                            lk[SS.username] = True
-                        break
-                save_db(db)
-                safe_rerun()
-            if ra2.button("✈️ Share", key="rsh_" + r["id"],
-                          use_container_width=True):
-                st.info("Reel link copied!")
-
-            n = len(r.get("likes", {}))
-            cap_html = ("<p class='likes-txt'>" + str(n) + " likes</p>"
-                        "<p class='post-details'><b>" + r["user"] +
-                        "</b> " + esc(r.get("cap", "")) + "</p>")
-            st.markdown(cap_html, unsafe_allow_html=True)
-
-    # ================= TAB: CREATE =================
-    elif SS.current_tab == "Create":
-
-        st.markdown('<div class="panel-header">➕ Create Post</div>',
-                    unsafe_allow_html=True)
-
-        kind = st.radio("What do you want to post?",
-                        ["Photo", "Video", "YouTube Link"],
-                        horizontal=True, key="create_kind")
-
-        f = None
-        yt_link = ""
-
-        if kind == "Photo":
-            f = st.file_uploader("Choose a photo",
-                                 type=["png", "jpg", "jpeg", "webp"],
-                                 key="up_photo")
-        elif kind == "Video":
-            f = st.file_uploader("Choose a video (also appears in Reels)",
-                                 type=["mp4", "mov", "webm"],
-                                 key="up_video")
-        else:
-            yt_link = st.text_input(
-                "Paste YouTube video link (watch, share, or Shorts link)",
-                key="up_yt",
-                placeholder="https://www.youtube.com/watch?v=...")
-
-        cap = st.text_input("Caption", key="up_cap",
-                            placeholder="Write a caption...")
-
-        if st.button("🚀 Publish Post", key="up_publish",
-                     use_container_width=True):
-
-            if kind == "YouTube Link":
-                vid = parse_youtube_id(yt_link)
-                if not vid:
-                    st.error("Invalid YouTube link! Video ka URL paste karein.")
-                else:
-                    db = load_db()
-                    db["posts"].insert(0, {
-                        "id": uuid.uuid4().hex[:8],
-                        "user": SS.username,
-                        "type": "youtube",
-                        "ref": vid,
-                        "cap": cap if cap else "YouTube video",
-                        "likes": {},
-                        "comments": [],
-                    })
-                    save_db(db)
-                    st.success("YouTube video posted!")
-                    SS.current_tab = "Home"
-                    safe_rerun()
-
-            elif f is None:
-                st.warning("Please choose a file first!")
-
-            else:
-                try:
-                    os.makedirs(UPLOAD_DIR, exist_ok=True)
-                    ext = f.name.split(".")[-1].lower()
-                    if ext not in ("png", "jpg", "jpeg", "webp",
-                                   "mp4", "mov", "webm"):
-                        ext = "bin"
-                    fname = uuid.uuid4().hex + "." + ext
-                    path = os.path.join(UPLOAD_DIR, fname)
-                    with open(path, "wb") as out:
-                        out.write(f.getbuffer())
-
-                    db = load_db()
-                    ptype = "image" if kind == "Photo" else "video"
-                    db["posts"].insert(0, {
-                        "id": uuid.uuid4().hex[:8],
-                        "user": SS.username,
-                        "type": ptype,
-                        "ref": path,
-                        "cap": cap,
-                        "likes": {},
-                        "comments": [],
-                    })
-                    save_db(db)
-                    st.success("Posted successfully!")
-                    SS.current_tab = "Home"
-                    safe_rerun()
-                except Exception as e:
-                    st.error("Upload failed: " + str(e))
-
-        st.caption("Note: On free Streamlit Cloud, uploaded files may "
-                   "reset when the app restarts.")
-
-    # ================= TAB: MESSAGES =================
-    elif SS.current_tab == "Messages":
-
-        if HAS_REFRESH:
-            st_autorefresh(interval=4000, key="msg_ref")
-
-        st.markdown('<div class="panel-header">✉️ Messages</div>',
-                    unsafe_allow_html=True)
-
-        db = load_db()
-
-        others = []
-        for u in db["users"]:
-            if u != SS.username and u not in SS.blocked:
-                others.append(u)
-
-        if not others:
-            st.info("No other members to chat with yet.")
-        else:
-            partner = st.selectbox("Chat with:", others, key="chat_sel")
-            me = SS.username
-
-            convo = []
-            for m in db["messages"]:
-                cond1 = m["from"] == me and m["to"] == partner
-                cond2 = m["from"] == partner and m["to"] == me
-                if cond1 or cond2:
-                    convo.append(m)
-            convo.sort(key=lambda x: x["time"])
-
-            if SS.clear_msg:
-                SS[SS.clear_msg] = ""
-                SS.clear_msg = ""
-
-            chat_html = ""
-            for m in convo:
-                tstr = time.strftime("%H:%M", time.localtime(m["time"]))
-                if m["from"] == me:
-                    chat_html += ("<span class='chat-me'>" +
-                                  esc(m["text"]) +
-                                  "<span class='chat-time'>" + tstr +
-                                  "</span></span>")
-                else:
-                    chat_html += ("<span class='chat-them'>" +
-                                  esc(m["text"]) +
-                                  "<span class='chat-time'>" + tstr +
-                                  "</span></span>")
-
-            if chat_html:
-                st.markdown(chat_html, unsafe_allow_html=True)
-            else:
-                st.caption("No messages yet - say hello!")
-
-            txt = st.text_input("Message", key="msg_input",
-                                placeholder="Type a message...")
-
-            if st.button("➡️ Send", key="msg_send",
-                         use_container_width=True):
-                if txt.strip():
-                    db = load_db()
-                    db["messages"].append({
-                        "from": me, "to": partner,
-                        "text": txt.strip(), "time": time.time(),
-                    })
-                    save_db(db)
-                    SS.clear_msg = "msg_input"
-                    safe_rerun()
-                else:
-                    st.warning("Message cannot be empty!")
-
-            st.caption("Chats auto-refresh every few seconds.")
-
-    # ================= TAB: LUDO =================
-    elif SS.current_tab == "Ludo":
-
-        st.markdown('<div class="panel-header">🎲 HMF Ludo Club</div>',
-                    unsafe_allow_html=True)
-        st.markdown('<div class="post-image-placeholder" '
-                    'style="height:200px; font-size:34px;">🎲 LUDO</div>',
-                    unsafe_allow_html=True)
-
-        if st.button("🏆 Create Private Room Code",
-                     use_container_width=True):
-            letters = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
-            SS.room_code = "".join(random.choices(letters, k=6))
-            safe_rerun()
-
-        if SS.room_code:
-            st.success("Room Code: **" + SS.room_code +
-                       "** - share this with your friends!")
-
-        if st.button("🎲 Roll Dice", use_container_width=True):
-            SS.dice = random.randint(1, 6)
-            if SS.dice == 6:
-                db = load_db()
-                u = db["users"].get(SS.username)
-                if u is not None:
-                    u["coins"] = u.get("coins", 0) + 5
-                    save_db(db)
-                SS.tx_history.insert(0, {
-                    "type": "Ludo Dice Bonus",
-                    "amount": "+5 coins", "time": "Just now",
-                })
-            safe_rerun()
-
-        if SS.dice:
-            extra = ""
-            if SS.dice == 6:
-                extra = " - Six! +5 coins earned"
-            st.markdown("<h3 style='text-align:center; color:#00B074;'>"
-                        "🎯 You rolled " + str(SS.dice) + extra + "</h3>",
-                        unsafe_allow_html=True)
-
-        if st.button("🏠 Back to Home", key="ludo_back",
-                     use_container_width=True):
-            SS.current_tab = "Home"
-            safe_rerun()
-
-    # ================= TAB: PROFILE =================
-    elif SS.current_tab == "Profile":
-
-        st.markdown('<div class="panel-header">👤 Profile</div>',
-                    unsafe_allow_html=True)
-
-        db = load_db()
-        me_db = db["users"].get(SS.username, {})
-        dname = me_db.get("display_name", SS.username)
-        mybio = me_db.get("bio", "")
-        mycoins = me_db.get("coins", 0)
-        myfollowers = me_db.get("followers", 0)
-
-        my_posts = []
-        for p in db["posts"]:
-            if p["user"] == SS.username:
-                my_posts.append(p)
-
-        initial = SS.username[:1].upper()
-
-        st.markdown(f"""
-        <div style="text-align:center; margin:10px 0;">
-            <div style="width:86px;height:86px;border-radius:50%;
-                 background:linear-gradient(135deg,#00B074,#056839);
-                 color:#fff;font-size:34px;font-weight:800;
-                 display:flex;align-items:center;
-                 justify-content:center;margin:0 auto;">{initial}</div>
-            <h3 style="margin:10px 0 2px;">{esc(dname)}</h3>
-            <p style="color:#6b7280; font-size:13px; margin:0;">{esc(mybio)}</p>
-            <p style="color:#6b7280; font-size:12px; margin:8px 0 0;">
-                {len(my_posts)} Posts • {myfollowers} Followers</p>
-        </div>
-        """, unsafe_allow_html=True)
-
-        st.success("💰 Wallet Balance: **" + str(mycoins) + " Coins**")
-
-        if st.button("💳 Request Withdrawal", key="prof_wd",
-                     use_container_width=True):
-            db = load_db()
-            u = db["users"].get(SS.username)
-            if u is not None and u.get("coins", 0) >= 100:
-                u["coins"] = u["coins"] - 100
-                save_db(db)
-                SS.tx_history.insert(0, {
-                    "type": "Withdrawal Payout",
-                    "amount": "-100 coins", "time": "Just now",
-                })
-                SS.withdraw_msg = ("Withdrawal request submitted! "
-                                   "Processing in 3-5 business days.")
-            else:
-                SS.withdraw_msg = "Minimum 100 coins required!"
-            safe_rerun()
-
-        if SS.withdraw_msg:
-            st.info(SS.withdraw_msg)
-            SS.withdraw_msg = ""
-
-        pr1, pr2 = st.columns(2)
-        if pr1.button("⚙️ Open Settings", use_container_width=True):
-            SS.current_tab = "Settings"
-            SS.settings_page = "menu"
-            safe_rerun()
-        if pr2.button("🚪 Logout", use_container_width=True):
-            SS.logged_in = False
-            SS.page = "auth"
-            SS.current_tab = "Home"
-            safe_rerun()
-
-    # ================= TAB: SETTINGS =================
-    elif SS.current_tab == "Settings":
-
-        if SS.settings_page == "menu":
-
-            st.markdown('<div class="panel-header">⚙️ Settings & Privacy'
-                        '</div>', unsafe_allow_html=True)
-            st.caption("@" + SS.username + " - HMF book")
-
-            items = [
-                ("🔐 Security Center", "security", "m_security"),
-                ("📋 Personal Info", "personal", "m_personal"),
-                ("💰 Payments & Wallet", "payments", "m_payments"),
-                ("📰 News Feed", "feed", "m_feed"),
-                ("🔔 Notifications", "notifications", "m_notif"),
-                ("🌐 Language & Region", "language", "m_lang"),
-                ("🛡️ Privacy Checkup", "privacy", "m_privacy"),
-                ("👥 Privacy Settings", "friends", "m_friends"),
-                ("🚫 Blocked Members", "blocked", "m_blocked"),
-                ("⚠️ Report a Member", "reports", "m_reports"),
-                ("❓ Help Center", "help", "m_help"),
-                ("ℹ️ About", "about", "m_about"),
-            ]
-            for label, page, key in items:
-                if st.button(label + "   ›", key=key,
-                             use_container_width=True):
-                    SS.settings_page = page
-                    safe_rerun()
-
-            st.markdown("<div style='height:12px;'></div>",
-                        unsafe_allow_html=True)
-            if st.button("🚪 Logout", key="m_logout",
-                         use_container_width=True):
-                SS.logged_in = False
-                SS.page = "auth"
-                SS.current_tab = "Home"
-                safe_rerun()
-
-        elif SS.settings_page == "security":
-            settings_back("bk_security")
-            st.markdown('<div class="panel-header">🔐 Security Center'
-                        '</div>', unsafe_allow_html=True)
-            score, tips = security_score()
-            st.progress(score / 100.0)
-            if score >= 80:
-                st.success("Security Score: " + str(score) + "/100")
-            elif score >= 50:
-                st.warning("Security Score: " + str(score) + "/100")
-            else:
-                st.error("Security Score: " + str(score) + "/100 - Weak!")
-            if tips:
-                st.markdown("💡 **Improve your security:**")
-                for t in tips:
-                    st.markdown("• " + t)
-
-            st.markdown("<p class='set-label'>🔢 App Lock (PIN)</p>",
-                        unsafe_allow_html=True)
-            if not SS.app_lock:
-                pin_set = st.text_input("Choose a 4-digit PIN",
-                                        type="password", key="pin_set",
-                                        max_chars=4)
-                if st.button("🔒 Enable App Lock", key="pin_enable",
-                             use_container_width=True):
-                    if len(pin_set) == 4 and pin_set.isdigit():
-                        SS.app_pin = pin_set
-                        SS.app_lock = True
-                        st.success("App Lock enabled!")
+                            db = load_db()
+                            for post in db["posts"]:
+                                if post["id"] == p["id"]:
+                                    post.setdefault("comments", []).append(
+                                        {"user": SS.username, "text": cmt})
+                                    if post["user"] != SS.username:
+                                        add_notification(
+                                            post["user"], "💬 @" +
+                                            SS.username +
+                                            " commented: " + cmt[:30])
+                                    break
+                            save_db(db)
+                            SS.clear_cmt = "cmt_" + p["id"]
+                            safe_rerun()
                     else:
-                        st.warning("PIN must be exactly 4 digits!")
-            else:
-                st.success("App Lock is ON")
-                lc1, lc2 = st.columns(2)
-                if lc1.button("🔒 Lock Now", key="lock_now",
-                              use_container_width=True):
-                    SS.pin_unlocked = False
-                    SS.pin_attempts = 0
-                    safe_rerun()
-                if lc2.button("❌ Disable", key="pin_disable",
-                              use_container_width=True):
-                    SS.app_lock = False
-                    SS.app_pin = ""
-                    SS.pin_unlocked = True
-                    safe_rerun()
+                        st.warning("Comment cannot be empty!")
 
-            tf = st.checkbox("🔑 Two-Factor Auth", value=SS.two_factor,
-                             key="tf_chk2")
-            if tf != SS.two_factor:
-                SS.two_factor = tf
-                if tf:
-                    SS.two_fa_code = str(random.randint(100000, 999999))
-                    st.success("2FA enabled! Backup code: " +
-                               SS.two_fa_code)
+                for c in p.get("comments", []):
+                    st.markdown("<p class='post-details' "
+                                "style='color:#6b7280;'><b>" +
+                                esc(c["user"]) + "</b> " +
+                                esc(c["text"]) + "</p>",
+                                unsafe_allow_html=True)
+
+        # ================= TAB: CHANNEL =================
+        elif SS.current_tab == "Channel":
+
+            st.markdown("<div class='channel-banner'><h2>📺 " +
+                        CHANNEL_NAME + "</h2><p>" + CHANNEL_HANDLE +
+                        " • Videos inside HMF book</p></div>",
+                        unsafe_allow_html=True)
+
+            if UPLOADS_PL:
+                pl = ('<iframe width="100%" height="230" src='
+                      '"https://www.youtube.com/embed/videoseries?list=' +
+                      UPLOADS_PL + '" frameborder="0" allowfullscreen>'
+                      '</iframe>')
+                components.html(pl, height=245)
+            else:
+                st.info("💡 Channel ID paste karne se poori playlist "
+                        "chalti hai (code ke upar CHANNEL_ID).")
+
+            st.markdown("[🔗 Open channel on YouTube](" + CHANNEL_URL + ")")
+
+            if SS.yt_msg:
+                st.success(SS.yt_msg)
+                SS.yt_msg = ""
+
+            yt_link = st.text_input("Paste YouTube video link",
+                                    key="ch_link")
+            if st.button("➕ Add Video", key="ch_add",
+                         use_container_width=True):
+                vid = parse_youtube_id(yt_link)
+                if vid:
+                    db = load_db()
+                    my_av = db["users"].get(SS.username, {}).get("avatar")
+                    db["posts"].insert(0, {
+                        "id": uuid.uuid4().hex[:8], "user": SS.username,
+                        "type": "youtube", "ref": vid,
+                        "cap": "From " + CHANNEL_NAME,
+                        "likes": {}, "comments": [],
+                        "avatar": my_av, "channel": True})
+                    save_db(db)
+                    SS.yt_msg = "Video added!"
+                    safe_rerun()
+                else:
+                    st.error("Invalid YouTube link!")
+
+            st.markdown("**📺 Added videos:**")
+            ch_posts = [p for p in DB["posts"] if p.get("channel")]
+            if not ch_posts:
+                st.caption("No videos added yet.")
+            for p in reversed(ch_posts):
+                yt = ('<iframe width="100%" height="200" src='
+                      '"https://www.youtube.com/embed/' + p["ref"] +
+                      '" frameborder="0" allowfullscreen></iframe>')
+                components.html(yt, height=210)
+
+        # ================= TAB: REELS =================
+        elif SS.current_tab == "Reels":
+
+            st.markdown('<div class="panel-header">🎬 Reels</div>',
+                        unsafe_allow_html=True)
+            reels = [p for p in DB["posts"]
+                     if p.get("type") in ("reel", "video")
+                     and p["user"] not in SS.blocked]
+
+            if not reels:
+                st.info("No reels yet. Upload a video!")
+            for r in reversed(reels):
+                st.markdown("<div class='post-card'>"
+                            "<div class='post-header'>" +
+                            avatar_html(r["user"], r.get("avatar"), 36) +
+                            "<div class='post-username'>" + r["user"] +
+                            "</div></div></div>", unsafe_allow_html=True)
+                st.video(r["ref"])
+                liked = SS.username in r.get("likes", {})
+                ra1, ra2 = st.columns(2)
+                if ra1.button("❤️" if liked else "🤍",
+                              key="rl_" + r["id"],
+                              use_container_width=True):
+                    db = load_db()
+                    for post in db["posts"]:
+                        if post["id"] == r["id"]:
+                            lk = post.setdefault("likes", {})
+                            if SS.username in lk:
+                                del lk[SS.username]
+                            else:
+                                lk[SS.username] = True
+                            break
+                    save_db(db)
+                    safe_rerun()
+                if ra2.button("✈️ Share", key="rsh_" + r["id"],
+                              use_container_width=True):
+                    st.info("Reel link copied!")
+
+        # ================= TAB: CREATE =================
+        elif SS.current_tab == "Create":
+
+            st.markdown('<div class="panel-header">➕ Create Post</div>',
+                        unsafe_allow_html=True)
+
+            kind = st.radio("What do you want to post?",
+                            ["Photo", "Video", "Camera", "YouTube Link"],
+                            horizontal=True, key="create_kind")
+
+            f = None
+            cam = None
+            yt_link = ""
+
+            if kind == "Photo":
+                f = st.file_uploader("Choose a photo",
+                                     type=["png", "jpg", "jpeg", "webp"],
+                                     key="up_photo")
+            elif kind == "Video":
+                f = st.file_uploader("Choose a video (also in Reels)",
+                                     type=["mp4", "mov", "webm"],
+                                     key="up_video")
+            elif kind == "Camera":
+                cam = st.camera_input("📸 Take a photo", key="up_cam")
+            else:
+                yt_link = st.text_input("Paste YouTube link",
+                                        key="up_yt")
+
+            cap = st.text_input("Caption", key="up_cap",
+                                placeholder="Write a caption...")
+
+            if st.button("🚀 Publish", key="up_publish",
+                         use_container_width=True):
+
+                db = load_db()
+                my_av = db["users"].get(SS.username, {}).get("avatar")
+
+                if kind == "YouTube Link":
+                    vid = parse_youtube_id(yt_link)
+                    if not vid:
+                        st.error("Invalid YouTube link!")
+                    else:
+                        db["posts"].insert(0, {
+                            "id": uuid.uuid4().hex[:8],
+                            "user": SS.username, "type": "youtube",
+                            "ref": vid, "cap": cap or "YouTube video",
+                            "likes": {}, "comments": [],
+                            "avatar": my_av})
+                        save_db(db)
+                        st.success("Posted!")
+                        SS.current_tab = "Home"
+                        safe_rerun()
+                else:
+                    src = f if f is not None else cam
+                    if src is None:
+                        st.warning("Please choose/take a photo first!")
+                    else:
+                        try:
+                            path = save_upload(src)
+                            ptype = "video" if kind == "Video" else "image"
+                            db["posts"].insert(0, {
+                                "id": uuid.uuid4().hex[:8],
+                                "user": SS.username, "type": ptype,
+                                "ref": path, "cap": cap,
+                                "likes": {}, "comments": [],
+                                "avatar": my_av})
+                            save_db(db)
+                            st.success("Posted!")
+                            SS.current_tab = "Home"
+                            safe_rerun()
+                        except Exception as e:
+                            st.error("Upload failed: " + str(e))
+
+            st.caption("Note: free Cloud par app restart hone par "
+                       "uploads reset ho sakte hain.")
+
+        # ================= TAB: MESSAGES =================
+        elif SS.current_tab == "Messages":
+
+            if HAS_REFRESH:
+                st_autorefresh(interval=4000, key="msg_ref")
+
+            shot_install()
+
+            st.markdown('<div class="panel-header">✉️ Messages</div>',
+                        unsafe_allow_html=True)
+
+            m1, m2 = st.columns(2)
+            if m1.button("👤 Direct", key="mode_direct",
+                         use_container_width=True):
+                SS.chat_mode = "Direct"
+                safe_rerun()
+            if m2.button("👥 Groups", key="mode_group",
+                         use_container_width=True):
+                SS.chat_mode = "Group"
                 safe_rerun()
 
-            SS.login_alerts = st.checkbox("📩 Login Alerts",
-                                          value=SS.login_alerts,
-                                          key="la_chk2")
+            if SS.chat_mode == "Direct":
 
-            timeout_opts = [0, 5, 10, 30]
-            timeout_labels = ["Off", "5 minutes", "10 minutes",
-                              "30 minutes"]
-            cur = 0
-            if SS.auto_logout in timeout_opts:
-                cur = timeout_opts.index(SS.auto_logout)
-            sel = st.selectbox("Auto logout after:", timeout_labels,
-                               index=cur, key="timeout_sel")
-            SS.auto_logout = timeout_opts[timeout_labels.index(sel)]
+                db = load_db()
+                others = [u for u in db["users"]
+                          if u != SS.username and u not in SS.blocked]
 
-        elif SS.settings_page == "personal":
-            settings_back("bk_personal")
-            st.markdown('<div class="panel-header">📋 Personal Info'
-                        '</div>', unsafe_allow_html=True)
+                if not others:
+                    st.info("No members to chat with.")
+                else:
+                    if SS.chat_partner and SS.chat_partner in others:
+                        default_idx = others.index(SS.chat_partner)
+                    else:
+                        default_idx = 0
+                    partner = st.selectbox("Chat with:", others,
+                                           index=default_idx,
+                                           key="chat_sel")
+                    SS.chat_partner = partner
+
+                    convo = []
+                    for m in db["messages"]:
+                        if ((m["from"] == SS.username and
+                             m["to"] == partner) or
+                            (m["from"] == partner and
+                             m["to"] == SS.username)):
+                            convo.append(m)
+                    convo.sort(key=lambda x: x["time"])
+
+                    # screenshot detection
+                    pending = shot_check()
+                    if pending:
+                        if time.time() - SS.last_shot_time > 5:
+                            SS.last_shot_time = time.time()
+                            add_notification(
+                                partner, "📸 @" + SS.username +
+                                " took a screenshot of your chat!")
+                            safe_toast("📸 Screenshot detected - "
+                                       "partner notified!")
+                            safe_rerun()
+
+                    if SS.clear_msg:
+                        SS[SS.clear_msg] = ""
+                        SS.clear_msg = ""
+
+                    chat_html = ""
+                    for m in convo:
+                        tstr = time.strftime(
+                            "%H:%M", time.localtime(m["time"]))
+                        if m["from"] == SS.username:
+                            chat_html += ("<span class='chat-me'>" +
+                                          esc(m["text"]) +
+                                          "<span class='chat-time'>" +
+                                          tstr + "</span></span>")
+                        else:
+                            chat_html += ("<span class='chat-them'>" +
+                                          esc(m["text"]) +
+                                          "<span class='chat-time'>" +
+                                          tstr + "</span></span>")
+                    if chat_html:
+                        st.markdown(chat_html, unsafe_allow_html=True)
+                    else:
+                        st.caption("No messages yet - say hello!")
+
+                    txt = st.text_input("Message", key="msg_input",
+                                        placeholder="Type a message...")
+                    if st.button("➡️ Send", key="msg_send",
+                                 use_container_width=True):
+                        if txt.strip():
+                            db = load_db()
+                            db["messages"].append({
+                                "from": SS.username, "to": partner,
+                                "text": txt.strip(),
+                                "time": time.time()})
+                            save_db(db)
+                            add_notification(
+                                partner, "✉️ @" + SS.username +
+                                " sent you a message")
+                            SS.clear_msg = "msg_input"
+                            safe_rerun()
+                        else:
+                            st.warning("Message cannot be empty!")
+
+                    st.caption("🛡️ Screenshot & copy detect hota hai - "
+                               "partner ko notification jata hai.")
+
+            else:
+                # ---------- GROUPS ----------
+                db = load_db()
+
+                with st.expander("➕ Create Group"):
+                    gname = st.text_input("Group name", key="g_name")
+                    others = [u for u in db["users"]
+                              if u != SS.username]
+                    members = st.multiselect("Add members", others,
+                                             key="g_members")
+                    if st.button("Create Group", key="g_create",
+                                 use_container_width=True):
+                        if gname.strip() and members:
+                            db = load_db()
+                            gid = uuid.uuid4().hex[:8]
+                            db["groups"].append({
+                                "id": gid, "name": gname.strip(),
+                                "members": [SS.username] + members,
+                                "messages": []})
+                            save_db(db)
+                            for m in members:
+                                add_notification(
+                                    m, "👥 @" + SS.username +
+                                    " added you to group '" +
+                                    gname.strip() + "'")
+                            st.success("Group created!")
+                            safe_rerun()
+                        else:
+                            st.warning("Name aur members select karein!")
+
+                my_groups = [g for g in db["groups"]
+                             if SS.username in g["members"]]
+                if not my_groups:
+                    st.info("No groups yet. Create one above!")
+                else:
+                    names = [g["name"] for g in my_groups]
+                    gsel = st.selectbox("Your groups:", names,
+                                        key="g_sel")
+                    group = my_groups[names.index(gsel)]
+
+                    st.caption("Members: " +
+                               ", ".join("@" + m for m in
+                                         group["members"]))
+
+                    msgs = sorted(group["messages"],
+                                  key=lambda x: x["time"])
+
+                    pending = shot_check()
+                    if pending:
+                        if time.time() - SS.last_shot_time > 5:
+                            SS.last_shot_time = time.time()
+                            for m in group["members"]:
+                                if m != SS.username:
+                                    add_notification(
+                                        m, "📸 @" + SS.username +
+                                        " took a screenshot of group '" +
+                                        group["name"] + "'!")
+                            safe_toast("📸 Screenshot detected!")
+                            safe_rerun()
+
+                    if SS.clear_msg:
+                        SS[SS.clear_msg] = ""
+                        SS.clear_msg = ""
+
+                    chat_html = ""
+                    for m in msgs:
+                        tstr = time.strftime(
+                            "%H:%M", time.localtime(m["time"]))
+                        who = "<b>@" + esc(m["from"]) + "</b> "
+                        if m["from"] == SS.username:
+                            chat_html += ("<span class='chat-me'>" + who +
+                                          esc(m["text"]) +
+                                          "<span class='chat-time'>" +
+                                          tstr + "</span></span>")
+                        else:
+                            chat_html += ("<span class='chat-them'>" +
+                                          who + esc(m["text"]) +
+                                          "<span class='chat-time'>" +
+                                          tstr + "</span></span>")
+                    if chat_html:
+                        st.markdown(chat_html, unsafe_allow_html=True)
+                    else:
+                        st.caption("No group messages yet!")
+
+                    txt = st.text_input("Group message", key="gmsg_input",
+                                        placeholder="Type a message...")
+                    if st.button("➡️ Send", key="g_send",
+                                 use_container_width=True):
+                        if txt.strip():
+                            db = load_db()
+                            for g in db["groups"]:
+                                if g["id"] == group["id"]:
+                                    g["messages"].append({
+                                        "from": SS.username,
+                                        "text": txt.strip(),
+                                        "time": time.time()})
+                                    break
+                            save_db(db)
+                            for m in group["members"]:
+                                if m != SS.username:
+                                    add_notification(
+                                        m, "👥 @" + SS.username +
+                                        " in '" + group["name"] +
+                                        "': " + txt.strip()[:25])
+                            SS.clear_msg = "gmsg_input"
+                            safe_rerun()
+                        else:
+                            st.warning("Message cannot be empty!")
+
+        # ================= TAB: NOTIFICATIONS =================
+        elif SS.current_tab == "Notifications":
+
+            st.markdown('<div class="panel-header">🔔 Notifications</div>',
+                        unsafe_allow_html=True)
+
             db = load_db()
-            me_db = db["users"].get(SS.username, {})
-            st.text_input("Username", value=SS.username, disabled=True,
-                          key="pi_user")
-            st.text_input("Email", value=me_db.get("email", ""),
-                          key="pi_email")
-            dn = st.text_input("Display Name",
-                               value=me_db.get("display_name", ""),
-                               key="st_dn")
-            bio = st.text_input("Bio", value=me_db.get("bio", ""),
-                                key="st_bio")
-            if st.button("💾 Save Changes", key="st_save",
+            my_notifs = [n for n in db["notifications"]
+                         if n.get("to") == SS.username][:40]
+
+            if st.button("✅ Mark all as read", key="ntf_read",
                          use_container_width=True):
                 db = load_db()
-                u = db["users"].get(SS.username)
-                if u is not None:
-                    u["display_name"] = dn
-                    u["bio"] = bio
-                    save_db(db)
-                st.success("Profile saved successfully!")
+                for n in db["notifications"]:
+                    if n.get("to") == SS.username:
+                        n["read"] = True
+                save_db(db)
+                safe_rerun()
 
-        elif SS.settings_page == "payments":
-            settings_back("bk_payments")
-            st.markdown('<div class="panel-header">💰 Payments & Wallet'
-                        '</div>', unsafe_allow_html=True)
+            if not my_notifs:
+                st.info("No notifications yet!")
+            for i, n in enumerate(my_notifs):
+                tstr = time.strftime("%d %b %H:%M",
+                                     time.localtime(n["time"]))
+                dot = "" if n.get("read") else "<span class='badge-dot'>NEW</span>"
+                st.markdown("<div class='notif-row'>" + n["text"] + dot +
+                            "<br><span style='font-size:11px;"
+                            "color:#9ca3af;'>" + tstr + "</span></div>",
+                            unsafe_allow_html=True)
+
+        # ================= TAB: LUDO =================
+        elif SS.current_tab == "Ludo":
+
+            st.markdown('<div class="panel-header">🎲 HMF Ludo Club</div>',
+                        unsafe_allow_html=True)
+            st.markdown("<div class='post-image-placeholder' "
+                        "style='height:180px;font-size:34px;'>🎲 LUDO"
+                        "</div>", unsafe_allow_html=True)
+
+            if st.button("🏆 Create Room Code", use_container_width=True):
+                letters = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+                SS.room_code = "".join(random.choices(letters, k=6))
+                safe_rerun()
+            if SS.room_code:
+                st.success("Room Code: **" + SS.room_code + "**")
+
+            if st.button("🎲 Roll Dice", use_container_width=True):
+                SS.dice = random.randint(1, 6)
+                if SS.dice == 6:
+                    db = load_db()
+                    u = db["users"].get(SS.username)
+                    if u is not None:
+                        u["coins"] = u.get("coins", 0) + 5
+                        save_db(db)
+                    SS.tx_history.insert(0, {
+                        "type": "Ludo Bonus", "amount": "+5 coins",
+                        "time": "Just now"})
+                safe_rerun()
+
+            if SS.dice:
+                extra = " - Six! +5 coins" if SS.dice == 6 else ""
+                st.markdown("<h3 style='text-align:center;color:#00B074;'>"
+                            "🎯 You rolled " + str(SS.dice) + extra +
+                            "</h3>", unsafe_allow_html=True)
+
+        # ================= TAB: PROFILE =================
+        elif SS.current_tab == "Profile":
+
+            st.markdown('<div class="panel-header">👤 Profile</div>',
+                        unsafe_allow_html=True)
+
             db = load_db()
             me_db = db["users"].get(SS.username, {})
-            st.success("Balance: **" + str(me_db.get("coins", 0)) +
+            my_posts = [p for p in db["posts"] if p["user"] == SS.username]
+
+            st.markdown("<div style='text-align:center;margin:10px 0;'>" +
+                        avatar_html(SS.username, me_db.get("avatar"), 86) +
+                        "</div>", unsafe_allow_html=True)
+            st.markdown("<h3 style='text-align:center;'>" +
+                        esc(me_db.get("display_name", SS.username)) +
+                        "</h3><p style='text-align:center;color:#6b7280;"
+                        "font-size:13px;'>" +
+                        esc(me_db.get("bio", "")) +
+                        "</p><p style='text-align:center;color:#00B074;"
+                        "font-size:12px;'>" + str(len(my_posts)) +
+                        " Posts • " + str(me_db.get("followers", 0)) +
+                        " Followers</p>", unsafe_allow_html=True)
+
+            # profile link share
+            base = get_base_url()
+            if base:
+                link = base + "?profile=" + SS.username
+                st.caption("🔗 Your shareable profile link:")
+                st.code(link)
+
+            # profile pic change
+            with st.expander("🖼️ Change Profile Picture"):
+                pic = st.file_uploader("Upload picture",
+                                       type=["png", "jpg", "jpeg",
+                                             "webp"], key="avatar_up")
+                campic = st.camera_input("Or take with camera",
+                                         key="avatar_cam")
+                if st.button("💾 Update Profile Pic", key="avatar_save",
+                             use_container_width=True):
+                    src = pic if pic is not None else campic
+                    if src is None:
+                        st.warning("Pehle photo choose karein!")
+                    else:
+                        try:
+                            path = save_upload(src)
+                            db = load_db()
+                            db["users"][SS.username]["avatar"] = path
+                            save_db(db)
+                            st.success("Profile pic updated! Purani posts "
+                                       "mein purani pic rahegi (Facebook "
+                                       "style).")
+                            safe_rerun()
+                        except Exception as e:
+                            st.error("Failed: " + str(e))
+
+            st.success("💰 Balance: **" + str(me_db.get("coins", 0)) +
                        " Coins**")
-            if st.button("💳 Request Payout", key="pay_wd",
+
+            if st.button("💳 Request Withdrawal", key="prof_wd",
                          use_container_width=True):
                 db = load_db()
                 u = db["users"].get(SS.username)
                 if u is not None and u.get("coins", 0) >= 100:
-                    u["coins"] = u["coins"] - 100
+                    u["coins"] -= 100
                     save_db(db)
                     SS.tx_history.insert(0, {
-                        "type": "Withdrawal Payout",
-                        "amount": "-100 coins", "time": "Just now",
-                    })
-                    SS.withdraw_msg = "Payout request submitted!"
+                        "type": "Withdrawal", "amount": "-100 coins",
+                        "time": "Just now"})
+                    SS.withdraw_msg = "Payout submitted!"
                 else:
                     SS.withdraw_msg = "Minimum 100 coins required!"
                 safe_rerun()
             if SS.withdraw_msg:
                 st.info(SS.withdraw_msg)
                 SS.withdraw_msg = ""
-            st.markdown("📜 **Transaction History**")
-            if SS.tx_history:
+
+            pr1, pr2 = st.columns(2)
+            if pr1.button("⚙️ Settings", use_container_width=True):
+                SS.current_tab = "Settings"
+                SS.settings_page = "menu"
+                safe_rerun()
+            if pr2.button("🚪 Logout", use_container_width=True):
+                SS.logged_in = False
+                SS.page = "auth"
+                safe_rerun()
+
+        # ================= TAB: SETTINGS =================
+        elif SS.current_tab == "Settings":
+
+            if SS.settings_page == "menu":
+
+                st.markdown('<div class="panel-header">⚙️ Settings</div>',
+                            unsafe_allow_html=True)
+                st.caption("@" + SS.username)
+
+                if SS.username == "admin":
+                    if st.button("🛡️ Admin Panel   ›", key="m_admin",
+                                 use_container_width=True):
+                        SS.settings_page = "admin"
+                        safe_rerun()
+
+                items = [
+                    ("🔐 Security Center", "security"),
+                    ("📋 Personal Info", "personal"),
+                    ("💰 Payments", "payments"),
+                    ("📰 News Feed", "feed"),
+                    ("🔔 Notifications", "notifications"),
+                    ("🌐 Language & Region", "language"),
+                    ("🛡️ Privacy Checkup", "privacy"),
+                    ("🚫 Blocked Members", "blocked"),
+                    ("⚠️ Report a Member", "reports"),
+                    ("❓ Help Center", "help"),
+                    ("ℹ️ About", "about"),
+                ]
+                for label, page in items:
+                    if st.button(label + "   ›", key="m_" + page,
+                                 use_container_width=True):
+                        SS.settings_page = page
+                        safe_rerun()
+
+                if st.button("🚪 Logout", key="m_logout",
+                             use_container_width=True):
+                    SS.logged_in = False
+                    SS.page = "auth"
+                    safe_rerun()
+
+            elif SS.settings_page == "admin":
+
+                settings_back("bk_admin")
+                st.markdown('<div class="panel-header">🛡️ Admin Panel'
+                            '</div>', unsafe_allow_html=True)
+
+                db = load_db()
+                c1, c2, c3, c4 = st.columns(4)
+                c1.metric("Users", len(db["users"]))
+                c2.metric("Posts", len(db["posts"]))
+                c3.metric("Messages", len(db["messages"]))
+                c4.metric("Groups", len(db["groups"]))
+
+                st.markdown("### 🚩 Reports")
+                if not db["reports"]:
+                    st.caption("No reports yet.")
+                for i, r in enumerate(db["reports"]):
+                    st.markdown("• 🚩 **@" + r["user"] + "** by @" +
+                                r["from"] + " - " + r["reason"])
+
+                st.markdown("### 👥 Users (ban)")
+                for u in db["users"]:
+                    if u == "admin":
+                        continue
+                    b1, b2 = st.columns([0.6, 0.4])
+                    b1.markdown("👤 **@" + u + "**")
+                    if b2.button("Ban", key="ban_" + u,
+                                 use_container_width=True):
+                        db = load_db()
+                        db["users"].pop(u, None)
+                        db["posts"] = [p for p in db["posts"]
+                                       if p["user"] != u]
+                        db["messages"] = [m for m in db["messages"]
+                                          if u not in (m["from"],
+                                                       m["to"])]
+                        save_db(db)
+                        st.success("@" + u + " banned!")
+                        safe_rerun()
+
+            elif SS.settings_page == "security":
+                settings_back("bk_security")
+                st.markdown('<div class="panel-header">🔐 Security Center'
+                            '</div>', unsafe_allow_html=True)
+                score, tips = security_score()
+                st.progress(score / 100.0)
+                st.write("Score: **" + str(score) + "/100**")
+                for t in tips:
+                    st.markdown("• " + t)
+
+                st.markdown("<p class='set-label'>🔢 App Lock</p>",
+                            unsafe_allow_html=True)
+                if not SS.app_lock:
+                    pin_set = st.text_input("4-digit PIN", type="password",
+                                            key="pin_set", max_chars=4)
+                    if st.button("🔒 Enable", key="pin_enable",
+                                 use_container_width=True):
+                        if len(pin_set) == 4 and pin_set.isdigit():
+                            SS.app_pin = pin_set
+                            SS.app_lock = True
+                            st.success("App Lock enabled!")
+                        else:
+                            st.warning("PIN must be 4 digits!")
+                else:
+                    st.success("App Lock is ON")
+                    lc1, lc2 = st.columns(2)
+                    if lc1.button("🔒 Lock Now", key="lock_now",
+                                  use_container_width=True):
+                        SS.pin_unlocked = False
+                        safe_rerun()
+                    if lc2.button("❌ Disable", key="pin_disable",
+                                  use_container_width=True):
+                        SS.app_lock = False
+                        SS.pin_unlocked = True
+                        safe_rerun()
+
+            elif SS.settings_page == "personal":
+                settings_back("bk_personal")
+                st.markdown('<div class="panel-header">📋 Personal Info'
+                            '</div>', unsafe_allow_html=True)
+                db = load_db()
+                me_db = db["users"].get(SS.username, {})
+                st.text_input("Username", value=SS.username,
+                              disabled=True, key="pi_user")
+                dn = st.text_input("Display Name",
+                                   value=me_db.get("display_name", ""),
+                                   key="st_dn")
+                bio = st.text_input("Bio", value=me_db.get("bio", ""),
+                                    key="st_bio")
+                if st.button("💾 Save", key="st_save",
+                             use_container_width=True):
+                    db = load_db()
+                    u = db["users"].get(SS.username)
+                    if u is not None:
+                        u["display_name"] = dn
+                        u["bio"] = bio
+                        save_db(db)
+                    st.success("Saved!")
+
+            elif SS.settings_page == "payments":
+                settings_back("bk_payments")
+                st.markdown('<div class="panel-header">💰 Payments'
+                            '</div>', unsafe_allow_html=True)
+                db = load_db()
+                me_db = db["users"].get(SS.username, {})
+                st.success("Balance: **" + str(me_db.get("coins", 0)) +
+                           " Coins**")
+                if st.button("💳 Request Payout", key="pay_wd",
+                             use_container_width=True):
+                    db = load_db()
+                    u = db["users"].get(SS.username)
+                    if u is not None and u.get("coins", 0) >= 100:
+                        u["coins"] -= 100
+                        save_db(db)
+                        SS.tx_history.insert(0, {
+                            "type": "Withdrawal", "amount": "-100",
+                            "time": "Now"})
+                        SS.withdraw_msg = "Payout submitted!"
+                    else:
+                        SS.withdraw_msg = "Min 100 coins needed!"
+                    safe_rerun()
+                if SS.withdraw_msg:
+                    st.info(SS.withdraw_msg)
+                    SS.withdraw_msg = ""
                 for t in SS.tx_history:
                     st.markdown("• " + t["type"] + " (" + t["amount"] + ")")
-            else:
-                st.caption("No transactions yet.")
 
-        elif SS.settings_page == "feed":
-            settings_back("bk_feed")
-            st.markdown('<div class="panel-header">📰 News Feed</div>',
-                        unsafe_allow_html=True)
-            SS.feed_sort = st.radio(
-                "Sort feed by:", ["Most Recent", "Top Posts"],
-                index=0 if SS.feed_sort == "Most Recent" else 1,
-                key="feed_sort_radio")
-            SS.show_stories = st.checkbox("Show Stories row",
-                                          value=SS.show_stories,
-                                          key="stories_chk")
-            SS.comment_filter = st.checkbox("🛡️ Comment Filter",
-                                            value=SS.comment_filter,
-                                            key="cfilter_chk")
+            elif SS.settings_page == "feed":
+                settings_back("bk_feed")
+                SS.feed_sort = st.radio(
+                    "Sort by:", ["Most Recent", "Top Posts"],
+                    key="feed_sort_radio")
+                SS.show_stories = st.checkbox("Show Stories",
+                                              value=SS.show_stories,
+                                              key="stories_chk")
+                SS.comment_filter = st.checkbox(
+                    "🛡️ Comment Filter",
+                    value=SS.comment_filter, key="cfilter_chk")
 
-        elif SS.settings_page == "notifications":
-            settings_back("bk_notif")
-            st.markdown('<div class="panel-header">🔔 Notifications</div>',
-                        unsafe_allow_html=True)
-            SS.notif["likes"] = st.checkbox("❤️ Likes",
-                                            value=SS.notif["likes"],
-                                            key="ntf_l")
-            SS.notif["comments"] = st.checkbox("💬 Comments",
-                                               value=SS.notif["comments"],
-                                               key="ntf_c")
-            SS.notif["follows"] = st.checkbox("👥 New Followers",
-                                              value=SS.notif["follows"],
-                                              key="ntf_f")
-            SS.notif["messages"] = st.checkbox("✉️ Messages",
-                                               value=SS.notif["messages"],
-                                               key="ntf_m")
+            elif SS.settings_page == "notifications":
+                settings_back("bk_notif")
+                SS.notif["likes"] = st.checkbox("❤️ Likes",
+                                                value=SS.notif["likes"],
+                                                key="ntf_l")
+                SS.notif["comments"] = st.checkbox(
+                    "💬 Comments", value=SS.notif["comments"],
+                    key="ntf_c")
+                SS.notif["follows"] = st.checkbox(
+                    "👥 Followers", value=SS.notif["follows"],
+                    key="ntf_f")
+                SS.notif["messages"] = st.checkbox(
+                    "✉️ Messages", value=SS.notif["messages"],
+                    key="ntf_m")
 
-        elif SS.settings_page == "language":
-            settings_back("bk_lang")
-            st.markdown('<div class="panel-header">🌐 Language & Region'
-                        '</div>', unsafe_allow_html=True)
-            lang = st.radio("App Language:", ["English", "Urdu"],
-                            index=0 if SS.language == "English" else 1,
-                            key="lang_radio")
-            SS.language = lang
-            regions = ["Worldwide", "Pakistan", "United Arab Emirates",
-                       "United Kingdom", "United States", "Saudi Arabia"]
-            if SS.region in regions:
-                r_index = regions.index(SS.region)
-            else:
-                r_index = 0
-            SS.region = st.selectbox("Region:", regions, index=r_index,
-                                     key="region_sel")
+            elif SS.settings_page == "language":
+                settings_back("bk_lang")
+                lang = st.radio("Language:", ["English", "Urdu"],
+                                key="lang_radio")
+                SS.language = lang
 
-        elif SS.settings_page == "privacy":
-            settings_back("bk_privacy")
-            st.markdown('<div class="panel-header">🛡️ Privacy Checkup'
-                        '</div>', unsafe_allow_html=True)
-            st.progress(min(SS.privacy_step / 4, 1.0))
-            if SS.privacy_step == 0:
-                st.markdown("Review your key privacy settings.")
-                if st.button("🚀 Get Started", key="pc_start",
-                             use_container_width=True):
-                    SS.privacy_step = 1
-                    safe_rerun()
-            elif SS.privacy_step == 1:
-                options = ["Public", "Friends", "Only Me"]
-                SS.post_visibility = st.radio(
-                    "Who can see your posts:", options,
-                    index=options.index(SS.post_visibility),
-                    key="vis_radio")
-                if st.button("Next →", key="pc_next1",
-                             use_container_width=True):
-                    SS.privacy_step = 2
-                    safe_rerun()
-            elif SS.privacy_step == 2:
-                if SS.blocked:
-                    for u in SS.blocked:
-                        st.markdown("🚫 **@" + u + "**")
+            elif SS.settings_page == "privacy":
+                settings_back("bk_privacy")
+                st.progress(min(SS.privacy_step / 4, 1.0))
+                if SS.privacy_step == 0:
+                    if st.button("🚀 Start Checkup", key="pc_start",
+                                 use_container_width=True):
+                        SS.privacy_step = 1
+                        safe_rerun()
+                elif SS.privacy_step == 1:
+                    SS.post_visibility = st.radio(
+                        "Post visibility:", ["Public", "Friends",
+                                             "Only Me"], key="vis_radio")
+                    if st.button("Next →", key="pc_next1",
+                                 use_container_width=True):
+                        SS.privacy_step = 2
+                        safe_rerun()
+                elif SS.privacy_step == 2:
+                    SS.private_account = st.checkbox(
+                        "Private Account", value=SS.private_account,
+                        key="priv_chk")
+                    if st.button("Next →", key="pc_next2",
+                                 use_container_width=True):
+                        SS.privacy_step = 3
+                        safe_rerun()
+                elif SS.privacy_step == 3:
+                    SS.searchable = st.checkbox("Searchable",
+                                                value=SS.searchable,
+                                                key="srch_chk")
+                    if st.button("Finish ✓", key="pc_fin",
+                                 use_container_width=True):
+                        SS.privacy_step = 4
+                        safe_rerun()
                 else:
-                    st.caption("No one is blocked. Great job!")
-                if st.button("Next →", key="pc_next2",
-                             use_container_width=True):
-                    SS.privacy_step = 3
-                    safe_rerun()
-            elif SS.privacy_step == 3:
-                SS.searchable = st.checkbox("Allow profile search",
-                                            value=SS.searchable,
-                                            key="search_chk")
-                SS.hide_last_seen = st.checkbox("Hide last seen",
-                                                value=SS.hide_last_seen,
-                                                key="hide_seen_chk")
-                if st.button("Finish ✓", key="pc_finish",
-                             use_container_width=True):
-                    SS.privacy_step = 4
-                    safe_rerun()
-            else:
-                st.success("Privacy Checkup complete!")
-                if st.button("Done", key="pc_done",
-                             use_container_width=True):
-                    SS.settings_page = "menu"
-                    SS.privacy_step = 0
-                    safe_rerun()
+                    st.success("Checkup complete!")
+                    if st.button("Done", key="pc_done",
+                                 use_container_width=True):
+                        SS.settings_page = "menu"
+                        SS.privacy_step = 0
+                        safe_rerun()
 
-        elif SS.settings_page == "friends":
-            settings_back("bk_friends")
-            st.markdown('<div class="panel-header">👥 Privacy Settings'
-                        '</div>', unsafe_allow_html=True)
-            SS.private_account = st.checkbox("🔒 Private Account",
-                                             value=SS.private_account,
-                                             key="priv_chk2")
-            SS.profile_lock = st.checkbox("🔒 Profile Lock",
-                                          value=SS.profile_lock,
-                                          key="plock_chk")
-            SS.activity_status = st.checkbox("🟢 Show online status",
-                                             value=SS.activity_status,
-                                             key="act_chk3")
-            fr_opts = ["Everyone", "Friends of friends", "No one"]
-            if SS.friend_requests in fr_opts:
-                fi = fr_opts.index(SS.friend_requests)
-            else:
-                fi = 0
-            SS.friend_requests = st.radio("Who can send friend requests:",
-                                          fr_opts, index=fi, key="fr_radio")
-
-        elif SS.settings_page == "blocked":
-            settings_back("bk_blocked")
-            st.markdown('<div class="panel-header">🚫 Blocked Members'
-                        '</div>', unsafe_allow_html=True)
-            if SS.block_msg:
-                st.success(SS.block_msg)
-                SS.block_msg = ""
-            db = load_db()
-            chips = ""
-            for m in db["users"]:
-                if m != SS.username:
-                    chips += "<span class='member-chip'>👤 @" + m + "</span>"
-            st.markdown(chips, unsafe_allow_html=True)
-            block_input = st.text_input("Username to block",
-                                        key="block_input",
-                                        placeholder="e.g. farrukh_m")
-            if st.button("🚫 Block This Member", key="block_btn",
-                         use_container_width=True):
-                u = block_input.strip().lower()
-                if not u:
-                    st.warning("Please enter an ID first!")
-                elif u == SS.username:
-                    st.warning("You cannot block yourself!")
-                elif u in SS.blocked:
-                    st.warning("Already blocked!")
-                else:
-                    db = load_db()
-                    rec = db["users"].get(SS.username)
-                    if rec is not None:
-                        rec.setdefault("blocked", []).append(u)
-                        save_db(db)
-                    SS.blocked.append(u)
-                    SS.block_msg = "@" + u + " has been blocked."
-                    safe_rerun()
-            if SS.blocked:
+            elif SS.settings_page == "blocked":
+                settings_back("bk_blocked")
+                st.markdown('<div class="panel-header">🚫 Blocked'
+                            '</div>', unsafe_allow_html=True)
+                if SS.block_msg:
+                    st.success(SS.block_msg)
+                    SS.block_msg = ""
+                db = load_db()
+                chips = ""
+                for m in db["users"]:
+                    if m != SS.username:
+                        chips += ("<span class='member-chip'>@" + m +
+                                  "</span>")
+                st.markdown(chips, unsafe_allow_html=True)
+                block_input = st.text_input("Username", key="block_input")
+                if st.button("🚫 Block", key="block_btn",
+                             use_container_width=True):
+                    u = block_input.strip().lower()
+                    if not u:
+                        st.warning("Enter an ID first!")
+                    elif u == SS.username:
+                        st.warning("Cannot block yourself!")
+                    elif u in SS.blocked:
+                        st.warning("Already blocked!")
+                    else:
+                        db = load_db()
+                        rec = db["users"].get(SS.username)
+                        if rec is not None:
+                            rec.setdefault("blocked", []).append(u)
+                            save_db(db)
+                        SS.blocked.append(u)
+                        SS.block_msg = "@" + u + " blocked."
+                        safe_rerun()
                 for i, u in enumerate(SS.blocked):
-                    bc1, bc2 = st.columns([0.65, 0.35])
+                    bc1, bc2 = st.columns([0.6, 0.4])
                     bc1.markdown("**🚫 @" + u + "**")
-                    if bc2.button("✅ Unblock", key="ub_" + str(i),
+                    if bc2.button("Unblock", key="ub_" + str(i),
                                   use_container_width=True):
                         db = load_db()
                         rec = db["users"].get(SS.username)
@@ -1481,101 +1826,77 @@ elif SS.page == "app" and SS.logged_in:
                             rec["blocked"].remove(u)
                             save_db(db)
                         SS.blocked.remove(u)
-                        SS.block_msg = "@" + u + " unblocked."
                         safe_rerun()
-            else:
-                st.caption("No members blocked yet.")
 
-        elif SS.settings_page == "reports":
-            settings_back("bk_reports")
-            st.markdown('<div class="panel-header">⚠️ Report a Member'
-                        '</div>', unsafe_allow_html=True)
-            if SS.report_msg:
-                st.success(SS.report_msg)
-                SS.report_msg = ""
-            rep_id = st.text_input("Member ID", key="rep_id",
-                                   placeholder="e.g. bilal_plays")
-            reasons = ["Harassment / Bullying", "Abusive Language",
-                       "Spam or Fake Posts", "Fake Account",
-                       "Scam / Fraud", "Other"]
-            reason = st.selectbox("Reason", reasons, key="rep_reason")
-            rep_detail = st.text_area("Details (optional)",
-                                      key="rep_detail", height=80)
-            if st.button("🚩 Submit Report", key="rep_btn",
-                         use_container_width=True):
-                r = rep_id.strip().lower()
-                if r:
-                    SS.reports.append({"user": r, "reason": reason,
-                                       "detail": rep_detail})
-                    SS.report_msg = "Report submitted - reviewed in 24h."
-                    safe_rerun()
-                else:
-                    st.warning("Please enter a member ID!")
+            elif SS.settings_page == "reports":
+                settings_back("bk_reports")
+                st.markdown('<div class="panel-header">⚠️ Report</div>',
+                            unsafe_allow_html=True)
+                if SS.report_msg:
+                    st.success(SS.report_msg)
+                    SS.report_msg = ""
+                rep_id = st.text_input("Member ID", key="rep_id")
+                reasons = ["Harassment", "Abusive Language", "Spam",
+                           "Fake Account", "Scam", "Other"]
+                reason = st.selectbox("Reason", reasons, key="rep_reason")
+                if st.button("🚩 Submit Report", key="rep_btn",
+                             use_container_width=True):
+                    r = rep_id.strip().lower()
+                    if r:
+                        db = load_db()
+                        db["reports"].append({
+                            "from": SS.username, "user": r,
+                            "reason": reason, "time": time.time()})
+                        save_db(db)
+                        add_notification(
+                            "admin", "🚩 New report against @" + r +
+                            " by @" + SS.username)
+                        SS.report_msg = ("Report submitted! Admin ko "
+                                         "notification chali gayi.")
+                        safe_rerun()
+                    else:
+                        st.warning("Enter a member ID!")
 
-        elif SS.settings_page == "help":
-            settings_back("bk_help")
-            st.markdown('<div class="panel-header">❓ Help Center</div>',
-                        unsafe_allow_html=True)
-            st.markdown(
-                "• **Channel videos** - Channel tab mein link paste karein\n"
-                "• **Earn coins** - Ludo khelen aur six roll karein\n"
-                "• **Messages** - Messages tab mein live chat\n"
-                "• **Someone bothering you?** - Settings → Blocked Members")
-            bug = st.text_area("Describe your issue:", key="bug_txt",
-                               height=80)
-            if st.button("✉️ Send to Support", key="sup_btn",
-                         use_container_width=True):
-                if bug.strip():
-                    SS.help_msg = "Message sent to support team!"
-                else:
-                    SS.help_msg = "Please describe your issue first."
-                safe_rerun()
-            if SS.help_msg:
-                st.info(SS.help_msg)
-                SS.help_msg = ""
+                db = load_db()
+                my_reps = [r for r in db["reports"]
+                           if r["from"] == SS.username]
+                for r in my_reps:
+                    st.markdown("• 🚩 @" + r["user"] + " - " + r["reason"])
 
-        elif SS.settings_page == "about":
-            settings_back("bk_about")
-            st.markdown('<div class="panel-header">ℹ️ About</div>',
-                        unsafe_allow_html=True)
-            st.markdown(
-                "**HMF book** v3.1.0\n\n"
-                "Social feed • YouTube Channel • Reels • Live Messages\n"
-                "Uploads • Games • Coins\n\n"
-                "© 2025 HMF - All rights reserved.")
+            elif SS.settings_page == "help":
+                settings_back("bk_help")
+                st.markdown(
+                    "• **Profile link** - Profile tab se link copy karein\n"
+                    "• **Groups** - Messages → Groups\n"
+                    "• **Admin** - admin/admin123 se login karein\n"
+                    "• **Reports** - Settings → Report")
+
+            elif SS.settings_page == "about":
+                settings_back("bk_about")
+                st.markdown("**HMF book** v4.0.0\n\n"
+                            "Profile Links • Groups • Notifications • "
+                            "Screenshot Alerts • Camera • Admin Panel\n\n"
+                            "© 2025 HMF")
 
     # ---------- BOTTOM NAV ----------
-    st.markdown("<hr style='border:none; border-top:1px solid #e5e7eb; "
+    st.markdown("<hr style='border:none;border-top:1px solid #e5e7eb;"
                 "margin:25px 0 10px;'>", unsafe_allow_html=True)
 
-    n1, n2, n3, n4, n5, n6, n7 = st.columns(7)
-
-    if n1.button("🏠", key="nav_home", use_container_width=True):
-        SS.current_tab = "Home"
-        safe_rerun()
-    if n2.button("📺", key="nav_channel", use_container_width=True,
-                 help="Channel"):
-        SS.current_tab = "Channel"
-        safe_rerun()
-    if n3.button("🎬", key="nav_reels", use_container_width=True):
-        SS.current_tab = "Reels"
-        safe_rerun()
-    if n4.button("➕", key="nav_create", use_container_width=True):
-        SS.current_tab = "Create"
-        safe_rerun()
-    if n5.button("✉️", key="nav_msg", use_container_width=True):
-        SS.current_tab = "Messages"
-        safe_rerun()
-    if n6.button("👤", key="nav_profile", use_container_width=True):
-        SS.current_tab = "Profile"
-        safe_rerun()
-    if n7.button("⚙️", key="nav_settings", use_container_width=True):
-        SS.current_tab = "Settings"
-        SS.settings_page = "menu"
-        safe_rerun()
+    nb1, nb2, nb3, nb4, nb5, nb6, nb7, nb8 = st.columns(8)
+    nav = [("🏠", "Home"), ("📺", "Channel"), ("🎬", "Reels"),
+           ("➕", "Create"), ("✉️", "Messages"), ("🔔", "Notifications"),
+           ("👤", "Profile"), ("⚙️", "Settings")]
+    for i, (icon, tab) in enumerate(nav):
+        col = [nb1, nb2, nb3, nb4, nb5, nb6, nb7, nb8][i]
+        if col.button(icon, key="nav_" + tab, use_container_width=True):
+            SS.current_tab = tab
+            if tab == "Settings":
+                SS.settings_page = "menu"
+            safe_rerun()
 
 
 # ---------- SAFETY ----------
 else:
     SS.page = "splash"
     safe_rerun()
+    
