@@ -1,1721 +1,482 @@
-import streamlit as st
-import random
+<!DOCTYPE html>
+<html lang="ur">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SnapReel 📱</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',system-ui,sans-serif}
+body{background:#0b0b0f;color:#fff;max-width:480px;margin:0 auto;min-height:100vh}
+button{cursor:pointer;border:none;background:none;color:inherit}
 
-st.set_page_config(
-    page_title="HMF book",
-    page_icon="🟢",
-    layout="centered",
-)
+/* Header */
+header{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;position:sticky;top:0;background:rgba(11,11,15,.95);z-index:50}
+header h1{font-size:22px;background:linear-gradient(90deg,#ffd60a,#ff006e,#8338ec);-webkit-background-clip:text;background-clip:text;color:transparent;font-weight:800}
 
+/* Stories (Snapchat style) */
+.stories{display:flex;gap:14px;overflow-x:auto;padding:10px 16px;scrollbar-width:none}
+.stories::-webkit-scrollbar{display:none}
+.story{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:64px;cursor:pointer}
+.story .ring{width:62px;height:62px;border-radius:50%;padding:3px;background:conic-gradient(#ffd60a,#ff006e,#8338ec,#ffd60a)}
+.story.seen .ring{background:#333}
+.story .ring .inner{width:100%;height:100%;border-radius:50%;background:#1a1a24;display:flex;align-items:center;justify-content:center;font-size:28px}
+.story span{font-size:11px;color:#aaa;max-width:64px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
-# ---------- SAFE RERUN ----------
-def safe_rerun():
-    if hasattr(st, "rerun"):
-        st.rerun()
-    else:
-        st.experimental_rerun()
+/* Feed */
+#feed{padding:0 0 80px}
+.post{margin:16px;background:#15151d;border-radius:16px;overflow:hidden}
+.post-head{display:flex;align-items:center;gap:10px;padding:10px 12px}
+.post-head .avatar{width:38px;height:38px;border-radius:50%;background:#2a2a38;display:flex;align-items:center;justify-content:center;font-size:20px}
+.post-head b{font-size:14px}
+.post-head small{display:block;color:#888;font-size:11px}
+.post video{width:100%;max-height:420px;object-fit:cover;background:#000;display:block}
+.post-actions{display:flex;gap:18px;padding:10px 12px;font-size:20px}
+.post-caption{padding:0 12px 12px;font-size:13px;color:#ccc}
 
+/* Bottom Nav */
+.bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;display:flex;justify-content:space-around;background:#12121a;border-top:1px solid #222;padding:8px 0;z-index:60}
+.bottom-nav button{font-size:24px;padding:6px 14px;border-radius:12px}
+.bottom-nav button.active{background:#23233a}
 
-# ---------- SESSION STATE ----------
-SS = st.session_state
+/* Screens */
+.screen{position:fixed;inset:0;max-width:480px;margin:0 auto;background:#0b0b0f;z-index:70;display:none;flex-direction:column}
+.screen.open{display:flex}
+.screen-head{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid #222;font-weight:700}
+.screen-head .back{font-size:22px;cursor:pointer}
 
-defaults = {
-    "page": "splash",
-    "logged_in": False,
-    "username": "",
-    "email": "",
-    "auth_mode": "login",
-    "current_tab": "Home",
-    "settings_page": "menu",
-    "privacy_step": 0,
-    "post_visibility": "Friends",
-    "searchable": True,
-    "two_factor": False,
-    "login_alerts": False,
-    "feed_sort": "Most Recent",
-    "show_stories": True,
-    "likes": {},
-    "comments": {},
-    "room_code": "",
-    "joined": False,
-    "dice": 0,
-    "coins": 550,
-    "display_name": "Hoor Jannat",
-    "bio": "Living life one post at a time.",
-    "withdraw_msg": "",
-    "social_msg": "",
-    "clear_cmt": "",
-    "block_msg": "",
-    "report_msg": "",
-    "help_msg": "",
-    "blocked": [],
-    "reports": [],
-    "tx_history": [],
-    "dark_mode": False,
-    "language": "English",
-    "region": "Worldwide",
-    "private_account": False,
-    "activity_status": True,
-    "notif": {
-        "likes": True,
-        "comments": True,
-        "follows": True,
-        "messages": True,
-    },
+/* Reels */
+.reels-wrap{flex:1;overflow-y:auto;scroll-snap-type:y mandatory}
+.reel{height:100%;scroll-snap-align:start;position:relative;background:#000;overflow:hidden}
+.reel video{width:100%;height:100%;object-fit:cover}
+.reel iframe{width:100%;height:100%;border:none;pointer-events:none}
+.reel .tap{position:absolute;inset:0;z-index:1}
+.reel-overlay{position:absolute;bottom:70px;left:12px;right:70px;z-index:2;text-shadow:0 1px 4px #000;pointer-events:none}
+.yt-badge{display:inline-block;background:#f00;color:#fff;font-size:10px;padding:2px 6px;border-radius:4px;margin-bottom:6px}
+.reel-overlay b{font-size:14px}
+.reel-overlay p{font-size:12px;color:#ddd;margin-top:3px}
+.reel-side{position:absolute;right:10px;bottom:80px;z-index:3;display:flex;flex-direction:column;gap:16px;align-items:center}
+.reel-side button{font-size:24px;filter:drop-shadow(0 1px 3px #000)}
+.reel-side small{font-size:10px;display:block;text-align:center;color:#eee}
+
+/* Chat */
+.chat-list{flex:1;overflow-y:auto}
+.chat-item{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid #1c1c28;cursor:pointer}
+.chat-item:hover{background:#15151d}
+.chat-item .avatar{width:48px;height:48px;border-radius:50%;background:#2a2a38;display:flex;align-items:center;justify-content:center;font-size:24px}
+.chat-item .info{flex:1;min-width:0}
+.chat-item b{font-size:14px}
+.chat-item small{display:block;color:#888;font-size:12px}
+.chat-msgs{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:8px}
+.msg{max-width:75%;padding:9px 13px;border-radius:16px;font-size:14px}
+.msg.me{align-self:flex-end;background:linear-gradient(135deg,#8338ec,#ff006e);border-bottom-right-radius:4px}
+.msg.them{align-self:flex-start;background:#23233a;border-bottom-left-radius:4px}
+.chat-input{display:flex;gap:8px;padding:10px 12px;border-top:1px solid #222}
+.chat-input input{flex:1;background:#1c1c28;border:none;border-radius:20px;padding:11px 15px;color:#fff;font-size:14px;outline:none}
+.chat-input button{font-size:22px;padding:0 10px}
+
+/* Profile */
+.profile-head{display:flex;align-items:center;gap:18px;padding:20px 16px}
+.profile-head .avatar{width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,#8338ec,#ff006e);display:flex;align-items:center;justify-content:center;font-size:38px}
+.stats{display:flex;flex:1;justify-content:space-around;text-align:center}
+.stats b{display:block;font-size:17px}
+.stats span{font-size:11px;color:#999}
+.profile-tabs{display:flex;border-bottom:1px solid #222;padding:0 12px}
+.profile-tabs button{padding:11px 20px;font-size:14px;color:#777;border-bottom:2px solid transparent}
+.profile-tabs button.active{color:#fff;border-color:#ff006e}
+.video-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;padding:2px}
+.video-grid .tile{aspect-ratio:9/14;background:#15151d;border-radius:6px;overflow:hidden;cursor:pointer}
+.video-grid .tile video{width:100%;height:100%;object-fit:cover}
+.video-grid .tile.empty{display:flex;align-items:center;justify-content:center;color:#444;font-size:24px}
+
+/* Upload Modal */
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:90;display:none;align-items:flex-end}
+.modal.open{display:flex}
+.modal-box{background:#17171f;width:100%;max-width:480px;border-radius:20px 20px 0 0;padding:18px 16px 26px;margin:0 auto}
+.modal-box h3{margin-bottom:12px}
+.modal-box input[type=text]{width:100%;background:#23233a;border:none;border-radius:10px;padding:12px;color:#fff;margin-bottom:12px;font-size:14px;outline:none}
+.pick-btn{display:block;width:100%;padding:13px;border-radius:10px;background:#23233a;font-size:14px;margin-bottom:8px;text-align:center;cursor:pointer}
+.publish-btn{display:block;width:100%;padding:13px;border-radius:10px;background:linear-gradient(90deg,#8338ec,#ff006e);font-weight:700;font-size:14px;margin-bottom:8px}
+.preview{width:100%;max-height:260px;border-radius:12px;background:#000;margin-bottom:12px;display:none;object-fit:cover}
+
+/* Story Viewer */
+.story-viewer{position:fixed;inset:0;background:#000;z-index:100;display:none;flex-direction:column}
+.story-viewer.open{display:flex}
+.story-viewer .bar{height:3px;background:#444;margin:10px 10px 0;border-radius:3px;overflow:hidden}
+.story-viewer .bar i{display:block;height:100%;width:0;background:#fff}
+.story-viewer .bar i.go{animation:prog 5s linear forwards}
+@keyframes prog{to{width:100%}}
+.story-viewer .top{display:flex;align-items:center;gap:10px;padding:12px}
+.story-viewer .top .avatar{width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:18px}
+.story-viewer .content{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative}
+.story-viewer .content .big{font-size:120px}
+.story-viewer .content img{max-width:100%;max-height:100%;position:absolute;inset:0}
+.story-viewer .nav-l,.story-viewer .nav-r{position:absolute;top:0;bottom:0;width:35%;z-index:5}
+.story-viewer .nav-l{left:0}
+.story-viewer .nav-r{right:0}
+.story-close{position:absolute;top:12px;right:14px;font-size:24px;z-index:6}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>SnapReel</h1>
+  <span style="font-size:22px">👻</span>
+</header>
+
+<!-- Stories Bar -->
+<div class="stories" id="storiesBar"></div>
+
+<!-- Feed -->
+<main id="feed"></main>
+
+<!-- Bottom Navigation -->
+<nav class="bottom-nav">
+  <button id="nav-home" class="active" onclick="showScreen('home')">🏠</button>
+  <button id="nav-reels" onclick="showScreen('reels')">🎬</button>
+  <button onclick="openUpload()">➕</button>
+  <button id="nav-chat" onclick="showScreen('chat')">💬</button>
+  <button id="nav-profile" onclick="showScreen('profile')">👤</button>
+</nav>
+
+<!-- REELS SCREEN -->
+<section id="screen-reels" class="screen">
+  <div class="screen-head"><span class="back" onclick="closeScreen('reels')">←</span> Reels
+    <span style="margin-left:auto"><span class="yt-badge">▶ YouTube</span></span>
+  </div>
+  <div class="reels-wrap" id="reelsWrap"></div>
+</section>
+
+<!-- CHAT SCREEN -->
+<section id="screen-chat" class="screen">
+  <div class="screen-head" id="chatHead"><span class="back" onclick="closeScreen('chat')">←</span> Messages</div>
+  <div class="chat-list" id="chatList"></div>
+  <div class="chat-msgs" id="chatMsgs" style="display:none"></div>
+  <div class="chat-input" id="chatInputBar" style="display:none">
+    <input id="msgInput" placeholder="Message likhein..." onkeydown="if(event.key==='Enter')sendMsg()">
+    <button onclick="sendMsg()">➤</button>
+  </div>
+</section>
+
+<!-- PROFILE SCREEN -->
+<section id="screen-profile" class="screen">
+  <div class="screen-head"><span class="back" onclick="closeScreen('profile')">←</span> Profile</div>
+  <div class="profile-head">
+    <div class="avatar">🙂</div>
+    <div class="stats">
+      <div><b id="statPosts">0</b><span>Videos</span></div>
+      <div><b>1.2K</b><span>Followers</span></div>
+      <div><b>348</b><span>Following</span></div>
+    </div>
+  </div>
+  <div class="profile-tabs"><button class="active">📹 Videos</button></div>
+  <div class="video-grid" id="videoGrid"></div>
+</section>
+
+<!-- UPLOAD MODAL -->
+<div class="modal" id="uploadModal">
+  <div class="modal-box">
+    <h3>➕ Video Upload Karein</h3>
+    <video id="preview" class="preview" controls muted loop playsinline></video>
+    <label class="pick-btn">📁 Video choose karein
+      <input type="file" id="videoFile" accept="video/*" hidden onchange="previewVideo(this)">
+    </label>
+    <input type="text" id="videoCaption" placeholder="Caption likhein...">
+    <button class="publish-btn" onclick="publish('reel')">🎬 Reels par daalein</button>
+    <button class="publish-btn" onclick="publish('profile')">👤 Profile par daalein</button>
+    <button style="width:100%;color:#888;padding:8px" onclick="closeUpload()">Cancel</button>
+  </div>
+</div>
+
+<!-- STORY VIEWER -->
+<div class="story-viewer" id="storyViewer">
+  <div class="bar"><i id="storyBar"></i></div>
+  <div class="top">
+    <div class="avatar" id="svAvatar">👻</div>
+    <b id="svName"></b>
+    <button class="story-close" onclick="closeStory()">✕</button>
+  </div>
+  <div class="content" id="svContent">
+    <div class="nav-l" onclick="prevStory()"></div>
+    <div class="nav-r" onclick="nextStory()"></div>
+  </div>
+</div>
+<input type="file" id="snapFile" accept="image/*" capture="environment" hidden onchange="addMySnap(this)">
+
+<script>
+/* ================= DATA ================= */
+let stories = [
+  {name:'Aapki Story', emoji:'➕', mine:true},
+  {name:'Ali',    emoji:'🧑', seen:false, bg:'linear-gradient(135deg,#ff006e,#8338ec)', text:'Snap 👻'},
+  {name:'Sara',   emoji:'👧', seen:false, bg:'linear-gradient(135deg,#ffd60a,#ff7b00)', text:'Good morning ☀️'},
+  {name:'Bilal',  emoji:'🧔', seen:false, bg:'linear-gradient(135deg,#00b4d8,#0077b6)', text:'Cricket 🏏'},
+  {name:'Ayesha', emoji:'👩', seen:true,  bg:'linear-gradient(135deg,#80ffdb,#48cae4)', text:'Coffee ☕'},
+];
+
+const feedPosts = [
+  {user:'Ali',  avatar:'🧑', time:'2 ghante', video:'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4', caption:'Mera naya video! 🎉'},
+  {user:'Sara', avatar:'👧', time:'5 ghante', video:'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4', caption:'Road trip vibes 🚗'},
+];
+
+/* Reels: YouTube videos + apni videos */
+let reels = [
+  {type:'yt', id:'dQw4w9WgXcQ', user:'YouTube', caption:'Classic! 😄', likes:'1.4B'},
+  {type:'video', src:'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4', user:'Bilal', caption:'Nature 🌿', likes:'12K'},
+  {type:'yt', id:'kJQP7kiw5Fk', user:'YouTube', caption:'Top song 🎶', likes:'8B'},
+  {type:'video', src:'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4', user:'Ayesha', caption:'🔥🔥🔥', likes:'45K'},
+  {type:'yt', id:'3JZ_D3ELwOQ', user:'YouTube', caption:'Music vibes 🎵', likes:'892K'},
+];
+
+let myVideos = []; // profile par upload ki hui videos
+
+let chats = [
+  {id:1, name:'Ali',   avatar:'🧑', msgs:[{me:false,t:'Kya haal hai?'},{me:true,t:'Bhai theek, tum sunao?'}]},
+  {id:2, name:'Sara',  avatar:'👧', msgs:[{me:false,t:'Reels dekhi? 😂'}]},
+  {id:3, name:'Bilal', avatar:'🧔', msgs:[{me:false,t:'Match dekhoge aaj? 🏏'}]},
+];
+const autoReplies = ['Haha 😂','Sahi hai!','Bilkul 👍','Acha ji','Wow 🤩','Phir baat karte hain'];
+let activeChat = null;
+let pendingVideo = null, svIndex = 0, svTimer = null, reelObserver = null;
+
+const esc = s => s.replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+/* ================= NAVIGATION ================= */
+function showScreen(name){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('open'));
+  document.querySelectorAll('.bottom-nav button').forEach(b=>b.classList.remove('active'));
+  if(name==='home'){ document.getElementById('nav-home').classList.add('active'); pauseAllReels(); window.scrollTo(0,0); return; }
+  document.getElementById('nav-'+name).classList.add('active');
+  document.getElementById('screen-'+name).classList.add('open');
+  if(name==='reels') observeReels();
+  if(name==='chat')  renderChats();
+  if(name==='profile') renderProfile();
+}
+function closeScreen(name){
+  document.getElementById('screen-'+name).classList.remove('open');
+  document.getElementById('nav-'+name).classList.remove('active');
+  pauseAllReels();
 }
 
-for k, v in defaults.items():
-    if k not in SS:
-        SS[k] = v
-
-
-# ---------- HELPERS ----------
-def settings_back(key):
-    if st.button("← Back to Settings", key=key):
-        SS.settings_page = "menu"
-        SS.privacy_step = 0
-        safe_rerun()
-
-
-def do_withdrawal():
-    if SS.coins >= 100:
-        SS.coins = SS.coins - 100
-        entry = {
-            "type": "Withdrawal Payout",
-            "amount": "-100 coins",
-            "time": "Just now",
-        }
-        SS.tx_history.insert(0, entry)
-        SS.withdraw_msg = (
-            "✅ Withdrawal request submitted! 100 coins deducted - "
-            "processing within 3-5 business days."
-        )
-    else:
-        SS.withdraw_msg = (
-            "⚠️ Minimum 100 coins required for withdrawal!"
-        )
-
-
-# ---------- FEED DATA ----------
-POSTS = [
-    {
-        "id": "p1",
-        "user": "hoor_jannat",
-        "ini": "HJ",
-        "grad": "linear-gradient(45deg,#e6f7f0,#b3e6cc)",
-        "txt": "🖼️ HMF Network Framework Live",
-        "cap": "Framework switching logic is now fully integrated!",
-        "likes": 128,
-    },
-    {
-        "id": "p2",
-        "user": "farrukh_m",
-        "ini": "FM",
-        "grad": "linear-gradient(45deg,#d1fae5,#a7f3d0)",
-        "txt": "🎲 Ludo Night Tournament",
-        "cap": "Tonight 8 PM - winner takes all coins!",
-        "likes": 96,
-    },
-    {
-        "id": "p3",
-        "user": "hamza_official",
-        "ini": "HA",
-        "grad": "linear-gradient(45deg,#ecfdf5,#6ee7b7)",
-        "txt": "🌿 Green Vibes Only",
-        "cap": "Loving this new HMF book app!",
-        "likes": 214,
-    },
-]
-
-KNOWN_MEMBERS = [
-    "hoor_jannat",
-    "farrukh_m",
-    "hamza_official",
-    "zara_x",
-    "ayesha.99",
-    "bilal_plays",
-]
-
-
-# ---------- MAIN APP CSS (Light + Dark) ----------
-def build_main_css(dark):
-    if dark:
-        APPBG = "#0f1110"
-        CARDBG = "#1b1e1b"
-        BORDERC = "#2a2e2a"
-        TXT1 = "#eef1ee"
-        TXT2 = "#9aa69a"
-        LOGOC = "#00e08a"
-    else:
-        APPBG = "#f0f2f5"
-        CARDBG = "#ffffff"
-        BORDERC = "#e5e7eb"
-        TXT1 = "#1f2937"
-        TXT2 = "#4b5563"
-        LOGOC = "#00B074"
-
-    css = f"""
-    <style>
-    .stApp {{ background-color:{APPBG} !important; }}
-    header[data-testid="stHeader"], #MainMenu, footer {{
-        visibility:hidden !important; }}
-    [data-testid="stToolbar"] {{ visibility:hidden !important; }}
-    [data-testid="stStatusWidget"] {{ visibility:hidden !important; }}
-
-    .block-container, [data-testid="block-container"] {{
-        max-width:460px;
-        margin:0 auto;
-        background:{CARDBG};
-        padding-top:0 !important;
-        padding-bottom:30px !important;
-        min-height:100vh;
-        box-shadow:0 0 25px rgba(0,0,0,.12);
-    }}
-
-    .insta-header {{
-        position:sticky;
-        top:0;
-        z-index:100;
-        display:flex;
-        justify-content:space-between;
-        align-items:center;
-        padding:14px 18px;
-        background:{CARDBG};
-        border-bottom:1px solid {BORDERC};
-    }}
-    .brand-logo {{
-        font-size:28px;
-        font-weight:900;
-        color:{LOGOC};
-        letter-spacing:-1px;
-    }}
-    .nico {{ font-size:20px; }}
-
-    .stories-container {{
-        display:flex;
-        gap:15px;
-        padding:12px 15px;
-        background:{CARDBG};
-        border-bottom:1px solid {BORDERC};
-        overflow-x:auto;
-    }}
-    .story-card {{
-        display:flex;
-        flex-direction:column;
-        align-items:center;
-        text-align:center;
-        min-width:65px;
-    }}
-    .story-ring {{
-        width:60px;
-        height:60px;
-        border-radius:50%;
-        padding:2.5px;
-        background:linear-gradient(135deg,#00B074 0%,#056839 100%);
-        display:flex;
-        align-items:center;
-        justify-content:center;
-    }}
-    .story-img {{
-        width:100%;
-        height:100%;
-        border-radius:50%;
-        background:{CARDBG};
-        border:2px solid {CARDBG};
-        display:flex;
-        align-items:center;
-        justify-content:center;
-        font-weight:bold;
-        color:{TXT2};
-        font-size:14px;
-    }}
-    .story-name {{
-        font-size:11px;
-        color:{TXT2};
-        margin-top:4px;
-        max-width:65px;
-        overflow:hidden;
-        text-overflow:ellipsis;
-        white-space:nowrap;
-    }}
-
-    .post-card {{
-        background:{CARDBG};
-        margin-bottom:12px;
-        border-bottom:1px solid {BORDERC};
-    }}
-    .post-header {{
-        display:flex;
-        align-items:center;
-        padding:12px 15px;
-    }}
-    .post-avatar {{
-        width:36px;
-        height:36px;
-        border-radius:50%;
-        background:#00B074;
-        color:#fff;
-        display:flex;
-        align-items:center;
-        justify-content:center;
-        font-weight:bold;
-        margin-right:10px;
-        font-size:13px;
-    }}
-    .post-username {{
-        font-size:14px;
-        font-weight:700;
-        color:{TXT1};
-    }}
-    .post-image-placeholder {{
-        width:100%;
-        height:300px;
-        background:#f3f4f6;
-        display:flex;
-        align-items:center;
-        justify-content:center;
-        font-size:16px;
-    }}
-    .likes-txt {{
-        padding:8px 15px 2px;
-        font-weight:600;
-        font-size:13px;
-        color:{TXT1};
-        margin:0;
-    }}
-    .post-details {{
-        padding:0 15px 10px 15px;
-        font-size:14px;
-        color:{TXT1};
-        margin:0;
-    }}
-
-    .panel-header {{
-        padding:18px;
-        font-size:22px;
-        font-weight:bold;
-        color:{LOGOC};
-        border-bottom:1px solid {BORDERC};
-        text-align:center;
-    }}
-
-    .ludo-board-mock {{
-        width:280px;
-        height:280px;
-        margin:30px auto;
-        background:#f59e0b;
-        border:10px solid #d97706;
-        border-radius:20px;
-        display:flex;
-        align-items:center;
-        justify-content:center;
-        color:white;
-        font-size:40px;
-        font-weight:bold;
-        box-shadow:0 10px 15px -3px rgba(0,0,0,0.1);
-    }}
-
-    .set-label {{
-        font-weight:700;
-        color:{TXT1};
-        margin:14px 0 4px;
-    }}
-    .sec-label {{
-        font-size:12px;
-        font-weight:800;
-        letter-spacing:1px;
-        color:{TXT2};
-        margin:18px 6px 8px;
-    }}
-    .privacy-card {{
-        display:flex;
-        gap:14px;
-        align-items:center;
-        background:rgba(0,176,116,0.10);
-        border:1px solid #00B074;
-        border-radius:14px;
-        padding:14px 16px;
-        margin:10px 0 4px;
-    }}
-    .privacy-card b {{ color:{TXT1}; font-size:15px; }}
-    .privacy-card p {{ margin:2px 0 0; font-size:12px; color:{TXT2}; }}
-    .member-chip {{
-        display:inline-block;
-        background:{CARDBG};
-        border:1px solid {BORDERC};
-        border-radius:20px;
-        padding:4px 12px;
-        margin:3px;
-        font-size:12px;
-        color:{TXT2};
-    }}
-    .session-row {{
-        display:flex;
-        align-items:center;
-        gap:12px;
-        padding:10px 4px;
-        border-bottom:1px solid {BORDERC};
-        font-size:13px;
-        color:{TXT1};
-    }}
-
-    div[data-testid="stButton"] > button, div.stButton > button {{
-        background:#00B074 !important;
-        color:#fff !important;
-        font-weight:600 !important;
-        border:none !important;
-        border-radius:12px !important;
-    }}
-    div[data-testid="stButton"] > button:hover,
-    div.stButton > button:hover {{
-        background:#056839 !important;
-        color:#fff !important;
-    }}
-    </style>
-    """
-
-    if dark:
-        css += """
-        <style>
-        [data-testid="stTextInput"] input,
-        [data-testid="stTextArea"] textarea {{
-            background:#242824 !important;
-            color:#fff !important;
-            border-color:#3a3f3a !important;
-        }}
-        [data-testid="stCheckbox"] label p,
-        [data-testid="stRadio"] label p {{
-            color:#e5e9e5 !important;
-        }}
-        [data-baseweb="select"] > div {{
-            background:#242824 !important;
-            color:#fff !important;
-        }}
-        hr {{ border-color:#2a2e2a !important; }}
-        </style>
-        """
-
-    return css
-
-
-# ================= 1) SPLASH SCREEN =================
-if SS.page == "splash":
-
-    st.markdown(
-        """
-        <style>
-        .stApp {
-            background: linear-gradient(135deg, #00B074 0%, #056839 100%) !important;
-        }
-        header[data-testid="stHeader"], #MainMenu, footer {
-            visibility:hidden !important;
-        }
-        [data-testid="stToolbar"] { visibility:hidden !important; }
-        [data-testid="stStatusWidget"] { visibility:hidden !important; }
-        .mid {
-            display:flex;
-            flex-direction:column;
-            align-items:center;
-            justify-content:center;
-            height:70vh;
-            text-align:center;
-        }
-        .logo {
-            font-size:90px;
-            font-weight:900;
-            color:#fff;
-            letter-spacing:4px;
-            text-shadow:0 4px 14px rgba(0,0,0,.25);
-            margin:0;
-        }
-        .sub {
-            font-size:24px;
-            color:rgba(255,255,255,.92);
-            margin:5px 0 0;
-            letter-spacing:2px;
-        }
-        div[data-testid="stButton"] > button, div.stButton > button {
-            background:#fff !important;
-            color:#00B074 !important;
-            font-size:18px !important;
-            font-weight:bold !important;
-            padding:12px 45px !important;
-            border-radius:30px !important;
-            border:none !important;
-            box-shadow:0 4px 15px rgba(0,0,0,.25) !important;
-        }
-        </style>
-        <div class="mid">
-            <h1 class="logo">HMF</h1>
-            <p class="sub">HMF book</p>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-    c1, c2, c3 = st.columns([1, 1.3, 1])
-    with c2:
-        if st.button("Get Started", use_container_width=True):
-            SS.page = "auth"
-            safe_rerun()
-
-
-# ================= 2) LOGIN / SIGNUP =================
-elif SS.page == "auth":
-
-    is_signup = SS.auth_mode == "signup"
-
-    if is_signup:
-        title = "Create Account"
-        subtitle = "Sign up to continue to HMF book"
-        btn_label = "Sign Up"
-        switch_txt = "Already have an account? Login"
-    else:
-        title = "Welcome Back"
-        subtitle = "Login to continue to HMF book"
-        btn_label = "Login"
-        switch_txt = "New here? Create an account"
-
-    st.markdown(
-        """
-        <style>
-        .stApp { background:#F3FAF6 !important; }
-        header[data-testid="stHeader"], #MainMenu, footer {
-            visibility:hidden !important;
-        }
-        [data-testid="stToolbar"] { visibility:hidden !important; }
-        [data-testid="stStatusWidget"] { visibility:hidden !important; }
-        .badge {
-            background:linear-gradient(135deg,#00B074,#056839);
-            display:inline-block;
-            padding:18px 52px;
-            border-radius:22px;
-            box-shadow:0 6px 18px rgba(0,176,116,.35);
-        }
-        .badge h1 {
-            color:#fff;
-            font-size:36px;
-            font-weight:900;
-            letter-spacing:3px;
-            margin:0;
-        }
-        .title {
-            text-align:center;
-            font-size:24px;
-            font-weight:700;
-            color:#222;
-            margin:26px 0 4px;
-        }
-        .sub2 {
-            text-align:center;
-            color:#889;
-            font-size:14px;
-            margin:0 0 22px;
-        }
-        div[data-testid="stButton"] > button, div.stButton > button {
-            background:#00B074 !important;
-            color:#fff !important;
-            font-weight:600 !important;
-            border:none !important;
-            border-radius:12px !important;
-        }
-        .or {
-            text-align:center;
-            color:#99a;
-            font-size:13px;
-            margin:20px 0 8px;
-        }
-        </style>
-        <div style="text-align:center; margin-top:14px;">
-            <div class="badge"><h1>HMF</h1></div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-    head = f"<h2 class='title'>{title}</h2><p class='sub2'>{subtitle}</p>"
-    st.markdown(head, unsafe_allow_html=True)
-
-    username = st.text_input("Username", placeholder="Enter username")
-
-    if is_signup:
-        email = st.text_input("Email", placeholder="Enter email")
-    else:
-        email = SS.email
-
-    password = st.text_input(
-        "Password",
-        type="password",
-        placeholder="Enter password",
-    )
-
-    if st.button(btn_label, use_container_width=True):
-        if username and password:
-            SS.logged_in = True
-            SS.username = username
-            if email:
-                SS.email = email
-            SS.page = "app"
-            safe_rerun()
-        else:
-            st.error("Please enter both username and password!")
-
-    if st.button(switch_txt):
-        if is_signup:
-            SS.auth_mode = "login"
-        else:
-            SS.auth_mode = "signup"
-        safe_rerun()
-
-    st.markdown(
-        "<p class='or'>Or continue with</p>",
-        unsafe_allow_html=True,
-    )
-
-    g, s, f = st.columns(3)
-
-    if g.button("Google", use_container_width=True):
-        SS.social_msg = "Google sign-in will be available soon."
-        safe_rerun()
-
-    if s.button("Snapchat", use_container_width=True):
-        SS.social_msg = "Snapchat login will be available soon."
-        safe_rerun()
-
-    if f.button("Facebook", use_container_width=True):
-        SS.social_msg = "Facebook login will be available soon."
-        safe_rerun()
-
-    if SS.social_msg:
-        st.info(SS.social_msg)
-
-
-# ================= 3) MAIN APP =================
-elif SS.page == "app" and SS.logged_in:
-
-    st.markdown(build_main_css(SS.dark_mode), unsafe_allow_html=True)
-
-    # ---------- TOP BAR ----------
-    topbar = """
-    <div class="insta-header">
-        <div class="brand-logo">HMF book</div>
-        <div class="nico">❤️ &nbsp; ✉️ &nbsp; 🔔</div>
-    </div>
-    """
-    st.markdown(topbar, unsafe_allow_html=True)
-
-    # ---------- QUICK ICON ROW ----------
-    q1, q2, q3, q4, q5 = st.columns([0.6, 0.6, 0.6, 0.6, 1.6])
-
-    if q1.button("⚙️", key="top_set", use_container_width=True,
-                 help="Open Settings"):
-        SS.current_tab = "Settings"
-        safe_rerun()
-
-    if q2.button("🔔", key="top_bell", use_container_width=True,
-                 help="Notifications"):
-        st.toast("You have 3 new notifications!")
-
-    if q3.button("✉️", key="top_mail", use_container_width=True,
-                 help="Messages"):
-        st.toast("You have 2 new messages!")
-
-    if q4.button("🌙", key="top_dark", use_container_width=True,
-                 help="Toggle Dark Mode"):
-        SS.dark_mode = not SS.dark_mode
-        safe_rerun()
-
-    if SS.current_tab == "Settings":
-        q5.markdown(
-            "<b style='color:#00B074;'>⚙️ Settings</b>",
-            unsafe_allow_html=True,
-        )
-
-    st.markdown("<div style='height:6px;'></div>", unsafe_allow_html=True)
-
-    # ================= TAB: HOME =================
-    if SS.current_tab == "Home":
-
-        if SS.show_stories:
-            stories_html = """
-            <div class="stories-container">
-                <div class="story-card">
-                    <div class="story-ring" style="background:#6b7280;">
-                        <div class="story-img"
-                             style="background-color:#056839;color:#fff;">+
-                        </div>
-                    </div>
-                    <div class="story-name">Your Story</div>
-                </div>
-                <div class="story-card">
-                    <div class="story-ring"><div class="story-img">HJ</div></div>
-                    <div class="story-name">hoor_jannat</div>
-                </div>
-                <div class="story-card">
-                    <div class="story-ring"><div class="story-img">FM</div></div>
-                    <div class="story-name">farrukh_m</div>
-                </div>
-                <div class="story-card">
-                    <div class="story-ring"><div class="story-img">ZX</div></div>
-                    <div class="story-name">zara_x</div>
-                </div>
-                <div class="story-card">
-                    <div class="story-ring"><div class="story-img">HA</div></div>
-                    <div class="story-name">hamza</div>
-                </div>
-            </div>
-            """
-            st.markdown(stories_html, unsafe_allow_html=True)
-
-        if SS.block_msg:
-            st.success(SS.block_msg)
-            SS.block_msg = ""
-
-        visible_posts = []
-        for p in POSTS:
-            if p["user"].lower() not in SS.blocked:
-                visible_posts.append(p)
-
-        if SS.feed_sort == "Top Posts":
-            visible_posts = sorted(
-                visible_posts,
-                key=lambda x: x["likes"],
-                reverse=True,
-            )
-        else:
-            visible_posts = list(reversed(visible_posts))
-
-        hidden = len(POSTS) - len(visible_posts)
-
-        if hidden > 0:
-            st.info(
-                "🚫 " + str(hidden) +
-                " post(s) from blocked members are hidden."
-            )
-
-        if SS.clear_cmt:
-            SS[SS.clear_cmt] = ""
-            SS.clear_cmt = ""
-
-        for p in visible_posts:
-
-            post_html = f"""
-            <div class="post-card">
-                <div class="post-header">
-                    <div class="post-avatar">{p['ini']}</div>
-                    <div class="post-username">{p['user']}</div>
-                </div>
-                <div class="post-image-placeholder"
-                     style="background:{p['grad']};
-                            color:#056839;
-                            font-weight:bold;">
-                    {p['txt']}
-                </div>
-            </div>
-            """
-            st.markdown(post_html, unsafe_allow_html=True)
-
-            liked = SS.likes.get(p["id"], False)
-
-            a1, a2, a3, a4 = st.columns(4)
-
-            like_icon = "❤️" if liked else "🤍"
-            if a1.button(
-                like_icon,
-                key="lk_" + p["id"],
-                use_container_width=True,
-            ):
-                SS.likes[p["id"]] = not liked
-                safe_rerun()
-
-            if a2.button(
-                "💬",
-                key="cm_" + p["id"],
-                use_container_width=True,
-            ):
-                st.info("Type your comment in the box below.")
-
-            if a3.button(
-                "✈️",
-                key="sh_" + p["id"],
-                use_container_width=True,
-            ):
-                st.info("Post link copied!")
-
-            if a4.button(
-                "🚫",
-                key="bl_" + p["id"],
-                use_container_width=True,
-            ):
-                SS.blocked.append(p["user"].lower())
-                SS.block_msg = (
-                    "✅ @" + p["user"] + " has been blocked - "
-                    "their posts will no longer appear in your feed."
-                )
-                safe_rerun()
-
-            n = p["likes"]
-            if liked:
-                n = n + 1
-
-            likes_html = (
-                "<p class='likes-txt'>" + str(n) + " likes</p>"
-                "<p class='post-details'><b>" + p["user"] +
-                "</b> " + p["cap"] + "</p>"
-            )
-            st.markdown(likes_html, unsafe_allow_html=True)
-
-            cmt = st.text_input(
-                "comment",
-                key="cmt_" + p["id"],
-                placeholder="Add a comment...",
-                label_visibility="collapsed",
-            )
-
-            if st.button("Post Comment", key="pc_" + p["id"]):
-                if cmt.strip():
-                    if p["id"] not in SS.comments:
-                        SS.comments[p["id"]] = []
-                    entry = "<b>" + SS.username + "</b> " + cmt
-                    SS.comments[p["id"]].append(entry)
-                    SS.clear_cmt = "cmt_" + p["id"]
-                    safe_rerun()
-                else:
-                    st.warning("Comment cannot be empty!")
-
-            for c in SS.comments.get(p["id"], []):
-                cmt_html = (
-                    "<p class='post-details' style='color:#6b7280;'>"
-                    + c + "</p>"
-                )
-                st.markdown(cmt_html, unsafe_allow_html=True)
-
-    # ================= TAB: LUDO =================
-    elif SS.current_tab == "Ludo":
-
-        st.markdown(
-            '<div class="panel-header">🎲 HMF Ludo Club</div>',
-            unsafe_allow_html=True,
-        )
-        st.markdown(
-            '<div class="ludo-board-mock"> LUDO </div>',
-            unsafe_allow_html=True,
-        )
-
-        if st.button(
-            "🏆 Create Private Room Code",
-            use_container_width=True,
-        ):
-            letters = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
-            SS.room_code = "".join(random.choices(letters, k=6))
-            safe_rerun()
-
-        if SS.room_code:
-            room_txt = (
-                "Room Code: **" + SS.room_code +
-                "** - share this code with your friends!"
-            )
-            st.success(room_txt)
-
-        if st.button(
-            "👥 Play with Online Friends",
-            use_container_width=True,
-        ):
-            SS.joined = True
-            safe_rerun()
-
-        if SS.joined:
-            st.info(
-                "✅ You and 3 players have joined the table. "
-                "Full multiplayer mode coming soon!"
-            )
-
-        if st.button("🎲 Roll Dice", use_container_width=True):
-            SS.dice = random.randint(1, 6)
-            if SS.dice == 6:
-                SS.coins = SS.coins + 5
-                entry = {
-                    "type": "Ludo Dice Bonus",
-                    "amount": "+5 coins",
-                    "time": "Just now",
-                }
-                SS.tx_history.insert(0, entry)
-            safe_rerun()
-
-        if SS.dice:
-            extra = ""
-            if SS.dice == 6:
-                extra = " - Six! +5 coins earned"
-            dice_txt = (
-                "<h3 style='text-align:center; color:#00B074;'>"
-                "🎯 You rolled " + str(SS.dice) + extra +
-                "</h3>"
-            )
-            st.markdown(dice_txt, unsafe_allow_html=True)
-
-    # ================= TAB: PROFILE =================
-    elif SS.current_tab == "Profile":
-
-        st.markdown(
-            '<div class="panel-header">👤 User Profile</div>',
-            unsafe_allow_html=True,
-        )
-        st.info("Logged in as: **@" + SS.username + "**")
-
-        initial = SS.username[:1].upper()
-
-        profile_html = f"""
-        <div style="text-align:center; margin:10px 0;">
-            <div style="width:86px;height:86px;border-radius:50%;
-                 background:linear-gradient(135deg,#00B074,#056839);
-                 color:#fff;font-size:34px;font-weight:800;
-                 display:flex;align-items:center;
-                 justify-content:center;margin:0 auto;">
-                 {initial}
-            </div>
-            <h3 style="margin:10px 0 2px;">{SS.display_name}</h3>
-            <p style="color:#6b7280; font-size:13px; margin:0;">{SS.bio}</p>
-            <p style="color:#6b7280; font-size:12px; margin:8px 0 0;">
-                9 Posts &nbsp;•&nbsp; 1,240 Followers &nbsp;•&nbsp; 356 Following
-            </p>
-        </div>
-        """
-        st.markdown(profile_html, unsafe_allow_html=True)
-
-        bal = "💰 Current Wallet Balance: **" + str(SS.coins) + " Coins**"
-        st.success(bal)
-
-        if st.button(
-            "💳 Request Withdrawal",
-            key="prof_wd",
-            use_container_width=True,
-        ):
-            do_withdrawal()
-            safe_rerun()
-
-        if SS.withdraw_msg:
-            wm = (
-                "<p style='text-align:center; color:#056839;'>"
-                + SS.withdraw_msg + "</p>"
-            )
-            st.markdown(wm, unsafe_allow_html=True)
-            SS.withdraw_msg = ""
-
-        p1, p2 = st.columns(2)
-
-        if p1.button("⚙️ Open Settings", use_container_width=True):
-            SS.current_tab = "Settings"
-            SS.settings_page = "menu"
-            safe_rerun()
-
-        if p2.button("🚪 Logout", use_container_width=True):
-            SS.logged_in = False
-            SS.page = "auth"
-            SS.current_tab = "Home"
-            safe_rerun()
-
-    # ================= TAB: SETTINGS & PRIVACY =================
-    elif SS.current_tab == "Settings":
-
-        # ---------- SETTINGS MENU ----------
-        if SS.settings_page == "menu":
-
-            st.markdown(
-                '<div class="panel-header">⚙️ Settings & Privacy</div>',
-                unsafe_allow_html=True,
-            )
-            st.caption("@" + SS.username + " - Manage your account")
-
-            # Privacy Checkup banner
-            st.markdown(
-                """
-                <div class='privacy-card'>
-                    <div style='font-size:28px;'>🛡️</div>
-                    <div>
-                        <b>Privacy Checkup</b>
-                        <p>Review who can see your posts
-                        and manage your privacy settings.</p>
-                    </div>
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
-            if st.button(
-                "🛡️ Get Started",
-                key="privacy_start",
-                use_container_width=True,
-            ):
-                SS.settings_page = "privacy"
-                SS.privacy_step = 0
-                safe_rerun()
-
-            # ----- ACCOUNT -----
-            st.markdown(
-                "<p class='sec-label'>ACCOUNT</p>",
-                unsafe_allow_html=True,
-            )
-            if st.button(
-                "📋 Personal and Account Information   ›",
-                key="m_personal",
-                use_container_width=True,
-            ):
-                SS.settings_page = "personal"
-                safe_rerun()
-
-            if st.button(
-                "🔐 Password and Security   ›",
-                key="m_password",
-                use_container_width=True,
-            ):
-                SS.settings_page = "password"
-                safe_rerun()
-
-            if st.button(
-                "💰 Payments and Wallet   ›",
-                key="m_payments",
-                use_container_width=True,
-            ):
-                SS.settings_page = "payments"
-                safe_rerun()
-
-            # ----- PREFERENCES -----
-            st.markdown(
-                "<p class='sec-label'>PREFERENCES</p>",
-                unsafe_allow_html=True,
-            )
-            if st.button(
-                "📰 News Feed   ›",
-                key="m_feed",
-                use_container_width=True,
-            ):
-                SS.settings_page = "feed"
-                safe_rerun()
-
-            if st.button(
-                "🔔 Notifications   ›",
-                key="m_notif",
-                use_container_width=True,
-            ):
-                SS.settings_page = "notifications"
-                safe_rerun()
-
-            if st.button(
-                "🌐 Language and Region   ›",
-                key="m_lang",
-                use_container_width=True,
-            ):
-                SS.settings_page = "language"
-                safe_rerun()
-
-            # ----- PRIVACY -----
-            st.markdown(
-                "<p class='sec-label'>PRIVACY</p>",
-                unsafe_allow_html=True,
-            )
-            if st.button(
-                "🚫 Blocked Members   ›",
-                key="m_blocked",
-                use_container_width=True,
-            ):
-                SS.settings_page = "blocked"
-                safe_rerun()
-
-            if st.button(
-                "⚠️ Your Reports   ›",
-                key="m_reports",
-                use_container_width=True,
-            ):
-                SS.settings_page = "reports"
-                safe_rerun()
-
-            # ----- SUPPORT -----
-            st.markdown(
-                "<p class='sec-label'>SUPPORT</p>",
-                unsafe_allow_html=True,
-            )
-            if st.button(
-                "❓ Help Center   ›",
-                key="m_help",
-                use_container_width=True,
-            ):
-                SS.settings_page = "help"
-                safe_rerun()
-
-            if st.button(
-                "ℹ️ About   ›",
-                key="m_about",
-                use_container_width=True,
-            ):
-                SS.settings_page = "about"
-                safe_rerun()
-
-            # ----- LOGOUT -----
-            st.markdown(
-                "<div style='height:12px;'></div>",
-                unsafe_allow_html=True,
-            )
-            if st.button(
-                "🚪 Logout",
-                key="m_logout",
-                use_container_width=True,
-            ):
-                SS.logged_in = False
-                SS.page = "auth"
-                SS.current_tab = "Home"
-                safe_rerun()
-
-        # ---------- SUB-PAGE: PERSONAL INFO ----------
-        elif SS.settings_page == "personal":
-
-            settings_back("bk_personal")
-            st.markdown(
-                '<div class="panel-header">📋 Personal and Account Information</div>',
-                unsafe_allow_html=True,
-            )
-
-            st.markdown(
-                "<p class='set-label'>Account Details</p>",
-                unsafe_allow_html=True,
-            )
-
-            st.text_input(
-                "Username",
-                value=SS.username,
-                disabled=True,
-                key="pi_user",
-            )
-            st.text_input(
-                "Email",
-                value=SS.email if SS.email else "user@hmfbook.com",
-                key="pi_email",
-            )
-            dn = st.text_input(
-                "Display Name",
-                value=SS.display_name,
-                key="st_dn",
-            )
-            bio = st.text_input("Bio", value=SS.bio, key="st_bio")
-
-            if st.button(
-                "💾 Save Changes",
-                key="st_save",
-                use_container_width=True,
-            ):
-                SS.display_name = dn
-                SS.bio = bio
-                st.success("Profile saved successfully!")
-
-            st.markdown("---")
-            st.markdown(
-                "<p class='set-label'>⚠️ Danger Zone</p>",
-                unsafe_allow_html=True,
-            )
-
-            del_chk = st.checkbox(
-                "I want to delete my account",
-                key="del_chk",
-            )
-
-            if del_chk:
-                if st.button(
-                    "🗑️ Delete My Account Permanently",
-                    key="del_btn",
-                    use_container_width=True,
-                ):
-                    SS.logged_in = False
-                    SS.page = "splash"
-                    SS.username = ""
-                    safe_rerun()
-
-        # ---------- SUB-PAGE: PASSWORD & SECURITY ----------
-        elif SS.settings_page == "password":
-
-            settings_back("bk_password")
-            st.markdown(
-                '<div class="panel-header">🔐 Password and Security</div>',
-                unsafe_allow_html=True,
-            )
-
-            st.markdown(
-                "<p class='set-label'>Change Password</p>",
-                unsafe_allow_html=True,
-            )
-            cur_pw = st.text_input(
-                "Current Password",
-                type="password",
-                key="cur_pw",
-            )
-            new_pw = st.text_input(
-                "New Password",
-                type="password",
-                key="new_pw",
-            )
-            conf_pw = st.text_input(
-                "Confirm New Password",
-                type="password",
-                key="conf_pw",
-            )
-
-            if st.button(
-                "🔐 Update Password",
-                key="pw_btn",
-                use_container_width=True,
-            ):
-                if cur_pw and new_pw:
-                    if new_pw == conf_pw:
-                        st.success("Password updated successfully!")
-                    else:
-                        st.warning("New passwords do not match!")
-                else:
-                    st.warning("Please fill in the password fields!")
-
-            st.markdown(
-                "<p class='set-label'>Security Settings</p>",
-                unsafe_allow_html=True,
-            )
-            SS.two_factor = st.checkbox(
-                "🔑 Two-Factor Authentication (2FA)",
-                value=SS.two_factor,
-                key="tf_chk",
-            )
-            SS.login_alerts = st.checkbox(
-                "📩 Login Alerts - notify me on new logins",
-                value=SS.login_alerts,
-                key="la_chk",
-            )
-
-            st.markdown(
-                "<p class='set-label'>Where You're Logged In</p>",
-                unsafe_allow_html=True,
-            )
-            st.markdown(
-                """
-                <div class="session-row">💻 <div>
-                <b>Windows PC</b> - Chrome<br>
-                <span style="color:#00B074;">Active now</span></div></div>
-                """,
-                unsafe_allow_html=True,
-            )
-            st.markdown(
-                """
-                <div class="session-row">📱 <div>
-                <b>Samsung Galaxy</b> - HMF app<br>
-                <span style="color:#9ca3af;">2 hours ago</span></div></div>
-                """,
-                unsafe_allow_html=True,
-            )
-            if st.button(
-                "🚪 Log Out of All Sessions",
-                key="logout_all",
-                use_container_width=True,
-            ):
-                st.success("You have been logged out of other sessions!")
-
-        # ---------- SUB-PAGE: PAYMENTS & WALLET ----------
-        elif SS.settings_page == "payments":
-
-            settings_back("bk_payments")
-            st.markdown(
-                '<div class="panel-header">💰 Payments and Wallet</div>',
-                unsafe_allow_html=True,
-            )
-
-            bal = "💰 Current Balance: **" + str(SS.coins) + " Coins**"
-            st.success(bal)
-
-            if st.button(
-                "💳 Request Payout",
-                key="pay_wd",
-                use_container_width=True,
-            ):
-                do_withdrawal()
-                safe_rerun()
-
-            if SS.withdraw_msg:
-                st.info(SS.withdraw_msg)
-                SS.withdraw_msg = ""
-
-            st.markdown(
-                "<p class='set-label'>📜 Transaction History</p>",
-                unsafe_allow_html=True,
-            )
-            if SS.tx_history:
-                for i, t in enumerate(SS.tx_history):
-                    h1, h2, h3 = st.columns([0.5, 0.3, 0.2])
-                    h1.markdown("<b>" + t["type"] + "</b>",
-                                unsafe_allow_html=True)
-                    h2.markdown(t["amount"])
-                    h3.caption(t["time"])
-            else:
-                st.caption(
-                    "No transactions yet. "
-                    "Play games and withdraw to see history here."
-                )
-
-            st.markdown(
-                "<p class='set-label'>➕ Add Coins</p>",
-                unsafe_allow_html=True,
-            )
-            st.caption(
-                "Coin purchases coming soon. "
-                "Earn coins by playing games and winning matches!"
-            )
-
-        # ---------- SUB-PAGE: NEWS FEED ----------
-        elif SS.settings_page == "feed":
-
-            settings_back("bk_feed")
-            st.markdown(
-                '<div class="panel-header">📰 News Feed Preferences</div>',
-                unsafe_allow_html=True,
-            )
-
-            st.markdown(
-                "<p class='set-label'>Feed Order</p>",
-                unsafe_allow_html=True,
-            )
-            SS.feed_sort = st.radio(
-                "Sort your feed by:",
-                ["Most Recent", "Top Posts"],
-                index=0 if SS.feed_sort == "Most Recent" else 1,
-                key="feed_sort_radio",
-            )
-
-            st.markdown(
-                "<p class='set-label'>Feed Content</p>",
-                unsafe_allow_html=True,
-            )
-            SS.show_stories = st.checkbox(
-                "📱 Show Stories row",
-                value=SS.show_stories,
-                key="stories_chk",
-            )
-
-            info = (
-                "🚫 Posts from " + str(len(SS.blocked)) +
-                " blocked member(s) are hidden from your feed."
-            )
-            st.caption(info)
-            st.caption("Changes are saved automatically.")
-
-        # ---------- SUB-PAGE: NOTIFICATIONS ----------
-        elif SS.settings_page == "notifications":
-
-            settings_back("bk_notif")
-            st.markdown(
-                '<div class="panel-header">🔔 Notifications</div>',
-                unsafe_allow_html=True,
-            )
-
-            SS.notif["likes"] = st.checkbox(
-                "❤️ Likes",
-                value=SS.notif["likes"],
-                key="ntf_l",
-            )
-            SS.notif["comments"] = st.checkbox(
-                "💬 Comments",
-                value=SS.notif["comments"],
-                key="ntf_c",
-            )
-            SS.notif["follows"] = st.checkbox(
-                "👥 New Followers",
-                value=SS.notif["follows"],
-                key="ntf_f",
-            )
-            SS.notif["messages"] = st.checkbox(
-                "✉️ Messages",
-                value=SS.notif["messages"],
-                key="ntf_m",
-            )
-
-            if st.button(
-                "🔔 Test Notification",
-                key="ntf_test",
-                use_container_width=True,
-            ):
-                on = []
-                for k, v in SS.notif.items():
-                    if v:
-                        on.append(k)
-                if on:
-                    joined = ", ".join(on)
-                    st.info(
-                        "🔔 Demo: '@hoor_jannat liked your post!' "
-                        "(On: " + joined + ")"
-                    )
-                else:
-                    st.warning("All notifications are off!")
-
-        # ---------- SUB-PAGE: LANGUAGE & REGION ----------
-        elif SS.settings_page == "language":
-
-            settings_back("bk_lang")
-            st.markdown(
-                '<div class="panel-header">🌐 Language and Region</div>',
-                unsafe_allow_html=True,
-            )
-
-            lang = st.radio(
-                "App Language:",
-                ["English", "Urdu"],
-                index=0 if SS.language == "English" else 1,
-                key="lang_radio",
-            )
-            SS.language = lang
-
-            regions = [
-                "Worldwide",
-                "Pakistan",
-                "United Arab Emirates",
-                "United Kingdom",
-                "United States",
-                "Saudi Arabia",
-            ]
-            if SS.region in regions:
-                r_index = regions.index(SS.region)
-            else:
-                r_index = 0
-            SS.region = st.selectbox(
-                "Region:",
-                regions,
-                index=r_index,
-                key="region_sel",
-            )
-            st.caption("Language and region are saved automatically.")
-
-        # ---------- SUB-PAGE: PRIVACY CHECKUP ----------
-        elif SS.settings_page == "privacy":
-
-            settings_back("bk_privacy")
-            st.markdown(
-                '<div class="panel-header">🛡️ Privacy Checkup</div>',
-                unsafe_allow_html=True,
-            )
-
-            prog = min(SS.privacy_step / 4, 1.0)
-            st.progress(prog)
-
-            if SS.privacy_step == 0:
-                st.markdown(
-                    "Take a minute to review your key privacy settings "
-                    "and make sure you share only what you want."
-                )
-                st.info("🔒 Your data is private by default.")
-                if st.button(
-                    "🚀 Get Started",
-                    key="pc_start",
-                    use_container_width=True,
-                ):
-                    SS.privacy_step = 1
-                    safe_rerun()
-
-            elif SS.privacy_step == 1:
-                st.markdown(
-                    "<p class='set-label'>Step 1 of 3 - Who can see your posts?</p>",
-                    unsafe_allow_html=True,
-                )
-                options = ["Public", "Friends", "Only Me"]
-                SS.post_visibility = st.radio(
-                    "Post visibility:",
-                    options,
-                    index=options.index(SS.post_visibility),
-                    key="vis_radio",
-                )
-                if st.button(
-                    "Next →",
-                    key="pc_next1",
-                    use_container_width=True,
-                ):
-                    SS.privacy_step = 2
-                    safe_rerun()
-
-            elif SS.privacy_step == 2:
-                st.markdown(
-                    "<p class='set-label'>Step 2 of 3 - Review blocked members</p>",
-                    unsafe_allow_html=True,
-                )
-                if SS.blocked:
-                    for u in SS.blocked:
-                        st.markdown("🚫 **@" + u + "**")
-                else:
-                    st.caption("No one is blocked. Great job!")
-                if st.button(
-                    "Next →",
-                    key="pc_next2",
-                    use_container_width=True,
-                ):
-                    SS.privacy_step = 3
-                    safe_rerun()
-
-            elif SS.privacy_step == 3:
-                st.markdown(
-                    "<p class='set-label'>Step 3 of 3 - How people can find you</p>",
-                    unsafe_allow_html=True,
-                )
-                SS.searchable = st.checkbox(
-                    "Allow people to search for your profile",
-                    value=SS.searchable,
-                    key="search_chk",
-                )
-                SS.activity_status = st.checkbox(
-                    "Show your online status",
-                    value=SS.activity_status,
-                    key="act_chk2",
-                )
-                if st.button(
-                    "Finish Checkup ✓",
-                    key="pc_finish",
-                    use_container_width=True,
-                ):
-                    SS.privacy_step = 4
-                    safe_rerun()
-
-            else:
-                st.success("🎉 Privacy Checkup complete!")
-                srch = "Yes" if SS.searchable else "No"
-                act = "Visible" if SS.activity_status else "Hidden"
-                st.markdown(
-                    "✅ Post visibility: **" + SS.post_visibility + "**\n\n"
-                    "✅ Blocked members: **" + str(len(SS.blocked)) + "**\n\n"
-                    "✅ Searchable: **" + srch + "**\n\n"
-                    "✅ Activity status: **" + act + "**"
-                )
-                if st.button(
-                    "Done",
-                    key="pc_done",
-                    use_container_width=True,
-                ):
-                    SS.settings_page = "menu"
-                    SS.privacy_step = 0
-                    safe_rerun()
-
-        # ---------- SUB-PAGE: BLOCKED MEMBERS ----------
-        elif SS.settings_page == "blocked":
-
-            settings_back("bk_blocked")
-            st.markdown(
-                '<div class="panel-header">🚫 Blocked Members</div>',
-                unsafe_allow_html=True,
-            )
-
-            if SS.block_msg:
-                st.success(SS.block_msg)
-                SS.block_msg = ""
-
-            st.markdown(
-                "<p class='set-label'>Member IDs (copy the exact ID):</p>",
-                unsafe_allow_html=True,
-            )
-            chips = ""
-            for m in KNOWN_MEMBERS:
-                chips += "<span class='member-chip'>👤 @" + m + "</span>"
-            st.markdown(chips, unsafe_allow_html=True)
-
-            st.markdown(
-                "<p class='set-label'>Enter username/ID to block:</p>",
-                unsafe_allow_html=True,
-            )
-            block_input = st.text_input(
-                "Username / ID",
-                key="block_input",
-                placeholder="e.g. farrukh_m",
-            )
-
-            if st.button(
-                "🚫 Block This Member",
-                key="block_btn",
-                use_container_width=True,
-            ):
-                u = block_input.strip().lower()
-                if not u:
-                    st.warning("Please enter an ID first!")
-                elif u == SS.username.lower():
-                    st.warning("You cannot block your own ID!")
-                elif u in SS.blocked:
-                    st.warning("This member is already blocked!")
-                else:
-                    SS.blocked.append(u)
-                    SS.block_msg = (
-                        "✅ @" + u + " has been blocked - "
-                        "their posts and comments will no longer appear."
-                    )
-                    safe_rerun()
-
-            st.markdown(
-                "<p class='set-label'>🚫 Blocked List:</p>",
-                unsafe_allow_html=True,
-            )
-            if SS.blocked:
-                for i, u in enumerate(SS.blocked):
-                    bc1, bc2 = st.columns([0.65, 0.35])
-                    bc1.markdown("**🚫 @" + u + "**")
-                    if bc2.button(
-                        "✅ Unblock",
-                        key="ub_" + str(i),
-                        use_container_width=True,
-                    ):
-                        SS.blocked.remove(u)
-                        SS.block_msg = (
-                            "@" + u + " has been unblocked - "
-                            "their posts will reappear in your feed."
-                        )
-                        safe_rerun()
-            else:
-                st.caption(
-                    "No members are blocked yet. "
-                    "You can also block directly from the feed."
-                )
-
-        # ---------- SUB-PAGE: REPORTS ----------
-        elif SS.settings_page == "reports":
-
-            settings_back("bk_reports")
-            st.markdown(
-                '<div class="panel-header">⚠️ Report a Member</div>',
-                unsafe_allow_html=True,
-            )
-
-            if SS.report_msg:
-                st.success(SS.report_msg)
-                SS.report_msg = ""
-
-            rep_id = st.text_input(
-                "Member ID to report",
-                key="rep_id",
-                placeholder="e.g. bilal_plays",
-            )
-            reasons = [
-                "Harassment / Bullying",
-                "Abusive Language",
-                "Spam or Fake Posts",
-                "Fake Account",
-                "Scam / Fraud",
-                "Other",
-            ]
-            reason = st.selectbox("Reason", reasons, key="rep_reason")
-            rep_detail = st.text_area(
-                "Details (optional)",
-                key="rep_detail",
-                height=80,
-            )
-
-            if st.button(
-                "🚩 Submit Report",
-                key="rep_btn",
-                use_container_width=True,
-            ):
-                r = rep_id.strip().lower()
-                if r:
-                    report = {
-                        "user": r,
-                        "reason": reason,
-                        "detail": rep_detail,
-                    }
-                    SS.reports.append(report)
-                    SS.report_msg = (
-                        "✅ Report against @" + r + " submitted - "
-                        "our team will review it within 24 hours."
-                    )
-                    safe_rerun()
-                else:
-                    st.warning("Please enter a member ID!")
-
-            if SS.reports:
-                st.markdown(
-                    "<p class='set-label'>📋 Your Reports:</p>",
-                    unsafe_allow_html=True,
-                )
-                for i, r in enumerate(SS.reports):
-                    line = (
-                        "<p style='font-size:12px; color:#6b7280;'>"
-                        + str(i + 1) + ". 🚩 <b>@" + r["user"] +
-                        "</b> - " + r["reason"] + "</p>"
-                    )
-                    st.markdown(line, unsafe_allow_html=True)
-
-        # ---------- SUB-PAGE: HELP CENTER ----------
-        elif SS.settings_page == "help":
-
-            settings_back("bk_help")
-            st.markdown(
-                '<div class="panel-header">❓ Help Center</div>',
-                unsafe_allow_html=True,
-            )
-
-            st.markdown("**❓ Frequently Asked Questions:**")
-            st.markdown(
-                "• **How do I earn coins?** - Play games, daily login, and win matches\n"
-                "• **How do withdrawals work?** - Request from Payments with 100+ coins\n"
-                "• **Someone is bothering me?** - Privacy → Blocked Members\n"
-                "• **How do I report someone?** - Privacy → Your Reports"
-            )
-
-            bug = st.text_area(
-                "🐞 Describe the bug or issue:",
-                key="bug_txt",
-                height=80,
-            )
-
-            if st.button(
-                "✉️ Send to Support",
-                key="sup_btn",
-                use_container_width=True,
-            ):
-                if bug.strip():
-                    SS.help_msg = (
-                        "✅ Your message has been sent to our support team - "
-                        "you will receive a reply within 24-48 hours."
-                    )
-                else:
-                    SS.help_msg = "⚠️ Please describe your issue first."
-                safe_rerun()
-
-            if SS.help_msg:
-                st.info(SS.help_msg)
-                SS.help_msg = ""
-
-        # ---------- SUB-PAGE: ABOUT ----------
-        elif SS.settings_page == "about":
-
-            settings_back("bk_about")
-            st.markdown(
-                '<div class="panel-header">ℹ️ About</div>',
-                unsafe_allow_html=True,
-            )
-            st.markdown(
-                "**HMF book** v1.3.0 🟢\n\n"
-                "Social feed • Games • Coins • Live streaming (coming soon)\n\n"
-                "© 2025 HMF - All rights reserved."
-            )
-
-    # ---------- BOTTOM NAVIGATION ----------
-    hr_html = (
-        "<hr style='border:none; border-top:1px solid #e5e7eb; "
-        "margin:25px 0 10px;'>"
-    )
-    st.markdown(hr_html, unsafe_allow_html=True)
-
-    n1, n2, n3, n4 = st.columns(4)
-
-    if n1.button("🏠 Home", use_container_width=True):
-        SS.current_tab = "Home"
-        safe_rerun()
-
-    if n2.button("🎮 Ludo", use_container_width=True):
-        SS.current_tab = "Ludo"
-        safe_rerun()
-
-    if n3.button("👤 Profile", use_container_width=True):
-        SS.current_tab = "Profile"
-        safe_rerun()
-
-    if n4.button("⚙️ Settings", use_container_width=True):
-        SS.current_tab = "Settings"
-        SS.settings_page = "menu"
-        safe_rerun()
-
-
-# ---------- SAFETY ----------
-else:
-    SS.page = "splash"
-    safe_rerun()
+/* ================= STORIES ================= */
+function renderStories(){
+  document.getElementById('storiesBar').innerHTML = stories.map((s,i)=>`
+    <div class="story ${s.seen?'seen':''}" onclick="openStory(${i})">
+      <div class="ring"><div class="inner">${s.emoji}</div></div>
+      <span>${s.name}</span>
+    </div>`).join('');
+}
+function openStory(i){
+  const s = stories[i];
+  if(s.mine && !s.img){ document.getElementById('snapFile').click(); return; }
+  svIndex = i;
+  document.getElementById('storyViewer').classList.add('open');
+  document.getElementById('svAvatar').textContent = s.emoji;
+  document.getElementById('svName').textContent = s.name;
+  const c = document.getElementById('svContent');
+  c.style.background = s.bg || '#000';
+  c.innerHTML = (s.img ? `<img src="${s.img}">` : `<div class="big">${s.emoji}</div><p style="font-size:20px;margin-top:10px">${s.text||''}</p>`)
+    + `<div class="nav-l" onclick="prevStory()"></div><div class="nav-r" onclick="nextStory()"></div>`;
+  const bar = document.getElementById('storyBar');
+  bar.classList.remove('go'); void bar.offsetWidth; bar.classList.add('go');
+  clearTimeout(svTimer);
+  svTimer = setTimeout(nextStory, 5000);
+  s.seen = true; renderStories();
+}
+function nextStory(){ svIndex < stories.length-1 ? openStory(svIndex+1) : closeStory(); }
+function prevStory(){ if(svIndex>0) openStory(svIndex-1); }
+function closeStory(){ clearTimeout(svTimer); document.getElementById('storyViewer').classList.remove('open'); }
+function addMySnap(input){
+  if(!input.files[0]) return;
+  const s = stories.find(x=>x.mine);
+  s.img = URL.createObjectURL(input.files[0]);
+  s.emoji = '🙂'; s.bg = '#000'; s.seen = false;
+  input.value = '';
+  renderStories();
+  openStory(stories.indexOf(s));
+}
+
+/* ================= FEED ================= */
+function renderFeed(){
+  document.getElementById('feed').innerHTML = feedPosts.map(p=>`
+    <div class="post">
+      <div class="post-head">
+        <div class="avatar">${p.avatar}</div>
+        <div><b>${p.user}</b><small>${p.time} pehle</small></div>
+      </div>
+      <video src="${p.video}" controls muted loop playsinline preload="metadata"></video>
+      <div class="post-actions">
+        <button onclick="this.textContent=this.textContent==='❤️'?'🤍':'❤️'">❤️</button>
+        <button onclick="showScreen('chat')">💬</button>
+        <button onclick="shareReel()">↗️</button>
+      </div>
+      <div class="post-caption"><b>${p.user}</b> ${p.caption}</div>
+    </div>`).join('');
+}
+
+/* ================= REELS ================= */
+function renderReels(){
+  document.getElementById('reelsWrap').innerHTML = reels.map((r,i)=>{
+    const media = r.type==='yt'
+      ? `<iframe src="https://www.youtube.com/embed/${r.id}?enablejsapi=1&playsinline=1&mute=1&rel=0" allow="autoplay; encrypted-media; picture-in-picture" loading="lazy"></iframe>`
+      : `<video src="${r.src}" loop muted playsinline></video>`;
+    const badge = r.type==='yt' ? `<span class="yt-badge">▶ YouTube</span><br>` : '';
+    return `<div class="reel">
+      ${media}
+      <div class="tap" onclick="tapReel(this,${i})"></div>
+      <div class="reel-overlay">${badge}<b>@${esc(r.user)}</b><p>${esc(r.caption)}</p></div>
+      <div class="reel-side">
+        <div><button onclick="likeReel(this,${i})">❤️</button><small>${r.likes}</small></div>
+        <div><button onclick="showScreen('chat')">💬</button><small>Comments</small></div>
+        <div><button onclick="shareReel()">↗️</button><small>Share</small></div>
+        <div><button onclick="toggleMute(this,${i})">🔇</button><small>Sound</small></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+function ytCommand(iframe, func){
+  try{ iframe.contentWindow.postMessage(JSON.stringify({event:'command', func, args:[]}), '*'); }catch(e){}
+}
+function tapReel(btn, i){
+  const reelEl = btn.closest('.reel');
+  if(reels[i].type==='video'){
+    const v = reelEl.querySelector('video');
+    v.paused ? v.play() : v.pause();
+  } else {
+    const f = reelEl.querySelector('iframe');
+    reelEl.dataset.paused = reelEl.dataset.paused==='1' ? '0' : '1';
+    ytCommand(f, reelEl.dataset.paused==='1' ? 'pauseVideo' : 'playVideo');
+  }
+}
+function toggleMute(btn, i){
+  const reelEl = btn.closest('.reel');
+  if(reels[i].type==='video'){
+    const v = reelEl.querySelector('video');
+    v.muted = !v.muted;
+    btn.textContent = v.muted ? '🔇' : '🔊';
+  } else {
+    const f = reelEl.querySelector('iframe');
+    const muteKaro = btn.textContent === '🔊';
+    ytCommand(f, muteKaro ? 'mute' : 'unMute');
+    btn.textContent = muteKaro ? '🔇' : '🔊';
+  }
+}
+function likeReel(btn, i){
+  btn.textContent = btn.textContent==='❤️' ? '🤍' : '❤️';
+}
+function observeReels(){
+  if(reelObserver) reelObserver.disconnect();
+  reelObserver = new IntersectionObserver(entries=>{
+    entries.forEach(e=>{
+      const vid = e.target.querySelector('video');
+      const yt  = e.target.querySelector('iframe');
+      if(e.intersectionRatio > 0.6){
+        if(vid) vid.play().catch(()=>{});
+        if(yt)  ytCommand(yt,'playVideo');   // YouTube video khud chal jaye gi
+      } else {
+        if(vid) vid.pause();
+        if(yt)  ytCommand(yt,'pauseVideo');
+      }
+    });
+  }, {threshold:[0, 0.6, 1]});
+  document.querySelectorAll('.reel').forEach(r=>reelObserver.observe(r));
+}
+function pauseAllReels(){
+  document.querySelectorAll('#reelsWrap video').forEach(v=>v.pause());
+  document.querySelectorAll('#reelsWrap iframe').forEach(f=>ytCommand(f,'pauseVideo'));
+}
+function shareReel(){
+  const data = {title:'SnapReel', text:'Yeh video dekhein!', url: location.href};
+  if(navigator.share) navigator.share(data).catch(()=>{});
+  else { if(navigator.clipboard) navigator.clipboard.writeText(location.href); alert('Link copy ho gaya! 🔗'); }
+}
+
+/* ================= CHAT ================= */
+function renderChats(){
+  document.getElementById('chatList').style.display = 'block';
+  document.getElementById('chatMsgs').style.display = 'none';
+  document.getElementById('chatInputBar').style.display = 'none';
+  document.getElementById('chatHead').innerHTML = '<span class="back" onclick="closeScreen(\'chat\')">←</span> Messages';
+  document.getElementById('chatList').innerHTML = chats.map(c=>`
+    <div class="chat-item" onclick="openChat(${c.id})">
+      <div class="avatar">${c.avatar}</div>
+      <div class="info"><b>${c.name}</b><small>${esc(c.msgs[c.msgs.length-1].t)}</small></div>
+    </div>`).join('');
+}
+function openChat(id){
+  activeChat = chats.find(c=>c.id===id);
+  document.getElementById('chatHead').innerHTML =
+    `<span class="back" onclick="renderChats()">←</span> <span style="font-size:20px">${activeChat.avatar}</span> ${activeChat.name}`;
+  document.getElementById('chatList').style.display = 'none';
+  document.getElementById('chatMsgs').style.display = 'flex';
+  document.getElementById('chatInputBar').style.display = 'flex';
+  renderMsgs();
+}
+function renderMsgs(){
+  const box = document.getElementById('chatMsgs');
+  box.innerHTML = activeChat.msgs.map(m=>`<div class="msg ${m.me?'me':'them'}">${esc(m.t)}</div>`).join('');
+  box.scrollTop = box.scrollHeight;
+}
+function sendMsg(){
+  const inp = document.getElementById('msgInput');
+  const t = inp.value.trim();
+  if(!t || !activeChat) return;
+  activeChat.msgs.push({me:true, t});
+  inp.value = '';
+  renderMsgs();
+  setTimeout(()=>{ // automatic reply
+    if(!activeChat) return;
+    activeChat.msgs.push({me:false, t: autoReplies[Math.floor(Math.random()*autoReplies.length)]});
+    renderMsgs();
+  }, 1200);
+}
+
+/* ================= PROFILE ================= */
+function renderProfile(){
+  document.getElementById('statPosts').textContent = myVideos.length;
+  const grid = document.getElementById('videoGrid');
+  grid.innerHTML = myVideos.length
+    ? myVideos.map(v=>`<div class="tile" onclick="const v=this.querySelector('video'); v.paused?v.play():v.pause()"><video src="${v.src}" loop muted playsinline></video></div>`).join('')
+    : `<div class="tile empty" onclick="openUpload()">➕</div><div class="tile empty">🎬</div><div class="tile empty">📹</div>`;
+}
+
+/* ================= UPLOAD ================= */
+function openUpload(){ document.getElementById('uploadModal').classList.add('open'); }
+function closeUpload(){
+  document.getElementById('uploadModal').classList.remove('open');
+  document.getElementById('preview').style.display = 'none';
+  document.getElementById('videoCaption').value = '';
+  document.getElementById('videoFile').value = '';
+  pendingVideo = null;
+}
+function previewVideo(input){
+  if(input.files[0]){
+    pendingVideo = URL.createObjectURL(input.files[0]);
+    const p = document.getElementById('preview');
+    p.src = pendingVideo;
+    p.style.display = 'block';
+    p.play();
+  }
+}
+function publish(where){
+  if(!pendingVideo){ alert('Pehle video choose karein! 📁'); return; }
+  const cap = document.getElementById('videoCaption').value.trim() || 'Meri video 🎬';
+  if(where==='reel'){
+    reels.unshift({type:'video', src:pendingVideo, user:'Aap', caption:cap, likes:'0'});
+    renderReels();
+    closeUpload();
+    showScreen('reels');
+  } else {
+    myVideos.unshift({src:pendingVideo, caption:cap});
+    renderProfile();
+    closeUpload();
+    showScreen('profile');
+  }
+}
+
+/* ================= START ================= */
+renderStories();
+renderFeed();
+renderReels();
+renderProfile();
+</script>
+</body>
+</html>
