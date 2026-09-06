@@ -536,6 +536,35 @@ elif SS.page == "app" and SS.logged_in:
     """
     st.markdown(topbar, unsafe_allow_html=True)
 
+    # ---------- QUICK ICON ROW (Settings + Heart + Mail) ----------
+    q1, q2, q3, q4, q5 = st.columns([0.6, 0.6, 0.6, 0.6, 1.6])
+
+    if q1.button("⚙️", key="top_set", use_container_width=True,
+                 help="Settings kholein"):
+        SS.current_tab = "Settings"
+        safe_rerun()
+
+    if q2.button("🔔", key="top_bell", use_container_width=True,
+                 help="Notifications"):
+        st.toast("🔔 3 new notifications hain!")
+
+    if q3.button("✉️", key="top_mail", use_container_width=True,
+                 help="Messages"):
+        st.toast("✉️ 2 new messages hain!")
+
+    if q4.button("🌙", key="top_dark", use_container_width=True,
+                 help="Dark Mode on/off"):
+        SS.dark_mode = not SS.dark_mode
+        safe_rerun()
+
+    if SS.current_tab == "Settings":
+        q5.markdown(
+            "<b style='color:#00B074;'>⚙️ Settings khuli hain</b>",
+            unsafe_allow_html=True,
+        )
+
+    st.markdown("<div style='height:6px;'></div>", unsafe_allow_html=True)
+
     # ================= TAB: HOME =================
     if SS.current_tab == "Home":
 
@@ -543,7 +572,9 @@ elif SS.page == "app" and SS.logged_in:
         <div class="stories-container">
             <div class="story-card">
                 <div class="story-ring" style="background:#6b7280;">
-                    <div class="story-img" style="background-color:#056839;color:#fff;">+</div>
+                    <div class="story-img"
+                         style="background-color:#056839;color:#fff;">+
+                    </div>
                 </div>
                 <div class="story-name">Your Story</div>
             </div>
@@ -823,7 +854,7 @@ elif SS.page == "app" and SS.logged_in:
             SS.report_msg = ""
 
         # ---------- ACCOUNT ----------
-        with st.expander("👤 Account"):
+        with st.expander("👤 Account", expanded=True):
 
             dn = st.text_input(
                 "Display Name",
@@ -864,7 +895,7 @@ elif SS.page == "app" and SS.logged_in:
                     safe_rerun()
 
         # ---------- PRIVACY & SECURITY ----------
-        with st.expander("🔒 Privacy & Security"):
+        with st.expander("🔒 Privacy & Security", expanded=True):
 
             SS.private_account = st.checkbox(
                 "🔒 Private Account - sirf followers posts dekh sakte hain",
@@ -907,7 +938,7 @@ elif SS.page == "app" and SS.logged_in:
                     st.warning("Dono fields bharin!")
 
         # ---------- NOTIFICATIONS ----------
-        with st.expander("🔔 Notifications"):
+        with st.expander("🔔 Notifications", expanded=True):
 
             SS.notif["likes"] = st.checkbox(
                 "❤️ Likes",
@@ -949,7 +980,10 @@ elif SS.page == "app" and SS.logged_in:
                     st.warning("Sab notifications off hain!")
 
         # ---------- BLOCKED MEMBERS ----------
-        with st.expander("🚫 Blocked Members - Tang karne walon ko block karein"):
+        with st.expander(
+            "🚫 Blocked Members - Tang karne walon ko block karein",
+            expanded=True,
+        ):
 
             st.markdown(
                 "<p class='set-label'>Members ki IDs (check kar ke exact ID likhein):</p>",
@@ -1021,7 +1055,10 @@ elif SS.page == "app" and SS.logged_in:
                 )
 
         # ---------- REPORT MEMBER ----------
-        with st.expander("⚠️ Report a Member - Complaint karein"):
+        with st.expander(
+            "⚠️ Report a Member - Complaint karein",
+            expanded=True,
+        ):
 
             rep_id = st.text_input(
                 "Jis member ki shikayat hai uski ID",
@@ -1080,7 +1117,7 @@ elif SS.page == "app" and SS.logged_in:
                     st.markdown(line, unsafe_allow_html=True)
 
         # ---------- APPEARANCE ----------
-        with st.expander("🌙 Appearance"):
+        with st.expander("🌙 Appearance", expanded=True):
 
             new_dark = st.checkbox(
                 "🌙 Dark Mode on karein",
@@ -1097,7 +1134,7 @@ elif SS.page == "app" and SS.logged_in:
             )
 
         # ---------- LANGUAGE ----------
-        with st.expander("🌐 Language"):
+        with st.expander("🌐 Language", expanded=True):
 
             lang = st.radio(
                 "Apni pasand ki zaban chunein:",
@@ -1112,10 +1149,12 @@ elif SS.page == "app" and SS.logged_in:
                 st.caption("English selected.")
             else:
                 SS.language = "Urdu"
-                st.caption("Urdu select ho gayi - translation agli module mein aayegi.")
+                st.caption(
+                    "Urdu select ho gayi - translation agli module mein aayegi."
+                )
 
         # ---------- HELP & SUPPORT ----------
-        with st.expander("❓ Help & Support"):
+        with st.expander("❓ Help & Support", expanded=True):
 
             st.markdown("**❓ Common Questions:**")
             st.markdown(
@@ -1150,10 +1189,10 @@ elif SS.page == "app" and SS.logged_in:
                 SS.help_msg = ""
 
         # ---------- ABOUT ----------
-        with st.expander("ℹ️ About"):
+        with st.expander("ℹ️ About", expanded=True):
 
             st.markdown(
-                "**HMF book** v1.0.0 🟢\n\n"
+                "**HMF book** v1.1.0 🟢\n\n"
                 "Social feed • Games • Coins • Live streaming (coming soon)\n\n"
                 "© 2025 HMF - All rights reserved."
             )
