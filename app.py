@@ -4,6 +4,31 @@ import random, time, copy
 
 st.set_page_config(page_title="SnapReel 👻", page_icon="👻", layout="centered")
 
+# ---------- GREEN THEME (purana look) ----------
+st.markdown("""<style>
+.stApp { background:#eef2f7; }
+.stButton > button, .stForm button, .stDownloadButton > button {
+    background-color:#00a67e !important;
+    color:#ffffff !important;
+    border:none !important;
+    border-radius:8px !important;
+    font-weight:500;
+}
+.stButton > button:hover, .stForm button:hover {
+    background-color:#008f6d !important; color:#fff !important;
+}
+.stTextInput input {
+    background:#e3e8f0 !important;
+    border:1px solid #d4dae3 !important;
+    border-radius:8px !important;
+}
+[data-baseweb="tab"] { background:#e3e8f0; border-radius:8px 8px 0 0; }
+[data-baseweb="tab"] p { color:#444; }
+[data-baseweb="tab"][aria-selected="true"] { background:#00a67e; }
+[data-baseweb="tab"][aria-selected="true"] p { color:#fff; }
+footer { visibility:hidden; }
+</style>""", unsafe_allow_html=True)
+
 # ---------- SAMPLE DATA ----------
 FEED_POSTS = [
     {"user": "Ali 🧑", "time": "2 ghante pehle",
@@ -33,7 +58,7 @@ AUTO_REPLIES = ["Haha 😂", "Sahi hai!", "Bilkul 👍", "Acha ji", "Wow 🤩", 
 
 # ---------- SESSION STATE ----------
 DEFAULTS = {
-    "logged_in": False, "username": "",
+    "logged_in": False, "username": "", "show_signup": False,
     "my_reels": [], "my_videos": [],
     "chats": {
         "Ali 🧑": [{"me": False, "t": "Kya haal hai?"}],
@@ -46,24 +71,43 @@ for k, v in DEFAULTS.items():
     if k not in st.session_state:
         st.session_state[k] = copy.deepcopy(v)
 
-# ---------- LOGIN PAGE ----------
+# ================= LOGIN PAGE (green wala) =================
 if not st.session_state.logged_in:
-    st.markdown("## 👻 SnapReel")
-    st.caption("Videos • Reels • Chat • Stories")
-    with st.form("login"):
-        u = st.text_input("Username")
-        p = st.text_input("Password", type="password")
-        ok = st.form_submit_button("Login", use_container_width=True, type="primary")
-    if ok:
-        if u.strip() and p.strip():
-            st.session_state.logged_in = True
-            st.session_state.username = u.strip()
-            st.rerun()
-        else:
-            st.error("Username aur password dono likhein!")
+    st.write("")
+    st.markdown("<h2 style='text-align:center'>👻 SnapReel</h2>", unsafe_allow_html=True)
 
-    st.divider()
-    st.caption("Ya continue karein:")
+    if not st.session_state.show_signup:
+        with st.form("login"):
+            u = st.text_input("Username")
+            p = st.text_input("Password", type="password")
+            ok = st.form_submit_button("Login", use_container_width=True)
+        if ok:
+            if u.strip() and p.strip():
+                st.session_state.logged_in = True
+                st.session_state.username = u.strip()
+                st.rerun()
+            else:
+                st.error("Username aur password dono likhein!")
+        if st.button("New here? Create an account"):
+            st.session_state.show_signup = True
+            st.rerun()
+    else:
+        with st.form("signup"):
+            u = st.text_input("Naya Username")
+            p = st.text_input("Password", type="password")
+            ok = st.form_submit_button("Create account", use_container_width=True)
+        if ok:
+            if u.strip() and p.strip():
+                st.session_state.logged_in = True
+                st.session_state.username = u.strip()
+                st.rerun()
+            else:
+                st.error("Dono fields bharein!")
+        if st.button("Pehle se account hai? Login karein"):
+            st.session_state.show_signup = False
+            st.rerun()
+
+    st.markdown("<p style='text-align:center;color:#888'>Or continue with</p>", unsafe_allow_html=True)
     c1, c2, c3 = st.columns(3)
     if c1.button("Google", use_container_width=True):
         st.session_state.logged_in = True; st.session_state.username = "Google User"; st.rerun()
@@ -85,7 +129,7 @@ with st.sidebar:
 tab_home, tab_reels, tab_up, tab_chat, tab_prof = st.tabs(
     ["🏠 Home", "🎬 Reels", "➕ Upload", "💬 Chat", "👤 Profile"])
 
-# ===== HOME (Stories + Feed) =====
+# ===== HOME =====
 with tab_home:
     st.subheader("👻 Stories")
     cols = st.columns(len(STORIES))
@@ -97,7 +141,7 @@ with tab_home:
         bg = s.get("bg", "#111")
         st.markdown(
             f"<div style='background:{bg};border-radius:16px;padding:70px 20px;"
-            f"text-align:center;font-size:26px;font-weight:bold'>{s['text']}</div>",
+            f"text-align:center;font-size:26px;font-weight:bold;color:#fff'>{s['text']}</div>",
             unsafe_allow_html=True)
         if st.button("✕ Story band karein"):
             st.session_state.show_story = None
@@ -118,7 +162,7 @@ with tab_home:
                 st.rerun()
             cB.write(f"**{p['user']}** {p['caption']}")
 
-# ===== REELS (YouTube + uploaded, ek ek karke) =====
+# ===== REELS =====
 with tab_reels:
     st.subheader("🎬 Reels")
     all_reels = st.session_state.my_reels + YT_REELS
@@ -127,7 +171,6 @@ with tab_reels:
     r = all_reels[i]
     st.caption(f"Reel {i+1}/{n}")
     if r["type"] == "yt":
-        # YouTube video khud chalti hai (autoplay, mute start — player se sound on karein)
         components.iframe(
             f"https://www.youtube.com/embed/{r['id']}?autoplay=1&mute=1&playsinline=1&rel=0",
             height=620, scrolling=False)
@@ -170,8 +213,7 @@ with tab_up:
 # ===== CHAT =====
 with tab_chat:
     st.subheader("💬 Messages")
-    names = list(st.session_state.chats.keys())
-    sel = st.selectbox("Dost select karein", names)
+    sel = st.selectbox("Dost select karein", list(st.session_state.chats.keys()))
     msgs = st.session_state.chats[sel]
     box = st.container(height=380)
     with box:
