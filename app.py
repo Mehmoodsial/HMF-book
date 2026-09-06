@@ -24,171 +24,180 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final screenHeight = MediaQuery.of(context).size.height;
+
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            // ---- Green header with HMF ----
-            Container(
-              width: double.infinity,
-              height: 160,
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Color(0xFF43A047), Color(0xFF2E7D32)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.only(
-                  bottomLeft: Radius.circular(40),
-                  bottomRight: Radius.circular(40),
-                ),
-              ),
-              child: const Center(
-                child: Text(
-                  'HMF',
-                  style: TextStyle(
-                    fontSize: 42,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                    letterSpacing: 3,
-                  ),
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 30),
-
-            // ---- Title ----
-            const Text(
-              'Create Account',
-              style: TextStyle(
-                fontSize: 26,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
-              ),
-            ),
-            const SizedBox(height: 6),
-            const Text(
-              'Sign up to get started',
-              style: TextStyle(fontSize: 14, color: Colors.grey),
-            ),
-
-            const SizedBox(height: 30),
-
-            // ---- Input fields ----
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 25),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  children: [
-                    _buildTextField(
-                      controller: _usernameController,
-                      hint: 'Username',
-                      icon: Icons.person_outline,
-                    ),
-                    const SizedBox(height: 16),
-                    _buildTextField(
-                      controller: _emailController,
-                      hint: 'Email',
-                      icon: Icons.email_outlined,
-                      keyboardType: TextInputType.emailAddress,
-                    ),
-                    const SizedBox(height: 16),
-                    _buildTextField(
-                      controller: _passwordController,
-                      hint: 'Password',
-                      icon: Icons.lock_outline,
-                      isPassword: true,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 30),
-
-            // ---- Sign Up Button ----
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 25),
-              child: SizedBox(
-                width: double.infinity,
-                height: 55,
-                child: ElevatedButton(
-                  onPressed: () {
-                    if (_formKey.currentState!.validate()) {
-                      // Yahan aap signup ki logic likhein (Firebase etc.)
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Account created!')),
-                      );
-                    }
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF2E7D32),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30),
-                    ),
-                    elevation: 4,
-                  ),
-                  child: const Text(
-                    'Sign Up',
+      body: Container(
+        width: double.infinity,
+        height: double.infinity,
+        // Premium Green Gradient Theme
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              Color(0xFF00B074), // Light Green
+              Color(0xFF056839), // Dark Green
+            ],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
+        ),
+        child: SafeArea(
+          bottom: false,
+          child: Column(
+            children: [
+              // Top Header HMF Logo (25% Height)
+              SizedBox(
+                height: screenHeight * 0.25,
+                child: const Center(
+                  child: Text(
+                    'HMF',
                     style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
+                      fontSize: 64,
+                      fontWeight: FontWeight.w900,
                       color: Colors.white,
+                      letterSpacing: 1.5,
                     ),
                   ),
                 ),
               ),
-            ),
 
-            const SizedBox(height: 30),
+              // Main Input White Sheet Card (75% Height)
+              Expanded(
+                child: Container(
+                  width: double.infinity,
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(40),
+                      topRight: Radius.circular(40),
+                    ),
+                  ),
+                  child: SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 32),
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Create Account',
+                            style: TextStyle(
+                              fontSize: 26,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF2D3142),
+                            ),
+                          ),
+                          
+                          const SizedBox(height: 24),
 
-            // ---- Or continue with ----
-            const Text(
-              'Or continue with',
-              style: TextStyle(color: Colors.grey, fontSize: 14),
-            ),
+                          // Username Field
+                          _buildTextField(
+                            controller: _usernameController,
+                            hint: 'Username',
+                            icon: Icons.person_outline_rounded,
+                          ),
+                          
+                          const SizedBox(height: 16),
 
-            const SizedBox(height: 20),
+                          // Email Field
+                          _buildTextField(
+                            controller: _emailController,
+                            hint: 'Email',
+                            icon: Icons.mail_outline_rounded,
+                            keyboardType: TextInputType.emailAddress,
+                          ),
+                          
+                          const SizedBox(height: 16),
 
-            // ---- Social buttons (Google, Snapchat, Facebook) ----
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                _socialButton('G', const Color(0xFFDB4437)),
-                const SizedBox(width: 20),
-                _socialButton('S', const Color(0xFFFFFC00)),
-                const SizedBox(width: 20),
-                _socialButton('f', const Color(0xFF4267B2)),
-              ],
-            ),
+                          // Password Field
+                          _buildTextField(
+                            controller: _passwordController,
+                            hint: 'Password',
+                            icon: Icons.lock_outline_rounded,
+                            isPassword: true,
+                          ),
 
-            const SizedBox(height: 30),
+                          const SizedBox(height: 32),
 
-            // ---- Login link ----
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Text("Already have an account? "),
-                GestureDetector(
-                  onTap: () {
-                    // Yahan login page ka route lagayein
-                  },
-                  child: const Text(
-                    'Login',
-                    style: TextStyle(
-                      color: Color(0xFF2E7D32),
-                      fontWeight: FontWeight.bold,
+                          // Sign Up Action Button
+                          SizedBox(
+                            width: double.infinity,
+                            height: 54,
+                            child: ElevatedButton(
+                              onPressed: () {
+                                if (_formKey.currentState!.validate()) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('Creating HMF Account...')),
+                                  );
+                                }
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF00A86B),
+                                foregroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(28),
+                                ),
+                              ),
+                              child: const Text(
+                                'Sign Up',
+                                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                          ),
+
+                          const SizedBox(height: 28),
+
+                          // Divider Line
+                          Row(
+                            children: const [
+                              Expanded(child: Divider(color: Color(0xFFE2E8F0), thickness: 1)),
+                              Padding(
+                                padding: EdgeInsets.symmetric(horizontal: 16),
+                                child: Text('Or continue with', style: TextStyle(color: Colors.grey, fontSize: 13)),
+                              ),
+                              Expanded(child: Divider(color: Color(0xFFE2E8F0), thickness: 1)),
+                            ],
+                          ),
+
+                          const SizedBox(height: 20),
+
+                          // Spherical Social Icons
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              _socialButton('G', const Color(0xFFEA4335), Colors.white),
+                              const SizedBox(width: 20),
+                              _socialButton('S', const Color(0xFFFFFC00), Colors.black),
+                              const SizedBox(width: 20),
+                              _socialButton('f', const Color(0xFF1877F2), Colors.white),
+                            ],
+                          ),
+
+                          const SizedBox(height: 32),
+
+                          // Bottom Switch Route Option
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Text("Already have an account? ", style: TextStyle(color: Colors.grey, fontSize: 14)),
+                              GestureDetector(
+                                onTap: () {},
+                                child: const Text(
+                                  'Login',
+                                  style: TextStyle(color: Color(0xFF00A86B), fontWeight: FontWeight.bold, fontSize: 14),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
-              ],
-            ),
-
-            const SizedBox(height: 30),
-          ],
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -207,51 +216,38 @@ class _SignUpScreenState extends State<SignUpScreen> {
       keyboardType: keyboardType,
       decoration: InputDecoration(
         hintText: hint,
-        prefixIcon: Icon(icon, color: Colors.grey),
+        prefixIcon: Icon(icon, color: Colors.grey.shade400, size: 22),
         suffixIcon: isPassword
             ? IconButton(
-                icon: Icon(
-                  _obscurePassword ? Icons.visibility_off : Icons.visibility,
-                  color: Colors.grey,
-                ),
-                onPressed: () {
-                  setState(() {
-                    _obscurePassword = !_obscurePassword;
-                  });
-                },
+                icon: Icon(_obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined, color: Colors.grey.shade400, size: 20),
+                onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
               )
             : null,
+        contentPadding: const EdgeInsets.symmetric(vertical: 18, horizontal: 16),
         filled: true,
-        fillColor: Colors.grey.shade100,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(15),
-          borderSide: BorderSide.none,
+        fillColor: Colors.white,
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.grey.shade300),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Color(0xFF00A86B), width: 1.5),
         ),
       ),
-      validator: (value) {
-        if (value == null || value.isEmpty) {
-          return 'Please enter $hint';
-        }
-        return null;
-      },
+      validator: (value) => value == null || value.isEmpty ? 'Please enter $hint' : null,
     );
   }
 
-  Widget _socialButton(String label, Color color) {
-    return GestureDetector(
-      onTap: () {
-        // Social login logic yahan likhein
-      },
-      child: CircleAvatar(
-        radius: 28,
-        backgroundColor: color,
+  Widget _socialButton(String label, Color bgColors, Color textColors) {
+    return Container(
+      width: 48,
+      height: 48,
+      decoration: BoxDecoration(color: bgColors, shape: BoxShape.circle),
+      child: Center(
         child: Text(
           label,
-          style: TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.bold,
-            color: color == const Color(0xFFFFFC00) ? Colors.black : Colors.white,
-          ),
+          style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: textColors, fontFamily: label == 'f' ? 'Georgia' : 'sans-serif'),
         ),
       ),
     );
