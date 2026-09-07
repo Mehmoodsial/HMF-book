@@ -86,10 +86,9 @@ def load_db():
                 "friend_requests"):
         if key not in db:
             db[key] = []
-    if "follows" not in db:
-        db["follows"] = {}
-    if "friends" not in db:
-        db["friends"] = {}
+    for key in ("follows", "friends", "seen"):
+        if key not in db:
+            db[key] = {}
     if "owner" not in db:
         db["owner"] = ""
     return db
@@ -123,6 +122,109 @@ def unread_count(user):
     return n
 
 
+# ---------- MESSENGER HELPERS ----------
+def unseen_count(me, partner):
+    db = load_db()
+    last = db.get("seen", {}).get(me, {}).get(partner, 0)
+    n = 0
+    for m in db["messages"]:
+        if m["from"] == partner and m["to"] == me \
+                and m.get("time", 0) > last:
+            n += 1
+    return n
+
+
+def mark_seen(me, partner):
+    db = load_db()
+    db.setdefault("seen", {}).setdefault(me, {})[partner] = \
+        time.time()
+    save_db(db)
+
+
+def toggle_reaction(is_group, group_id, msg_id, user):
+    db = load_db()
+    if is_group:
+        for g in db["groups"]:
+            if g["id"] == group_id:
+                for m in g["messages"]:
+                    if m.get("id") == msg_id:
+                        rr = m.setdefault("reactions", [])
+                        if user in rr:
+                            rr.remove(user)
+                        else:
+                            rr.append(user)
+                        break
+                break
+    else:
+        for m in db["messages"]:
+            if m.get("id") == msg_id:
+                rr = m.setdefault("reactions", [])
+                if user in rr:
+                    rr.remove(user)
+                else:
+                    rr.append(user)
+                break
+    save_db(db)
+
+
+def send_chat_message(is_group, group_id, to_user, text,
+                      photo=None):
+    db = load_db()
+    msg = {"id": uuid.uuid4().hex[:8],
+           "from": st.session_state.username,
+           "text": text, "time": time.time(),
+           "reactions": []}
+    if photo:
+        msg["photo"] = photo
+    if is_group:
+        for g in db["groups"]:
+            if g["id"] == group_id:
+                g["messages"].append(msg)
+                break
+        save_db(db)
+        db2 = load_db()
+        for g in db2["groups"]:
+            if g["id"] == group_id:
+                for mm in g["members"]:
+                    if mm != st.session_state.username:
+                        add_notification(
+                            mm, "👥 '" + g["name"] + "': @" +
+                            st.session_state.username + " " +
+                            text[:25])
+                break
+    else:
+        msg["to"] = to_user
+        db["messages"].append(msg)
+        save_db(db)
+        add_notification(to_user, "✉️ @" +
+                         st.session_state.username +
+                         " sent you a message")
+
+
+def hmf_ai_reply(q):
+    q = (q or "").lower()
+    if not q:
+        return "Kuch likhein - main madad karta hoon!"
+    if "hi" in q or "hello" in q or "salam" in q:
+        return "Hello! 👋 Main HMF AI hoon. Kaise madad karun?"
+    if "coin" in q:
+        return ("Coins kamane ke liye Ludo khelen "
+                "(6 par +5 coins) aur games jeeten!")
+    if "friend" in q:
+        return ("Friends tab mein 'People You May Know' "
+                "se requests bhejein!")
+    if "call" in q:
+        return ("Voice calls chat ya profile se hoti hain - "
+                "📞 button dabayein!")
+    if "security" in q or "hack" in q:
+        return ("Aapka data protected hai. Security Center "
+                "mein score check karein!")
+    return ("Interesting! Main abhi seekh raha hoon - "
+            "Friends, Chats, Calls aur Coins mein madad "
+            "kar sakta hoon.")
+
+
+# ---------- FRIENDS ----------
 def send_friend_request(a, b):
     db = load_db()
     for r in db["friend_requests"]:
@@ -170,6 +272,7 @@ def remove_friend(a, b):
     save_db(db)
 
 
+# ---------- CALLS ----------
 def load_calls():
     try:
         with open(CALL_FILE, "r", encoding="utf-8") as f:
@@ -236,6 +339,7 @@ def get_active_call_for(user):
     return None
 
 
+# ---------- FILES ----------
 def save_upload(file_obj):
     os.makedirs(UPLOAD_DIR, exist_ok=True)
     ext = file_obj.name.split(".")[-1].lower()
@@ -263,12 +367,13 @@ def avatar_html(username, avatar_path=None, size=36):
             b64 = base64.b64encode(
                 open(avatar_path, "rb").read()).decode()
             return ("<img src='data:image/png;base64," + b64 +
-                    "' style='width:" + str(size) + "px;height:" +
-                    str(size) + "px;border-radius:50%;"
-                    "object-fit:cover;margin-right:10px;'>")
+                    "' style='width:" + str(size) + "px;"
+                    "height:" + str(size) +
+                    "px;border-radius:50%;object-fit:cover;"
+                    "margin-right:10px;'>")
         except Exception:
             pass
-    ini = esc(username[:2].upper())
+    ini = esc(str(username)[:2].upper())
     return ("<div style='width:" + str(size) + "px;height:" +
             str(size) + "px;border-radius:50%;background:"
             "linear-gradient(135deg,#00B074,#056839);"
@@ -436,10 +541,12 @@ defaults = {
     "settings_page": "menu", "privacy_step": 0, "blocked": [],
     "clear_cmt": "", "clear_msg": "", "block_msg": "",
     "report_msg": "", "help_msg": "", "withdraw_msg": "",
-    "yt_msg": "", "view_user": None, "chat_partner": None,
-    "chat_mode": "Direct", "last_shot_time": 0,
-    "app_lock": False, "app_pin": "", "pin_unlocked": True,
-    "pin_attempts": 0, "pin_lock_until": 0, "pin_msg": "",
+    "yt_msg": "", "view_user": None,
+    "msg_view": "list", "msg_target": "",
+    "msg_target_type": "direct",
+    "last_shot_time": 0, "app_lock": False, "app_pin": "",
+    "pin_unlocked": True, "pin_attempts": 0,
+    "pin_lock_until": 0, "pin_msg": "",
     "finger_lock": False, "finger_unlocked": True,
     "auto_logout": 0, "last_active": 0, "dark_mode": False,
     "language": "English", "feed_sort": "Most Recent",
@@ -482,7 +589,8 @@ def password_strength(pw):
 
 
 def add_security_event(text):
-    SS.security_log.insert(0, {"event": text, "time": "Just now"})
+    SS.security_log.insert(0, {"event": text,
+                               "time": "Just now"})
     SS.security_log = SS.security_log[:20]
 
 
@@ -613,20 +721,6 @@ def build_main_css(dark):
         font-size:22px; }
     .channel-banner p {
         color:rgba(255,255,255,.9); margin:0; }
-    .chat-me { background:#00B074; color:#fff;
-        padding:8px 14px;
-        border-radius:16px 16px 4px 16px;
-        max-width:72%; margin:4px 0 4px auto;
-        font-size:14px; display:block;
-        width:fit-content; }
-    .chat-them { background:BORDERC; color:TXT1;
-        padding:8px 14px;
-        border-radius:16px 16px 16px 4px;
-        max-width:72%; margin:4px auto 4px 0;
-        font-size:14px; display:block;
-        width:fit-content; }
-    .chat-time { font-size:10px; color:TXT2;
-        display:block; text-align:right; }
     .notif-row { padding:10px 6px;
         border-bottom:1px solid BORDERC;
         font-size:14px; color:TXT1; }
@@ -657,10 +751,57 @@ def build_main_css(dark):
         border-bottom:1px solid BORDERC; }
     .call-icon { font-size:28px; }
     .call-status { font-weight:bold; font-size:13px; }
-    .call-timer { font-size:12px; color:TXT2; }
     .fr-row { display:flex; align-items:center;
         padding:10px 4px;
         border-bottom:1px solid BORDERC; }
+    /* ===== MESSENGER STYLE ===== */
+    .chat-item { display:flex; align-items:center;
+        padding:12px 6px;
+        border-bottom:1px solid BORDERC; }
+    .av-wrap { position:relative; margin-right:6px;
+        flex-shrink:0; }
+    .online-dot { position:absolute; bottom:2px;
+        right:2px; width:12px; height:12px;
+        border-radius:50%; background:#31a24c;
+        border:2px solid CARDBG; }
+    .chat-info { flex:1; min-width:0; }
+    .chat-name { font-weight:700; font-size:14px;
+        color:TXT1; }
+    .chat-preview { font-size:12.5px; color:TXT2;
+        overflow:hidden; text-overflow:ellipsis;
+        white-space:nowrap; margin-top:2px; }
+    .chat-time { font-size:11px; color:TXT2; }
+    .unread-badge { background:#00B074; color:#fff;
+        border-radius:50%; min-width:20px; height:20px;
+        display:inline-flex; align-items:center;
+        justify-content:center; font-size:11px;
+        font-weight:700; padding:0 6px; margin-top:4px; }
+    .chat-header { display:flex; align-items:center;
+        gap:8px; padding:10px 4px;
+        border-bottom:1px solid BORDERC;
+        margin-bottom:6px; }
+    .enc-note { text-align:center; font-size:11px;
+        color:TXT2;
+        background:rgba(0,176,116,.07);
+        border-radius:10px; padding:6px 10px;
+        margin:6px 0; }
+    .friend-note { text-align:center; font-size:12px;
+        color:#00B074; margin:8px 0; font-weight:600; }
+    .bubble-me { background:#00B074; color:#fff;
+        padding:8px 13px;
+        border-radius:18px 18px 4px 18px;
+        max-width:78%; margin:3px 0 3px auto;
+        font-size:14px; display:block;
+        width:fit-content; }
+    .bubble-them { background:BORDERC; color:TXT1;
+        padding:8px 13px;
+        border-radius:18px 18px 18px 4px;
+        max-width:78%; margin:3px auto 3px 0;
+        font-size:14px; display:block;
+        width:fit-content; }
+    .bubble-time { font-size:10px; opacity:.75;
+        display:block; text-align:right;
+        margin-top:2px; }
     div[data-testid="stButton"] > button,
     div.stButton > button { background:#00B074
         !important; color:#fff !important;
@@ -909,7 +1050,7 @@ elif SS.page == "auth":
                 unsafe_allow_html=True)
 
 
-# ================= 3) LOCK SCREENS + MAIN APP =========
+# ================= 3) LOCKS + MAIN APP =================
 elif SS.page == "app" and SS.logged_in:
     need_pin = SS.app_lock and not SS.pin_unlocked
     need_finger = SS.finger_lock and not SS.finger_unlocked
@@ -925,17 +1066,15 @@ elif SS.page == "app" and SS.logged_in:
                 <div class="finger-icon">👆</div>
                 <h2>Fingerprint Lock</h2>
                 <p style="color:#6b7280;">Tap the button
-                below to scan your fingerprint</p>
+                below to scan</p>
             </div>
             """, unsafe_allow_html=True)
-
             if st.button("👆 Scan Fingerprint",
                          use_container_width=True,
                          key="finger_scan"):
                 time.sleep(1.2)
                 SS.finger_unlocked = True
                 safe_rerun()
-
             if st.button("🚪 Logout instead",
                          key="finger_out",
                          use_container_width=True):
@@ -951,7 +1090,6 @@ elif SS.page == "app" and SS.logged_in:
                 <p style="color:#6b7280;">Enter your PIN</p>
             </div>
             """, unsafe_allow_html=True)
-
             now = time.time()
             if SS.pin_lock_until > now:
                 st.error("Locked for " +
@@ -998,7 +1136,7 @@ elif SS.page == "app" and SS.logged_in:
         unread = unread_count(SS.username)
         banned_list = DB.get("banned", [])
 
-        # ---------- INCOMING CALL ----------
+        # ---------- CALLS ----------
         incoming = get_incoming_call(SS.username)
         active_call = get_active_call_for(SS.username)
 
@@ -1008,18 +1146,15 @@ elif SS.page == "app" and SS.logged_in:
                  "border:2px solid #00B074;">
                 <div class="call-row">
                     <div class="call-icon">📞</div>
-                    <div>
-                        <div class="call-status">
-                            Incoming Call from @""" +
-                        esc(incoming["from"]) + """
-                        </div>
-                        <div class="call-timer">Ringing...
-                        </div>
+                    <div><div class="call-status">
+                    Incoming Call from @""" +
+                esc(incoming["from"]) + """
                     </div>
+                    <div style="font-size:12px;
+                    color:#6b7280;">Ringing...</div></div>
                 </div>
             </div>
             """, unsafe_allow_html=True)
-
             ic1, ic2 = st.columns(2)
             if ic1.button("✅ Accept", key="call_accept",
                           use_container_width=True):
@@ -1031,9 +1166,6 @@ elif SS.page == "app" and SS.logged_in:
             if ic2.button("❌ Reject", key="call_reject",
                           use_container_width=True):
                 answer_call(incoming["id"], False)
-                add_notification(incoming["from"],
-                                 "📞 @" + SS.username +
-                                 " rejected your call!")
                 safe_rerun()
 
         if active_call:
@@ -1042,16 +1174,13 @@ elif SS.page == "app" and SS.logged_in:
                  "border:2px solid #00B074;">
                 <div class="call-row">
                     <div class="call-icon">🎙️</div>
-                    <div>
-                        <div class="call-status">
-                            Call Active</div>
-                        <div class="call-timer">
-                            Connected</div>
-                    </div>
+                    <div><div class="call-status">
+                    Call Active</div>
+                    <div style="font-size:12px;
+                    color:#6b7280;">Connected</div></div>
                 </div>
             </div>
             """, unsafe_allow_html=True)
-
             ac1, ac2, ac3 = st.columns(3)
             if ac1.button("🎤 Mute", key="call_mute",
                           use_container_width=True):
@@ -1094,6 +1223,7 @@ elif SS.page == "app" and SS.logged_in:
         if q3.button("✉️", key="top_mail",
                      use_container_width=True):
             SS.current_tab = "Messages"
+            SS.msg_view = "list"
             safe_rerun()
         if q4.button("🌙", key="top_dark",
                      use_container_width=True):
@@ -1186,8 +1316,9 @@ elif SS.page == "app" and SS.logged_in:
                         safe_rerun()
                 if v2.button("✉️ Message", key="vw_msg",
                              use_container_width=True):
-                    SS.chat_partner = vu
-                    SS.chat_mode = "Direct"
+                    SS.msg_view = "chat"
+                    SS.msg_target = vu
+                    SS.msg_target_type = "direct"
                     SS.current_tab = "Messages"
                     SS.view_user = None
                     safe_rerun()
@@ -1482,27 +1613,24 @@ elif SS.page == "app" and SS.logged_in:
                 incoming_fr = [r for r in
                                db["friend_requests"]
                                if r["to"] == SS.username]
-                outgoing_fr = [r for r in
-                               db["friend_requests"]
-                               if r["from"] == SS.username]
                 friends = db["friends"].get(
                     SS.username, [])
 
-                # ---- INCOMING REQUESTS ----
                 st.markdown("### 📨 Friend Requests (" +
                             str(len(incoming_fr)) + ")")
                 if not incoming_fr:
                     st.caption("No new requests.")
                 for i, r in enumerate(incoming_fr):
                     f = r["from"]
-                    u = db["users"].get(f, {})
+                    fu = db["users"].get(f, {})
                     st.markdown(
                         "<div class='fr-row'>" +
-                        avatar_html(f, u.get("avatar"), 44) +
+                        avatar_html(f, fu.get("avatar"),
+                                    44) +
                         "<div><b>@" + esc(f) + "</b><br>"
                         "<span style='font-size:12px;"
                         "color:#9ca3af;'>" +
-                        esc(u.get("display_name", f)) +
+                        esc(fu.get("display_name", f)) +
                         "</span></div></div>",
                         unsafe_allow_html=True)
                     fr1, fr2, fr3 = st.columns(3)
@@ -1510,8 +1638,6 @@ elif SS.page == "app" and SS.logged_in:
                                   key="fr_acc_" + str(i),
                                   use_container_width=True):
                         accept_friend(SS.username, f)
-                        st.success("@" + f +
-                                   " is now your friend!")
                         safe_rerun()
                     if fr3.button("❌ Reject",
                                   key="fr_rej_" + str(i),
@@ -1523,21 +1649,17 @@ elif SS.page == "app" and SS.logged_in:
                                   use_container_width=True):
                         SS.view_user = f
                         safe_rerun()
-                    st.markdown(
-                        "<div style='height:4px;'></div>",
-                        unsafe_allow_html=True)
 
-                # ---- FRIENDS LIST ----
                 st.markdown("### 🧑‍🤝‍🧑 Your Friends (" +
                             str(len(friends)) + ")")
                 if not friends:
-                    st.caption("No friends yet - requests "
-                               "bhejein neeche se!")
+                    st.caption("No friends yet!")
                 for i, f in enumerate(friends):
-                    u = db["users"].get(f, {})
+                    fu = db["users"].get(f, {})
                     st.markdown(
                         "<div class='fr-row'>" +
-                        avatar_html(f, u.get("avatar"), 44) +
+                        avatar_html(f, fu.get("avatar"),
+                                    44) +
                         "<div><b>@" + esc(f) + "</b></div>"
                         "</div>", unsafe_allow_html=True)
                     f1, f2, f3, f4 = st.columns(4)
@@ -1549,8 +1671,9 @@ elif SS.page == "app" and SS.logged_in:
                     if f2.button("✉️ Msg",
                                  key="fl_m_" + str(i),
                                  use_container_width=True):
-                        SS.chat_partner = f
-                        SS.chat_mode = "Direct"
+                        SS.msg_view = "chat"
+                        SS.msg_target = f
+                        SS.msg_target_type = "direct"
                         SS.current_tab = "Messages"
                         safe_rerun()
                     if f3.button("📞 Call",
@@ -1567,27 +1690,14 @@ elif SS.page == "app" and SS.logged_in:
                         remove_friend(SS.username, f)
                         safe_rerun()
 
-                # ---- SENT REQUESTS ----
-                if outgoing_fr:
-                    st.markdown("### ⏳ Sent Requests")
-                    for i, r in enumerate(outgoing_fr):
-                        st.markdown(
-                            "• ⏳ To **@" +
-                            esc(r["to"]) + "**")
-
-                # ---- SUGGESTIONS (NEW USERS HERE!) ----
                 st.markdown("### 🌟 People You May Know")
-                st.caption("Naye users yahan samne aate "
-                           "hain!")
                 suggestions = []
                 for un in db["users"]:
                     if un == SS.username:
                         continue
                     if un in friends:
                         continue
-                    if un in SS.blocked:
-                        continue
-                    if un in banned_list:
+                    if un in SS.blocked or un in banned_list:
                         continue
                     sent = any(
                         r["from"] == SS.username and
@@ -1599,7 +1709,7 @@ elif SS.page == "app" and SS.logged_in:
                 if not suggestions:
                     st.caption("No new people right now.")
                 for un in suggestions:
-                    u = db["users"].get(un, {})
+                    su = db["users"].get(un, {})
                     badge = ""
                     if un == owner:
                         badge = (" <span class="
@@ -1607,12 +1717,12 @@ elif SS.page == "app" and SS.logged_in:
                                  "</span>")
                     st.markdown(
                         "<div class='fr-row'>" +
-                        avatar_html(un, u.get("avatar"),
+                        avatar_html(un, su.get("avatar"),
                                     44) +
                         "<div><b>@" + esc(un) + "</b>" +
                         badge + "<br><span style="
                         "'font-size:12px;color:#9ca3af;'>"
-                        + esc(u.get("display_name", un)) +
+                        + esc(su.get("display_name", un)) +
                         "</span></div></div>",
                         unsafe_allow_html=True)
                     s1, s2 = st.columns(2)
@@ -1621,8 +1731,6 @@ elif SS.page == "app" and SS.logged_in:
                                  use_container_width=True):
                         send_friend_request(
                             SS.username, un)
-                        st.success("Request sent to @" + un +
-                                   "!")
                         safe_rerun()
                     if s2.button("👤 View",
                                  key="sg_v_" + un,
@@ -1665,7 +1773,8 @@ elif SS.page == "app" and SS.logged_in:
                                           "'ban-tag'>🚫 "
                                           "BANNED</span>")
                             st.markdown(
-                                "<div class='search-row'>" +
+                                "<div class="
+                                "'search-row'>" +
                                 avatar_html(un,
                                             ud.get("avatar"),
                                             44) +
@@ -1685,13 +1794,16 @@ elif SS.page == "app" and SS.logged_in:
                                          =True):
                                 SS.view_user = un
                                 safe_rerun()
-                            if s2.button("➕ Add Friend",
-                                         key="sr_f_" + un,
+                            if s2.button("💬 Chat",
+                                         key="sr_m_" + un,
                                          use_container_width
                                          =True):
-                                send_friend_request(
-                                    SS.username, un)
-                                st.success("Request sent!")
+                                SS.msg_view = "chat"
+                                SS.msg_target = un
+                                SS.msg_target_type = \
+                                    "direct"
+                                SS.current_tab = \
+                                    "Messages"
                                 safe_rerun()
                 else:
                     st.caption("👆 Type any username to "
@@ -1770,7 +1882,6 @@ elif SS.page == "app" and SS.logged_in:
                         r["user"] + "</div></div></div>",
                         unsafe_allow_html=True)
                     st.video(r["ref"])
-                    # ✅ FIX: download sirf local files par
                     if is_local_file(r["ref"]):
                         with open(r["ref"], "rb") as fh:
                             st.download_button(
@@ -1780,9 +1891,6 @@ elif SS.page == "app" and SS.logged_in:
                                     r["ref"]),
                                 mime="video/mp4",
                                 key="dlr_" + r["id"])
-                    else:
-                        st.caption("🌐 Online reel - "
-                                   "external video")
                     liked = SS.username in r.get("likes",
                                                  {})
                     ra1, ra2 = st.columns(2)
@@ -1853,9 +1961,8 @@ elif SS.page == "app" and SS.logged_in:
                 elif kind == "Camera 🎨":
 
                     st.markdown(
-                        "<p class='set-label'>🎨 "
-                        "Snapchat-style Filter</p>",
-                        unsafe_allow_html=True)
+                        "<p class='set-label'>🎨 Filter"
+                        "</p>", unsafe_allow_html=True)
                     filt = st.selectbox("Choose filter:",
                                         FILTER_NAMES,
                                         key="cam_filter")
@@ -1947,190 +2054,523 @@ elif SS.page == "app" and SS.logged_in:
                             SS.current_tab = "Home"
                             safe_rerun()
 
-            # ================= MESSAGES =================
+            # ========= MESSAGES (MESSENGER STYLE) =====
             elif SS.current_tab == "Messages":
 
                 if HAS_REFRESH:
                     st_autorefresh(interval=4000,
                                    key="msg_ref")
+
+                db = load_db()
                 shot_install()
 
-                st.markdown('<div class="panel-header">✉️ '
-                            'Messages</div>',
+                # ---------- CHAT VIEW ----------
+                if SS.msg_view == "chat":
+
+                    tgt = SS.msg_target
+                    is_group = (SS.msg_target_type ==
+                                "group")
+
+                    valid = True
+                    group = None
+                    if is_group:
+                        for g in db["groups"]:
+                            if g["id"] == tgt:
+                                group = g
+                                break
+                        if group is None:
+                            valid = False
+                    else:
+                        if tgt not in db["users"] or \
+                                tgt in SS.blocked:
+                            valid = False
+
+                    if not valid:
+                        SS.msg_view = "list"
+                        safe_rerun()
+
+                    else:
+
+                        # ---- HEADER ----
+                        hb, ha, hi, hc = st.columns(
+                            [0.1, 0.14, 0.52, 0.24])
+                        if hb.button("←", key="ch_back"):
+                            SS.msg_view = "list"
+                            safe_rerun()
+
+                        if is_group:
+                            ha.markdown(
+                                avatar_html(
+                                    group["name"], None,
+                                    40),
+                                unsafe_allow_html=True)
+                            hi.markdown(
+                                "<b style='font-size:15px;"
+                                "'>" +
+                                esc(group["name"]) +
+                                "</b><br><span style="
+                                "'font-size:11px;color:"
+                                "#9ca3af;'>" +
+                                str(len(group["members"])) +
+                                " members</span>",
+                                unsafe_allow_html=True)
+                            msgs = sorted(
+                                group["messages"],
+                                key=lambda x: x["time"])
+                        else:
+                            u = db["users"][tgt]
+                            mark_seen(SS.username, tgt)
+                            ha.markdown(
+                                avatar_html(
+                                    tgt, u.get("avatar"),
+                                    40),
+                                unsafe_allow_html=True)
+                            hi.markdown(
+                                "<b style='font-size:15px;"
+                                "'>" +
+                                esc(u.get("display_name",
+                                          tgt)) +
+                                "</b><br><span style="
+                                "'font-size:11px;color:"
+                                "#31a24c;'>● Active now"
+                                "</span>",
+                                unsafe_allow_html=True)
+                            if hc.button("📞 Call",
+                                         key="ch_call",
+                                         use_container_width
+                                         =True):
+                                start_call(SS.username,
+                                           tgt)
+                                add_notification(
+                                    tgt, "📞 @" +
+                                    SS.username +
+                                    " is calling you!")
+                                safe_rerun()
+                            convo = []
+                            for m in db["messages"]:
+                                if (m["from"] ==
+                                        SS.username and
+                                        m["to"] == tgt) \
+                                        or \
+                                        (m["from"] == tgt
+                                         and m["to"] ==
+                                         SS.username):
+                                    convo.append(m)
+                            msgs = sorted(
+                                convo,
+                                key=lambda x: x["time"])
+
+                        # ---- NOTICES ----
+                        st.markdown(
+                            "<div class='enc-note'>🔒 "
+                            "Messages are end-to-end "
+                            "encrypted (demo)</div>",
                             unsafe_allow_html=True)
 
-                m1, m2 = st.columns(2)
-                if m1.button("👤 Direct",
-                             key="mode_direct",
-                             use_container_width=True):
-                    SS.chat_mode = "Direct"
-                    safe_rerun()
-                if m2.button("👥 Groups",
-                             key="mode_group",
-                             use_container_width=True):
-                    SS.chat_mode = "Group"
-                    safe_rerun()
+                        if not is_group:
+                            if tgt in db.get(
+                                    "friends", {}).get(
+                                        SS.username, []):
+                                st.markdown(
+                                    "<div class="
+                                    "'friend-note'>🤝 You "
+                                    "and @" + esc(tgt) +
+                                    " are now friends on "
+                                    "HMF book</div>",
+                                    unsafe_allow_html=True)
 
-                if SS.chat_mode == "Direct":
-
-                    others = [u for u in DB["users"]
-                              if u != SS.username
-                              and u not in SS.blocked
-                              and u not in banned_list]
-
-                    if not others:
-                        st.info(
-                            "No members to chat with.")
-                    else:
-                        idx = 0
-                        if SS.chat_partner in others:
-                            idx = others.index(
-                                SS.chat_partner)
-                        partner = st.selectbox(
-                            "Chat with:", others,
-                            index=idx, key="chat_sel")
-                        SS.chat_partner = partner
-
-                        cc1, cc2 = st.columns(2)
-                        if cc1.button("📞 Voice Call",
-                                      key="chat_call",
-                                      use_container_width
-                                      =True):
-                            start_call(SS.username,
-                                       partner)
-                            add_notification(
-                                partner, "📞 @" +
-                                SS.username +
-                                " is calling you!")
-                            safe_rerun()
-                        if cc2.button("🎤 Voice Msg",
-                                      key="chat_voice",
-                                      use_container_width
-                                      =True):
-                            st.info("🎙️ Voice recorder "
-                                    "neeche hai!")
-
-                        convo = [m for m in
-                                 DB["messages"]
-                                 if (m["from"] ==
-                                     SS.username and
-                                     m["to"] == partner)
-                                 or (m["from"] == partner
-                                     and m["to"] ==
-                                     SS.username)]
-                        convo.sort(
-                            key=lambda x: x["time"])
-
+                        # screenshot detection
                         pending = shot_check()
                         if pending and \
                                 time.time() - \
                                 SS.last_shot_time > 5:
                             SS.last_shot_time = \
                                 time.time()
-                            add_notification(
-                                partner, "📸 @" +
-                                SS.username +
-                                " took a screenshot!")
+                            if is_group:
+                                for mm in group[
+                                        "members"]:
+                                    if mm != \
+                                            SS.username:
+                                        add_notification(
+                                            mm, "📸 @" +
+                                            SS.username +
+                                            " screenshot "
+                                            "of '" +
+                                            group["name"]
+                                            + "'!")
+                            else:
+                                add_notification(
+                                    tgt, "📸 @" +
+                                    SS.username +
+                                    " took a screenshot "
+                                    "of your chat!")
                             safe_toast(
                                 "📸 Screenshot "
                                 "detected!")
                             safe_rerun()
 
+                        # ---- MESSAGES ----
                         if SS.clear_msg:
                             SS[SS.clear_msg] = ""
                             SS.clear_msg = ""
 
-                        chat_html = ""
-                        for m in convo:
-                            tstr = time.strftime(
-                                "%H:%M",
-                                time.localtime(
-                                    m["time"]))
-                            if m["from"] == SS.username:
-                                cls = "chat-me"
-                            else:
-                                cls = "chat-them"
-                            chat_html += (
-                                "<span class='" + cls +
-                                "'>" + esc(m["text"]) +
-                                "<span class="
-                                "'chat-time'>" + tstr +
-                                "</span></span>")
-                        if chat_html:
-                            st.markdown(
-                                chat_html,
-                                unsafe_allow_html=True)
-                        else:
+                        if not msgs:
                             st.caption(
-                                "No messages yet!")
+                                "No messages yet - say "
+                                "hello! 👋")
 
-                        txt = st.text_input(
-                            "Message", key="msg_input")
+                        for m in msgs:
+                            mine = (m["from"] ==
+                                    SS.username)
+                            tstr = time.strftime(
+                                "%I:%M %p",
+                                time.localtime(
+                                    m["time"])).lower()
 
+                            if m.get("photo") and \
+                                    is_local_file(
+                                        m["photo"]):
+                                st.image(m["photo"],
+                                         width=200)
+
+                            if mine:
+                                cls = "bubble-me"
+                            else:
+                                cls = "bubble-them"
+                            sender = ""
+                            if is_group and not mine:
+                                sender = ("<b>@" +
+                                          esc(m["from"]) +
+                                          "</b><br>")
+                            body = sender + esc(
+                                m.get("text", ""))
+
+                            st.markdown(
+                                "<span class='" + cls +
+                                "'>" + body +
+                                "<span class="
+                                "'bubble-time'>" + tstr +
+                                "</span></span>",
+                                unsafe_allow_html=True)
+
+                            # ---- REACTION ----
+                            r = m.get("reactions", [])
+                            mkey = m.get(
+                                "id",
+                                str(m["time"]))
+                            rr1, rr2 = st.columns(
+                                [0.2, 0.8])
+                            if r:
+                                btn = ("👍 " +
+                                       str(len(r)))
+                            else:
+                                btn = "👍"
+                            if rr1.button(
+                                    btn,
+                                    key="rx_" + mkey,
+                                    use_container_width
+                                    =True):
+                                toggle_reaction(
+                                    is_group, tgt,
+                                    m.get("id"),
+                                    SS.username)
+                                safe_rerun()
+
+                        # ---- SEND PHOTO ----
+                        with st.expander("📷 Send Photo"):
+                            photo = st.file_uploader(
+                                "Choose photo",
+                                type=["png", "jpg",
+                                      "jpeg", "webp"],
+                                key="chat_photo")
+                            if st.button(
+                                    "📷 Send Photo",
+                                    key="chat_sendphoto",
+                                    use_container_width
+                                    =True):
+                                if photo is None:
+                                    st.warning(
+                                        "Photo choose "
+                                        "karein!")
+                                else:
+                                    path = save_upload(
+                                        photo)
+                                    send_chat_message(
+                                        is_group, tgt,
+                                        "📷 Photo",
+                                        photo=path)
+                                    safe_rerun()
+
+                        # ---- VOICE ----
                         if hasattr(st, "audio_input"):
                             audio = st.audio_input(
                                 "🎙️ Record voice",
-                                key="voice_msg")
+                                key="chat_voice")
                             if audio is not None:
                                 st.audio(audio)
                                 if st.button(
                                         "➡️ Send Voice",
-                                        key="send_voice",
+                                        key="chat_sendvc",
                                         use_container_width
                                         =True):
-                                    db = load_db()
-                                    db["messages"]\
-                                        .append({
-                                        "from":
-                                        SS.username,
-                                        "to": partner,
-                                        "text":
+                                    send_chat_message(
+                                        is_group, tgt,
                                         "🎤 Voice "
-                                        "message",
-                                        "time":
-                                        time.time()})
-                                    save_db(db)
-                                    add_notification(
-                                        partner, "🎤 @" +
-                                        SS.username +
-                                        " sent voice "
                                         "message")
                                     st.success(
                                         "Voice sent!")
                                     safe_rerun()
 
+                        # ---- TEXT ----
+                        txt = st.text_input(
+                            "Aa message likhein...",
+                            key="chat_txt")
                         if st.button("➡️ Send",
-                                     key="msg_send",
+                                     key="chat_send",
                                      use_container_width
                                      =True):
                             if txt.strip():
-                                db = load_db()
-                                db["messages"].append({
-                                    "from": SS.username,
-                                    "to": partner,
-                                    "text": txt.strip(),
-                                    "time":
-                                    time.time()})
-                                save_db(db)
-                                add_notification(
-                                    partner, "✉️ @" +
-                                    SS.username +
-                                    " sent you a "
-                                    "message")
+                                send_chat_message(
+                                    is_group, tgt,
+                                    txt.strip())
                                 SS.clear_msg = \
-                                    "msg_input"
+                                    "chat_txt"
                                 safe_rerun()
 
+                # ---------- LIST VIEW ----------
                 else:
-                    db = load_db()
 
-                    with st.expander("➕ Create Group"):
+                    # total unread
+                    partners_all = set()
+                    for m in db["messages"]:
+                        if m["from"] == SS.username:
+                            partners_all.add(m["to"])
+                        elif m["to"] == SS.username:
+                            partners_all.add(m["from"])
+
+                    total_unread = 0
+                    for p in partners_all:
+                        if p != SS.username:
+                            total_unread += unseen_count(
+                                SS.username, p)
+
+                    if total_unread > 0:
+                        head = ("✉️ Chats  <span class="
+                                "'unread-badge'>" +
+                                str(total_unread) +
+                                "</span>")
+                    else:
+                        head = "✉️ Chats"
+                    st.markdown(
+                        '<div class="panel-header">' +
+                        head + '</div>',
+                        unsafe_allow_html=True)
+
+                    search_q = st.text_input(
+                        "🔍 Search chats",
+                        key="msg_search")
+
+                    # build conversations
+                    partners = set()
+                    for m in db["messages"]:
+                        if m["from"] == SS.username:
+                            partners.add(m["to"])
+                        elif m["to"] == SS.username:
+                            partners.add(m["from"])
+                    for f in db.get("friends", {}).get(
+                            SS.username, []):
+                        partners.add(f)
+
+                    convos = []
+                    for p in partners:
+                        if p == SS.username or \
+                                p in SS.blocked or \
+                                p in banned_list:
+                            continue
+                        if search_q and \
+                                search_q.lower() \
+                                not in p.lower():
+                            continue
+                        convo = []
+                        for m in db["messages"]:
+                            if (m["from"] ==
+                                    SS.username and
+                                    m["to"] == p) or \
+                                    (m["from"] == p and
+                                     m["to"] ==
+                                     SS.username):
+                                convo.append(m)
+                        if convo:
+                            last = convo[-1]
+                        else:
+                            last = None
+                        un = unseen_count(SS.username, p)
+                        convos.append({
+                            "t": "direct", "u": p,
+                            "last": last, "unread": un})
+
+                    for g in db["groups"]:
+                        if SS.username not in \
+                                g["members"]:
+                            continue
+                        if search_q and \
+                                search_q.lower() \
+                                not in g["name"].lower():
+                            continue
+                        if g["messages"]:
+                            last = g["messages"][-1]
+                        else:
+                            last = None
+                        convos.append({
+                            "t": "group", "g": g,
+                            "last": last})
+
+                    convos.sort(
+                        key=lambda c: (
+                            c["last"]["time"]
+                            if c["last"] else 0),
+                        reverse=True)
+
+                    if not convos:
+                        st.info("No chats yet - neeche "
+                                "se nayi chat shuru "
+                                "karein!")
+
+                    for c in convos:
+                        u_data = {}
+                        if c["t"] == "direct":
+                            p = c["u"]
+                            u_data = db["users"].get(
+                                p, {})
+                            is_friend = p in \
+                                db.get("friends",
+                                       {}).get(
+                                           SS.username,
+                                           [])
+                            if is_friend:
+                                dot = ("<div class="
+                                       "'online-dot'>"
+                                       "</div>")
+                            else:
+                                dot = ""
+                            name = esc(
+                                u_data.get(
+                                    "display_name",
+                                    p))
+                            if c["last"]:
+                                if c["last"]["from"] == \
+                                        SS.username:
+                                    pre = "You: "
+                                else:
+                                    pre = ""
+                                preview = pre + esc(
+                                    c["last"].get(
+                                        "text", ""))[:35]
+                            else:
+                                preview = \
+                                    "Say hello 👋"
+                            av = avatar_html(
+                                p,
+                                u_data.get("avatar"),
+                                46)
+                            key_id = p
+                        else:
+                            g = c["g"]
+                            dot = ""
+                            name = "👥 " + esc(
+                                g["name"])
+                            if c["last"]:
+                                preview = ("@" +
+                                           esc(c["last"]
+                                               ["from"]) +
+                                           ": " +
+                                           esc(c["last"]
+                                               .get("text",
+                                                    ""))[:28])
+                            else:
+                                preview = "Group chat"
+                            av = avatar_html(
+                                g["name"], None, 46)
+                            key_id = g["id"]
+
+                        if c["last"]:
+                            tm = time.strftime(
+                                "%I:%M %p",
+                                time.localtime(
+                                    c["last"]["time"])
+                            ).lower()
+                        else:
+                            tm = ""
+
+                        badge = ""
+                        if c.get("unread", 0) > 0:
+                            badge = ("<span class="
+                                     "'unread-badge'>"
+                                     + str(
+                                         c["unread"]) +
+                                     "</span>")
+
+                        row = ("<div class='chat-item'>"
+                               "<div class='av-wrap'>"
+                               + av + dot +
+                               "</div><div class="
+                               "'chat-info'><div class="
+                               "'chat-name'>" + name +
+                               "</div><div class="
+                               "'chat-preview'>"
+                               + preview +
+                               "</div></div><div "
+                               "style='text-align:"
+                               "right;'><div class="
+                               "'chat-time'>" + tm +
+                               "</div>" + badge +
+                               "</div></div>")
+
+                        r1, r2 = st.columns(
+                            [0.86, 0.14])
+                        r1.markdown(
+                            row, unsafe_allow_html=True)
+                        if r2.button(
+                                "💬",
+                                key="op_" + key_id,
+                                use_container_width
+                                =True):
+                            SS.msg_view = "chat"
+                            SS.msg_target = key_id
+                            if c["t"] == "direct":
+                                SS.msg_target_type = \
+                                    "direct"
+                            else:
+                                SS.msg_target_type = \
+                                    "group"
+                            safe_rerun()
+
+                    # ---- NEW CHAT ----
+                    st.markdown("### ➕ New Chat")
+                    others = [x for x in db["users"]
+                              if x != SS.username
+                              and x not in SS.blocked
+                              and x not in
+                              banned_list]
+                    if others:
+                        pick = st.selectbox(
+                            "Chat with:", others,
+                            key="new_chat_sel")
+                        if st.button("💬 Start Chat",
+                                     key="new_chat_btn",
+                                     use_container_width
+                                     =True):
+                            SS.msg_view = "chat"
+                            SS.msg_target = pick
+                            SS.msg_target_type = \
+                                "direct"
+                            safe_rerun()
+
+                    # ---- CREATE GROUP ----
+                    with st.expander("👥 Create Group"):
                         gname = st.text_input(
-                            "Group name", key="g_name")
-                        others = [u for u in db["users"]
-                                  if u != SS.username
-                                  and u not in
-                                  banned_list]
+                            "Group name",
+                            key="g_name")
                         members = st.multiselect(
                             "Members", others,
                             key="g_members")
@@ -2141,9 +2581,8 @@ elif SS.page == "app" and SS.logged_in:
                             if gname.strip() and members:
                                 db = load_db()
                                 db["groups"].append({
-                                    "id":
-                                    uuid.uuid4().hex
-                                    [:8],
+                                    "id": uuid.uuid4()
+                                    .hex[:8],
                                     "name":
                                     gname.strip(),
                                     "members":
@@ -2156,98 +2595,22 @@ elif SS.page == "app" and SS.logged_in:
                                         m, "👥 @" +
                                         SS.username +
                                         " added you "
-                                        "to '" + gname +
-                                        "'")
+                                        "to '" +
+                                        gname + "'")
                                 safe_rerun()
-
-                    my_groups = [g for g in db["groups"]
-                                 if SS.username in
-                                 g["members"]]
-                    if not my_groups:
-                        st.info("No groups yet!")
-                    else:
-                        names = [g["name"]
-                                 for g in my_groups]
-                        gsel = st.selectbox(
-                            "Your groups:", names,
-                            key="g_sel")
-                        group = my_groups[
-                            names.index(gsel)]
-                        st.caption(
-                            "Members: " + ", ".join(
-                                "@" + m for m in
-                                group["members"]))
-
-                        msgs = sorted(
-                            group["messages"],
-                            key=lambda x: x["time"])
-
-                        if SS.clear_msg:
-                            SS[SS.clear_msg] = ""
-                            SS.clear_msg = ""
-
-                        chat_html = ""
-                        for m in msgs:
-                            tstr = time.strftime(
-                                "%H:%M",
-                                time.localtime(
-                                    m["time"]))
-                            who = "<b>@" + esc(
-                                m["from"]) + "</b> "
-                            if m["from"] == SS.username:
-                                cls = "chat-me"
                             else:
-                                cls = "chat-them"
-                            chat_html += (
-                                "<span class='" + cls +
-                                "'>" + who +
-                                esc(m["text"]) +
-                                "<span class="
-                                "'chat-time'>" + tstr +
-                                "</span></span>")
-                        if chat_html:
-                            st.markdown(
-                                chat_html,
-                                unsafe_allow_html=True)
+                                st.warning("Naam aur "
+                                           "members "
+                                           "chunein!")
 
-                        txt = st.text_input(
-                            "Group message",
-                            key="gmsg_input")
-                        if st.button("➡️ Send",
-                                     key="g_send",
-                                     use_container_width
-                                     =True):
-                            if txt.strip():
-                                db = load_db()
-                                for g in db["groups"]:
-                                    if g["id"] == \
-                                            group["id"]:
-                                        g["messages"]\
-                                            .append({
-                                            "from":
-                                            SS.username,
-                                            "text":
-                                            txt.strip(),
-                                            "time":
-                                            time.time
-                                            ()})
-                                        break
-                                save_db(db)
-                                for m in group[
-                                        "members"]:
-                                    if m != \
-                                            SS.username:
-                                        add_notification(
-                                            m, "👥 '" +
-                                            group["name"]
-                                            + "': @" +
-                                            SS.username
-                                            + " " +
-                                            txt.strip()
-                                            [:25])
-                                SS.clear_msg = \
-                                    "gmsg_input"
-                                safe_rerun()
+                    # ---- HMF AI ----
+                    with st.expander("✨ Ask HMF AI"):
+                        ai_q = st.text_input(
+                            "Ask anything...",
+                            key="ai_q")
+                        if st.button("Ask", key="ai_btn"):
+                            st.info(
+                                hmf_ai_reply(ai_q))
 
             # ================= NOTIFICATIONS ============
             elif SS.current_tab == "Notifications":
@@ -2908,20 +3271,21 @@ elif SS.page == "app" and SS.logged_in:
                 elif SS.settings_page == "help":
                     settings_back("bk_help")
                     st.markdown(
-                        "• **Friends** - 👥 tab mein "
-                        "requests aur suggestions\n"
-                        "• **Voice Calls** - chat/profile "
-                        "se\n"
-                        "• **Filters** - Create → Camera 🎨\n"
+                        "• **Chats** - Messenger-style "
+                        "list + reactions 👍\n"
+                        "• **Ask HMF AI** - Chats list "
+                        "mein ✨\n"
+                        "• **Friends** - 👥 tab\n"
                         "• **Owner** - first new signup 👑")
 
                 elif SS.settings_page == "about":
                     settings_back("bk_about")
                     st.markdown(
-                        "**HMF book** v8.0.0\n\n"
-                        "Friend Requests • Voice Calls • "
-                        "Voice Messages • Downloads\n\n"
-                        "© 2025 HMF - All rights reserved.")
+                        "**HMF book** v9.0.0\n\n"
+                        "Messenger Chats • Reactions • "
+                        "Unread Badges • Voice Notes\n\n"
+                        "© 2025 HMF - All rights "
+                        "reserved.")
 
             # ---------- BOTTOM NAV ----------
             st.markdown(
@@ -2944,6 +3308,8 @@ elif SS.page == "app" and SS.logged_in:
                     SS.current_tab = tab
                     if tab == "Settings":
                         SS.settings_page = "menu"
+                    if tab == "Messages":
+                        SS.msg_view = "list"
                     safe_rerun()
 
 
