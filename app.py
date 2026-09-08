@@ -1,13 +1,3 @@
-.dmh{display:flex;align-items:center;gap:8px;padding:12px 4px;
-border-bottom:1px solid #e5e7eb;font-size:22px;font-weight:700}
-.dmi{display:flex;align-items:center;gap:12px;padding:12px 4px;
-border-bottom:1px solid #e5e7eb}
-.dmn{font-weight:700;font-size:14px;color:#1f2937}
-.dms{font-size:12px;color:#9ca3af;margin-top:2px}
-.dmtab{display:flex;border-bottom:2px solid #e5e7eb;margin:8px 0}
-.dmtab div{flex:1;text-align:center;padding:10px;font-size:14px;
-font-weight:600;color:#9ca3af}
-.dmtab .on{color:#1f2937;border-bottom:2px solid #1f2937}
             # ===== MESSAGES (Instagram DM) =====
             elif SS.tab == "Messages":
 
