@@ -26,58 +26,58 @@ try:
 except Exception:
     HAS_JS = False
 
-SALT = "hmf_book_secret_2025"
+SALT = "hmf_secret_2025"
 DB_FILE = "hmf_db.json"
 UPLOAD_DIR = "uploads"
-FILTER_NAMES = ["None", "Beauty", "Sepia", "Vintage",
-                "Cool", "Grayscale", "Bright", "Cartoon"]
+FILTERS = ["None", "Beauty", "Sepia", "Vintage", "Cool",
+           "Gray", "Bright", "Cartoon"]
 GRADS = ["linear-gradient(45deg,#d1fae5,#a7f3d0)",
          "linear-gradient(45deg,#ecfdf5,#6ee7b7)",
          "linear-gradient(45deg,#e6f7f0,#b3e6cc)"]
-VALID_TABS = ["Home", "Search", "Friends", "Groups",
-              "Pages", "Events", "Marketplace", "Ads",
-              "Channel", "Reels", "Create", "Messages",
-              "Notifications", "Ludo", "Profile",
-              "Settings"]
 BAD_WORDS = ["stupid", "idiot", "hate", "dumb", "ugly"]
-CHANNEL_URL = "https://www.youtube.com/@ColorPopCartoons83"
-APP_INFO = {"name": "HMF Book",
-            "founded": "February 4, 2026",
-            "founders": "Mehmood Sial, Hoor-e-Jannat, Farwa",
-            "parent": "HMF Group",
-            "hq": "Bahawalpur / Okara, Pakistan"}
+TABS = ["Home", "Search", "Friends", "Groups", "Pages",
+        "Events", "Market", "Ads", "Channel", "Reels",
+        "Create", "Messages", "Notifications", "Games",
+        "Profile", "Settings"]
+NAV_ICONS = {"Home": "🏠", "Search": "🔍", "Friends": "👥",
+             "Groups": "👥", "Pages": "📄", "Events": "📅",
+             "Market": "🛒", "Ads": "📢", "Channel": "📺",
+             "Reels": "🎬", "Create": "➕",
+             "Messages": "✉️", "Notifications": "🔔",
+             "Games": "🎲", "Profile": "👤",
+             "Settings": "⚙️"}
 
 
-def hash_pw(pw):
-    return hashlib.sha256((SALT + pw).encode()).hexdigest()
+def hash_pw(p):
+    return hashlib.sha256((SALT + p).encode()).hexdigest()
 
 
-def pw_ok(stored, pw):
-    return stored == hash_pw(pw) or stored == pw
+def pw_ok(s, p):
+    return s == hash_pw(p) or s == p
 
 
-def safe_rerun():
+def rr():
     if hasattr(st, "rerun"):
         st.rerun()
     else:
         st.experimental_rerun()
 
 
-def safe_toast(msg):
+def toast(m):
     if hasattr(st, "toast"):
-        st.toast(msg)
+        st.toast(m)
     else:
-        st.info(msg)
+        st.info(m)
 
 
-def parse_yt(url):
-    url = (url or "").strip()
-    if len(url) == 11 and "/" not in url:
-        return url
+def parse_yt(u):
+    u = (u or "").strip()
+    if len(u) == 11 and "/" not in u:
+        return u
     for t in ("youtu.be/", "v=", "/shorts/", "/embed/"):
-        if t in url:
-            p = url.split(t)[1]
-            p = p.split("?")[0].split("&")[0].split("/")[0]
+        if t in u:
+            p = u.split(t)[1].split("?")[0].split("&")[0]
+            .split("/")[0]
             if p:
                 return p
     return None
@@ -111,67 +111,59 @@ def save_db(db):
         pass
 
 
-def get_u(name):
-    return load_db()["users"].get(name, {})
-
-
-def set_pref(name, key, val):
+def setp(u, k, v):
     db = load_db()
-    u = db["users"].get(name)
-    if u is not None:
-        u[key] = val
+    rec = db["users"].get(u)
+    if rec is not None:
+        rec[k] = v
         save_db(db)
 
 
-def add_notification(to_user, text, kind="messages"):
-    if not to_user:
+def notify(to, text, kind="messages"):
+    if not to:
         return
     db = load_db()
-    u = db["users"].get(to_user)
-    if u is not None:
-        prefs = u.get("notif", {"likes": True,
-                                "comments": True,
-                                "follows": True,
-                                "messages": True})
-        if kind in prefs and not prefs.get(kind, True):
+    rec = db["users"].get(to)
+    if rec is not None:
+        pr = rec.get("notif", {"likes": True,
+                               "comments": True,
+                               "follows": True,
+                               "messages": True})
+        if kind in pr and not pr.get(kind, True):
             return
-    db["notifications"].insert(0, {
-        "to": to_user, "text": text,
-        "time": time.time(), "read": False})
+    db["notifications"].insert(0, {"to": to, "text": text,
+                                   "time": time.time(),
+                                   "read": False})
     db["notifications"] = db["notifications"][:200]
     save_db(db)
 
 
-def unread_count(user):
+def unread(u):
     db = load_db()
     return sum(1 for x in db["notifications"]
-               if x.get("to") == user and not x.get("read"))
+               if x.get("to") == u and not x.get("read"))
 
 
-def unseen_count(me, partner):
+def unseen(me, p):
     db = load_db()
-    last = db.get("seen", {}).get(me, {}).get(partner, 0)
+    last = db.get("seen", {}).get(me, {}).get(p, 0)
     return sum(1 for m in db["messages"]
-               if m["from"] == partner and m["to"] == me
+               if m["from"] == p and m["to"] == me
                and m.get("time", 0) > last)
 
 
-def mark_seen(me, partner):
+def seen(me, p):
     db = load_db()
     db.setdefault("seen", {}).setdefault(
-        me, {})[partner] = time.time()
+        me, {})[p] = time.time()
     save_db(db)
 
 
-def text_clean(text):
-    low = text.lower()
-    for w in BAD_WORDS:
-        if w in low:
-            return False
-    return True
+def clean(t):
+    return not any(w in t.lower() for w in BAD_WORDS)
 
 
-def send_msg(is_group, gid, to_user, text, photo=None):
+def smsg(isg, gid, to, text, photo=None):
     me = st.session_state.username
     db = load_db()
     m = {"id": uuid.uuid4().hex[:8], "from": me,
@@ -179,132 +171,65 @@ def send_msg(is_group, gid, to_user, text, photo=None):
          "reactions": []}
     if photo:
         m["photo"] = photo
-    if is_group:
+    if isg:
         for g in db["groups"]:
             if g["id"] == gid:
-                g["messages"].append(m)
+                g.setdefault("messages", []).append(m)
                 break
         save_db(db)
-        db2 = load_db()
-        for g in db2["groups"]:
+        for g in load_db()["groups"]:
             if g["id"] == gid:
                 for mm in g["members"]:
                     if mm != me:
-                        add_notification(
-                            mm, "👥 '" + g["name"] +
-                            "': @" + me + " " + text[:25])
+                        notify(mm, "👥 '" + g["name"] +
+                               "': @" + me + " " + text[:25])
                 break
     else:
-        m["to"] = to_user
+        m["to"] = to
         db["messages"].append(m)
         save_db(db)
-        add_notification(to_user, "✉️ @" + me +
-                         " sent you a message")
+        notify(to, "✉️ @" + me + " messaged you")
 
 
-def toggle_rx(is_group, gid, mid, user):
+def tog_rx(isg, gid, mid, u):
     db = load_db()
-    if is_group:
+    if isg:
         for g in db["groups"]:
             if g["id"] == gid:
-                for m in g["messages"]:
+                for m in g.get("messages", []):
                     if m.get("id") == mid:
-                        rr = m.setdefault("reactions", [])
-                        if user in rr:
-                            rr.remove(user)
+                        rx = m.setdefault("reactions", [])
+                        if u in rx:
+                            rx.remove(u)
                         else:
-                            rr.append(user)
-                        break
+                            rx.append(u)
                 break
     else:
         for m in db["messages"]:
             if m.get("id") == mid:
-                rr = m.setdefault("reactions", [])
-                if user in rr:
-                    rr.remove(user)
+                rx = m.setdefault("reactions", [])
+                if u in rx:
+                    rx.remove(u)
                 else:
-                    rr.append(user)
+                    rx.append(u)
                 break
     save_db(db)
 
 
-def start_call(a, b):
-    try:
-        with open("calls.json", "r") as f:
-            c = json.load(f)
-    except Exception:
-        c = {"active": {}, "history": []}
-    cid = uuid.uuid4().hex[:8]
-    c["active"][cid] = {"id": cid, "from": a, "to": b,
-                        "status": "ringing",
-                        "start": time.time()}
-    try:
-        with open("calls.json", "w") as f:
-            json.dump(c, f)
-    except Exception:
-        pass
-
-
-def answer_call(cid, accept):
-    try:
-        with open("calls.json", "r") as f:
-            c = json.load(f)
-    except Exception:
-        return
-    if cid in c["active"]:
-        if accept:
-            c["active"][cid]["status"] = "active"
-        else:
-            c["active"][cid]["status"] = "ended"
-        try:
-            with open("calls.json", "w") as f:
-                json.dump(c, f)
-        except Exception:
-            pass
-
-
-def end_call(cid):
-    try:
-        with open("calls.json", "r") as f:
-            c = json.load(f)
-    except Exception:
-        return
-    if cid in c["active"]:
-        c["active"].pop(cid)
-        try:
-            with open("calls.json", "w") as f:
-                json.dump(c, f)
-        except Exception:
-            pass
-
-
-def incoming_call(user):
-    try:
-        with open("calls.json", "r") as f:
-            c = json.load(f)
-        for cid, call in c["active"].items():
-            if call.get("to") == user and \
-                    call.get("status") == "ringing":
-                return call
-    except Exception:
-        pass
-    return None
-
-
-def save_upload(fobj):
+def supload(f):
     os.makedirs(UPLOAD_DIR, exist_ok=True)
-    ext = fobj.name.split(".")[-1].lower()
-    if ext not in ("png", "jpg", "jpeg", "webp",
-                   "mp4", "mov", "webm"):
+    ext = f.name.split(".")[-1].lower()
+    if ext not in ("png", "jpg", "jpeg", "mp4", "mov",
+                   "webm"):
         ext = "bin"
     p = os.path.join(UPLOAD_DIR,
                      uuid.uuid4().hex + "." + ext)
     with open(p, "wb") as o:
-        o.write(fobj.getbuffer())
+        o.write(f.getbuffer())
     return p
 
 
-def save_pil(img):
+def spil(img):
     os.makedirs(UPLOAD_DIR, exist_ok=True)
     p = os.path.join(UPLOAD_DIR,
                      uuid.uuid4().hex + ".png")
@@ -312,38 +237,36 @@ def save_pil(img):
     return p
 
 
-def av_html(name, path=None, size=36, border=False):
+def av(name, path=None, size=36, border=False):
     bs = "border:4px solid #fff;" if border else ""
     if path and os.path.exists(path):
         try:
-            b64 = base64.b64encode(
+            b = base64.b64encode(
                 open(path, "rb").read()).decode()
-            return ("<img src='data:image/png;base64," + b64 +
+            return ("<img src='data:image/png;base64," + b +
                     "' style='width:" + str(size) +
                     "px;height:" + str(size) +
                     "px;border-radius:50%;object-fit:"
-                    "cover;margin-right:8px;" + bs + "'>")
+                    "cover;" + bs + "'>")
         except Exception:
             pass
     ini = esc(str(name)[:2].upper())
-    return ("<div style='width:" + str(size) +
-            "px;height:" + str(size) +
-            "px;border-radius:50%;background:linear-"
-            "gradient(135deg,#00B074,#056839);color:#fff;"
-            "display:flex;align-items:center;justify-"
-            "content:center;font-weight:bold;margin-"
-            "right:8px;" + bs + "font-size:" +
+    return ("<div style='width:" + str(size) + "px;"
+            "height:" + str(size) + "px;border-radius:"
+            "50%;background:linear-gradient(135deg,"
+            "#00B074,#056839);color:#fff;display:flex;"
+            "align-items:center;justify-content:center;"
+            "font-weight:bold;" + bs + "font-size:" +
             str(int(size * 0.38)) + "px;'>" + ini + "</div>")
 
 
-def apply_filter(img, name):
+def filt(img, name):
     try:
         im = img.convert("RGB")
         if name == "Beauty":
             b = im.filter(ImageFilter.GaussianBlur(3))
             o = Image.blend(im, b, 0.5)
             o = ImageEnhance.Brightness(o).enhance(1.1)
-            o = ImageEnhance.Color(o).enhance(1.15)
         elif name == "Sepia":
             o = ImageOps.colorize(im.convert("L"),
                                   "#704214", "#ffe8c0")
@@ -353,7 +276,7 @@ def apply_filter(img, name):
         elif name == "Cool":
             o = ImageOps.colorize(im.convert("L"),
                                   "#20304a", "#c8e0ff")
-        elif name == "Grayscale":
+        elif name == "Gray":
             o = im.convert("L").convert("RGB")
         elif name == "Bright":
             o = ImageEnhance.Brightness(im).enhance(1.4)
@@ -363,7 +286,6 @@ def apply_filter(img, name):
             s = s.filter(ImageFilter.MedianFilter(7))
             o = s.resize((im.width, im.height))
             o = ImageOps.posterize(o, 5)
-            o = ImageEnhance.Color(o).enhance(1.3)
         else:
             o = im
         return o
@@ -371,367 +293,252 @@ def apply_filter(img, name):
         return img
 
 
-def is_local(ref):
-    ref = str(ref or "")
-    if ref.startswith("http"):
-        return False
-    return os.path.exists(ref)
-
-
-def shot_install():
-    if not HAS_JS:
-        return
-    code = ("(()=>{const w=window.parent;"
-            "if(!w.hmfListenSet){w.hmfListenSet=1;"
-            "w.addEventListener('keyup',function(e){"
-            "if(e.key==='PrintScreen'){"
-            "w.hmfShotPending='print';}});"
-            "w.addEventListener('copy',function(){"
-            "w.hmfShotPending='copy';});}"
-            "return 1;})()")
-    try:
-        js_eval(code, key="shot_listen")
-    except Exception:
-        pass
-
-
-def shot_check():
-    if not HAS_JS:
-        return None
-    code = ("(()=>{const w=window.parent;"
-            "const v=w.hmfShotPending;"
-            "w.hmfShotPending=null;return v;})()")
-    try:
-        return js_eval(code)
-    except Exception:
-        return None
+def isfile(r):
+    return not str(r or "").startswith("http") and \
+        os.path.exists(str(r or ""))
 
 
 # ---------- SEED ----------
 DB = load_db()
-SEED = [("demo", "demo@hmfbook.com", "1234",
-         "Demo User", "21 Dec 1996", "Male"),
-        ("hoor_jannat", "hoor@hmfbook.com", "1234",
-         "Hoor Jannat", "14 Mar 2000", "Female"),
-        ("farrukh_m", "farrukh@hmfbook.com", "1234",
-         "Farrukh M", "5 Jan 1995", "Male"),
-        ("zara_x", "zara@hmfbook.com", "1234",
-         "Zara X", "9 Sep 1999", "Female")]
-ch = False
-for un, ml, pw, nm, bd, gn in SEED:
-    if un in DB["banned"]:
-        continue
-    if un not in DB["users"]:
+for un, ml, pw, nm in [
+        ("demo", "d@h.com", "1234", "Demo User"),
+        ("hoor", "h@h.com", "1234", "Hoor Jannat"),
+        ("farrukh", "f@h.com", "1234", "Farrukh M")]:
+    if un not in DB["users"] and un not in DB["banned"]:
         DB["users"][un] = {
             "email": ml, "password": hash_pw(pw),
             "display_name": nm, "bio": "Hi!",
-            "birthday": bd, "gender": gn,
-            "coins": 550, "followers": 200,
-            "blocked": [], "avatar": None,
-            "fails": 0, "lock_until": 0,
+            "birthday": "Not set", "gender": "Not set",
+            "coins": 550, "followers": 200, "blocked": [],
+            "avatar": None, "fails": 0, "lock_until": 0,
             "app_lock": False, "app_pin": "",
             "finger_lock": False, "two_fa": False,
             "login_alerts": True, "auto_logout": 0,
-            "comment_filter": True, "feed_sort":
-            "Most Recent", "show_stories": True,
+            "comment_filter": True, "private": False,
+            "activity_status": True,
+            "feed_sort": "Recent", "show_stories": True,
             "notif": {"likes": True, "comments": True,
                       "follows": True, "messages": True}}
-        ch = True
 if not DB["posts"]:
     DB["posts"] = [
-        {"id": "s1", "user": "hoor_jannat", "type":
-         "youtube", "ref": "aqz-KE-bpKQ", "cap":
-         "Big Buck Bunny!", "likes": {},
-         "comments": []},
-        {"id": "s2", "user": "farrukh_m", "type":
-         "text", "grad": GRADS[0], "txt":
-         "Ludo Night", "cap": "Tonight 8 PM!",
-         "likes": {}, "comments": []}]
-    ch = True
-if not DB["pages"]:
-    DB["pages"].append({"id": "pg1", "name":
-                        "HMF Official", "category": "Brand",
-                        "owner": "demo", "description":
-                        "Official page!", "followers": []})
-    ch = True
+        {"id": "s1", "user": "hoor", "type": "youtube",
+         "ref": "aqz-KE-bpKQ", "cap": "Big Buck Bunny!",
+         "likes": {}, "comments": []},
+        {"id": "s2", "user": "farrukh", "type": "text",
+         "grad": GRADS[0], "txt": "Ludo Night!",
+         "cap": "Tonight 8 PM!", "likes": {},
+         "comments": []}]
 if not DB["events"]:
     DB["events"].append({"id": "ev1", "title":
-                         "HMF Meetup", "description": "Milte hain!",
-                         "host": "demo", "location": "Bahawalpur",
-                         "date": "2026-03-15", "time": "6 PM",
+                         "HMF Meetup", "host": "demo",
+                         "location": "Bahawalpur",
+                         "date": "15 Mar 2026",
                          "rsvps": []})
-    ch = True
 if not DB["listings"]:
     DB["listings"].append({"id": "ls1", "seller":
-                           "farrukh_m", "title": "Gaming Mouse",
-                           "description": "RGB, almost new",
-                           "price": 1500, "category": "Electronics",
-                           "image": None, "location": "Okara",
+                           "farrukh", "title":
+                           "Gaming Mouse",
+                           "price": 1500, "category":
+                           "Electronics", "description":
+                           "RGB", "image": None,
                            "status": "available"})
-    ch = True
-if ch:
-    save_db(DB)
+save_db(DB)
 
 
 # ---------- SESSION ----------
 SS = st.session_state
 for k, v in {
         "page": "splash", "logged_in": False,
-        "username": "", "email": "", "auth_mode":
-        "login", "current_tab": "Home",
-        "settings_page": "menu", "blocked": [],
-        "clear_cmt": "", "clear_msg": "",
-        "block_msg": "", "report_msg": "",
-        "withdraw_msg": "", "yt_msg": "",
+        "username": "", "auth_mode": "login",
+        "tab": "Home", "setpage": "menu",
+        "blocked": [], "clear_c": "", "clear_m": "",
         "view_user": None, "open_group": "",
         "open_page": "", "open_event": "",
-        "open_listing": "", "pin_unlocked": True,
-        "finger_unlocked": True, "pin_attempts": 0,
-        "pin_lock_until": 0, "pin_msg": "",
-        "msg_view": "list", "msg_target": "",
-        "msg_target_type": "direct",
-        "last_shot_time": 0, "twofa_code": "",
-        "last_active": 0, "dark_mode": False,
-        "dice": 0, "room_code": ""}.items():
+        "open_list": "", "open_reel": "",
+        "pin_ok": True, "fin_ok": True, "pin_att": 0,
+        "pin_lock": 0, "msg_view": "list",
+        "msg_target": "", "msg_ttype": "direct",
+        "shot_t": 0, "dark": False, "dice": 0,
+        "last_active": 0, "2fa": ""}.items():
     if k not in SS:
         SS[k] = v
 
-try:
-    qp = dict(st.query_params)
-except Exception:
-    qp = {}
-tab_q = qp.get("tab")
-dark_q = qp.get("dark")
-if SS.logged_in:
-    if tab_q in VALID_TABS:
-        SS.current_tab = tab_q
-        if tab_q == "Settings":
-            SS.settings_page = "menu"
-        if tab_q == "Messages":
-            SS.msg_view = "list"
-    if dark_q in ("0", "1"):
-        SS.dark_mode = dark_q == "1"
-if tab_q in VALID_TABS or dark_q in ("0", "1"):
-    try:
-        st.query_params.clear()
-    except Exception:
-        pass
+
+def go(tab):
+    SS.tab = tab
+    if tab == "Settings":
+        SS.setpage = "menu"
+    if tab == "Messages":
+        SS.msg_view = "list"
+    rr()
 
 
 # ---------- CSS ----------
-def css_main(dark):
+def css(dark):
     if dark:
-        T = {"BG": "#0f1110", "CARD": "#1b1e1b",
+        T = {"BG": "#0f1110", "CD": "#1b1e1b",
              "BR": "#2a2e2a", "T1": "#eef1ee",
              "T2": "#9aa69a", "LG": "#00e08a"}
     else:
-        T = {"BG": "#f0f2f5", "CARD": "#ffffff",
+        T = {"BG": "#f0f2f5", "CD": "#ffffff",
              "BR": "#e5e7eb", "T1": "#1f2937",
              "T2": "#4b5563", "LG": "#00B074"}
     c = """
     <style>
     .stApp{background-color:BG !important}
     header[data-testid="stHeader"],#MainMenu,footer,
-    [data-testid="stToolbar"],[data-testid="stStatusWidget"],
-    [data-testid="stDecoration"]{display:none !important}
-    .block-container,[data-testid="block-container"]{
-    max-width:430px;margin:0 auto;background:CARD;
-    padding:0 10px 95px !important;min-height:100vh;
-    box-shadow:0 0 35px rgba(0,0,0,.18)}
-    .topbar{position:sticky;top:0;z-index:995;display:flex;
+    [data-testid="stToolbar"],[data-testid=
+    "stStatusWidget"],[data-testid="stDecoration"]{
+    display:none !important}
+    .block-container{max-width:430px;margin:0 auto;
+    background:CD;padding:0 10px 40px !important;
+    min-height:100vh;box-shadow:0 0 35px
+    rgba(0,0,0,.18)}
+    .tb{position:sticky;top:0;z-index:995;display:flex;
     justify-content:space-between;align-items:center;
-    padding:12px 14px;background:CARD;border-bottom:
-    1px solid BR;margin:0 -10px}
-    .logo{font-size:25px;font-weight:700;font-family:
+    padding:12px 14px;background:CD;border-bottom:1px
+    solid BR;margin:0 -10px}
+    .lg{font-size:25px;font-weight:700;font-family:
     'Segoe Script','Brush Script MT',cursive;color:T1}
-    .ticons a{font-size:20px;text-decoration:none;
-    margin-left:13px;position:relative}
-    .ndot{position:absolute;top:-6px;right:-10px;
-    background:#e53e3e;color:#fff;border-radius:10px;
-    font-size:10px;font-weight:700;padding:1px 5px}
-    .stories{display:flex;gap:14px;padding:12px 4px;
+    .st{display:flex;gap:14px;padding:10px 4px;
     border-bottom:1px solid BR;overflow-x:auto}
     .sc{display:flex;flex-direction:column;align-items:
-    center;min-width:62px}
-    .ring{width:56px;height:56px;border-radius:50%;
+    center;min-width:60px}
+    .rg{width:54px;height:54px;border-radius:50%;
     padding:2.5px;background:linear-gradient(135deg,
     #00B074,#056839);display:flex;align-items:center;
     justify-content:center}
-    .ringg{background:#dbdbdb}
-    .rim{width:100%;height:100%;border-radius:50%;
-    background:CARD;border:2px solid CARD;display:flex;
-    align-items:center;justify-content:center;font-weight:
-    bold;color:T2;font-size:13px}
-    .snm{font-size:11px;color:T2;margin-top:4px}
-    .qr{display:flex;gap:8px;padding:10px 0 4px;
-    flex-wrap:wrap}
-    .qp{text-align:center;padding:6px 10px;border:1px
-    solid BR;border-radius:20px;font-size:12px;
-    text-decoration:none;color:T1;font-weight:600}
-    .pc{background:CARD;border-bottom:1px solid BR;
+    .rgg{background:#dbdbdb}
+    .rm{width:100%;height:100%;border-radius:50%;
+    background:CD;border:2px solid CD;display:flex;
+    align-items:center;justify-content:center;
+    font-weight:bold;color:T2;font-size:13px}
+    .sn{font-size:11px;color:T2;margin-top:4px}
+    .pc{background:CD;border-bottom:1px solid BR;
     margin-bottom:10px}
     .ph2{display:flex;align-items:center;padding:10px 4px}
-    .pun{font-size:14px;font-weight:700;color:T1}
-    .pph{width:100%;height:280px;background:#f3f4f6;
+    .pu{font-size:14px;font-weight:700;color:T1}
+    .pph{width:100%;height:270px;background:#f3f4f6;
     display:flex;align-items:center;justify-content:
     center;font-size:15px}
     .lk{padding:6px 2px 0;font-weight:600;font-size:13px;
     color:T1;margin:0}
     .pd{padding:0 2px 8px;font-size:14px;color:T1;margin:0}
-    .phdr{padding:16px 4px;font-size:20px;font-weight:
-    bold;color:LG;border-bottom:1px solid BR;
-    text-align:center}
+    .ph{padding:14px 4px;font-size:20px;font-weight:bold;
+    color:LG;border-bottom:1px solid BR;text-align:center}
     .sl{font-weight:700;color:T1;margin:12px 0 4px}
     .nr{padding:10px 4px;border-bottom:1px solid BR;
     font-size:14px;color:T1}
-    .bdot{background:#e53e3e;color:#fff;border-radius:50%;
-    padding:2px 8px;font-size:11px;font-weight:700;
-    margin-left:6px}
+    .bdt{background:#e53e3e;color:#fff;border-radius:50%;
+    padding:2px 8px;font-size:11px;font-weight:700}
     .ob{background:linear-gradient(135deg,#f59e0b,
     #d97706);color:#fff;padding:2px 10px;border-radius:
     12px;font-size:11px;font-weight:bold}
     .ci{display:flex;align-items:center;padding:11px 4px;
     border-bottom:1px solid BR}
-    .aw{position:relative;margin-right:6px}
-    .odot{position:absolute;bottom:2px;right:2px;width:
-    12px;height:12px;border-radius:50%;background:
-    #31a24c;border:2px solid CARD}
-    .cinf{flex:1;min-width:0}
-    .cnm{font-weight:700;font-size:14px;color:T1}
-    .cpv{font-size:12.5px;color:T2;overflow:hidden;
-    text-overflow:ellipsis;white-space:nowrap;margin-top:2px}
-    .ctm{font-size:11px;color:T2}
+    .aw{margin-right:8px}
+    .od{position:relative}
+    .od::after{content:'';position:absolute;bottom:2px;
+    right:2px;width:11px;height:11px;border-radius:50%;
+    background:#31a24c;border:2px solid CD}
+    .cn{flex:1;min-width:0}
+    .nm{font-weight:700;font-size:14px;color:T1}
+    .pv{font-size:12px;color:T2;overflow:hidden;text-
+    overflow:ellipsis;white-space:nowrap;margin-top:2px}
     .ub{background:#00B074;color:#fff;border-radius:50%;
     min-width:20px;height:20px;display:inline-flex;
     align-items:center;justify-content:center;font-size:
-    11px;font-weight:700;padding:0 6px;margin-top:4px}
-    .bme{background:#00B074;color:#fff;padding:8px 13px;
+    11px;font-weight:700;padding:0 6px}
+    .bm{background:#00B074;color:#fff;padding:8px 13px;
     border-radius:18px 18px 4px 18px;max-width:78%;
     margin:3px 0 3px auto;font-size:14px;display:block;
     width:fit-content}
-    .bth{background:BR;color:T1;padding:8px 13px;
+    .bh{background:BR;color:T1;padding:8px 13px;
     border-radius:18px 18px 18px 4px;max-width:78%;
     margin:3px auto 3px 0;font-size:14px;display:block;
     width:fit-content}
-    .btm{font-size:10px;opacity:.75;display:block;
+    .bt{font-size:10px;opacity:.75;display:block;
     text-align:right;margin-top:2px}
-    .enc{text-align:center;font-size:11px;color:T2;
+    .en{text-align:center;font-size:11px;color:T2;
     background:rgba(0,176,116,.07);border-radius:10px;
-    padding:6px 10px;margin:6px 0}
+    padding:6px;margin:6px 0}
     .fr{display:flex;align-items:center;padding:10px 4px;
     border-bottom:1px solid BR}
-    .sr{display:flex;align-items:center;padding:10px 4px;
-    border-bottom:1px solid BR}
-    .lkscr{display:flex;flex-direction:column;align-items:
-    center;justify-content:center;height:55vh;text-align:
-    center}
-    .fbi{font-size:70px;margin-bottom:10px}
-    .fbc{height:115px;border-radius:0 0 14px 14px;
-    background:linear-gradient(135deg,#00B074,#056839);
-    margin:0 -10px}
-    .fbn{font-size:22px}
-    .fbs{font-size:13px;color:T2}
     .gc{border:1px solid BR;border-radius:12px;padding:
     12px;margin-bottom:10px}
-    .gcv{height:65px;border-radius:8px;background:
+    .gv{height:60px;border-radius:8px;background:
     linear-gradient(135deg,#00B074,#056839);
     margin-bottom:8px}
-    .gnm{font-weight:800;font-size:15px;color:T1}
-    .gsb{font-size:12px;color:T2}
-    .adc{border:2px solid #f59e0b;border-radius:12px;
+    .gn{font-weight:800;font-size:15px;color:T1}
+    .gs{font-size:12px;color:T2}
+    .ad{border:2px solid #f59e0b;border-radius:12px;
     padding:12px;margin:10px 0;background:rgba(245,
     158,11,.06)}
-    .adt{background:#f59e0b;color:#fff;padding:2px 8px;
+    .at{background:#f59e0b;color:#fff;padding:2px 8px;
     border-radius:8px;font-size:10px;font-weight:700}
-    .nav{position:fixed;bottom:0;left:50%;transform:
-    translateX(-50%);width:100%;max-width:430px;
-    background:CARD;border-top:1px solid BR;display:
-    flex;justify-content:space-around;align-items:
-    center;padding:10px 0 14px;z-index:998}
-    .nav a{font-size:22px;text-decoration:none;filter:
-    grayscale(1) opacity(.45);position:relative;
-    line-height:1}
-    .nav a.on{filter:none;transform:scale(1.12)}
-    .call{background:CARD;border:2px solid #00B074;
-    border-radius:14px;padding:12px;margin:8px 0;
-    display:flex;align-items:center;gap:12px}
-    div[data-testid="stButton"]>button,
-    div.stButton>button{background:#00B074 !important;
-    color:#fff !important;font-weight:600 !important;
-    border:none !important;border-radius:12px !important}
+    .fbc{height:110px;border-radius:0 0 14px 14px;
+    background:linear-gradient(135deg,#00B074,#056839);
+    margin:0 -10px}
+    .div[data-testid="stButton"]>button{
+    background:#00B074 !important;color:#fff !important;
+    font-weight:600 !important;border:none !important;
+    border-radius:12px !important}
     div[data-testid="stButton"]>button:hover{
-    background:#056839 !important;color:#fff !important}
+    background:#056839 !important}
+    .nvb button{background:transparent !important;
+    color:T1 !important;border:none !important;
+    font-size:20px !important;padding:4px 0 !important}
     </style>
     """
     for k, v in T.items():
         c = c.replace(k, v)
-    if dark:
-        c += """
-        <style>
-        [data-testid="stTextInput"] input,
-        [data-testid="stTextArea"] textarea{
-        background:#242824 !important;color:#fff
-        !important;border-color:#3a3f3a !important}
-        [data-testid="stCheckbox"] label p,
-        [data-testid="stRadio"] label p{color:#e5e9e5
-        !important}
-        </style>
-        """
     return c
 
 
 # ================= SPLASH =================
 if SS.page == "splash":
     st.markdown("""
-    <style>
-    .stApp{background:linear-gradient(135deg,#00B074,
-    #056839) !important}
-    header[data-testid="stHeader"],#MainMenu,footer,
-    [data-testid="stToolbar"],[data-testid=
-    "stDecoration"]{display:none !important}
+    <style>.stApp{background:linear-gradient(135deg,
+    #00B074,#056839) !important}
+    header,#MainMenu,footer,[data-testid="stToolbar"]{
+    display:none !important}
     .mid{display:flex;flex-direction:column;align-items:
-    center;justify-content:center;height:60vh;
-    text-align:center}
-    .lgo{font-size:90px;font-weight:900;color:#fff;
+    center;justify-content:center;height:60vh;text-align:
+    center}
+    .lg2{font-size:90px;font-weight:900;color:#fff;
     letter-spacing:4px;margin:0}
-    .sub{font-size:24px;color:rgba(255,255,255,.92)}
-    div[data-testid="stButton"]>button{background:#fff
-    !important;color:#00B074 !important;font-size:18px
-    !important;font-weight:bold !important;padding:12px
-    45px !important;border-radius:30px !important;border:
-    none !important}
     </style>
-    <div class="mid"><h1 class="lgo">HMF</h1>
-    <p class="sub">HMF Book</p></div>
+    <div class="mid"><h1 class="lg2">HMF</h1>
+    <p style="font-size:24px;color:rgba(255,255,255,.9)">
+    HMF Book</p></div>
     """, unsafe_allow_html=True)
     if st.button("Get Started", use_container_width=True):
         SS.page = "auth"
-        safe_rerun()
+        rr()
 
 
 # ================= AUTH =================
 elif SS.page == "auth":
 
     sup = SS.auth_mode == "signup"
-    title = "Create Account" if sup else "Welcome Back"
+    ttl = "Create Account" if sup else "Welcome Back"
     btn = "Sign Up" if sup else "Login"
 
-    st.markdown(css_main(False), unsafe_allow_html=True)
-    st.markdown("<div style='text-align:center;"
-                "margin-top:14px;'><div style="
-                "'background:linear-gradient(135deg,"
-                "#00B074,#056839);display:inline-block;"
-                "padding:16px 48px;border-radius:22px;'>"
-                "<h1 style='color:#fff;font-size:34px;"
-                "margin:0;font-weight:900;letter-spacing:"
-                "3px;'>HMF</h1></div></div>",
-                unsafe_allow_html=True)
-    st.markdown("<h2 style='text-align:center;'>" +
-                title + "</h2>", unsafe_allow_html=True)
+    st.markdown(css(False), unsafe_allow_html=True)
+    st.markdown("<div style='text-align:center;margin-"
+                "top:14px;'><div style='background:"
+                "linear-gradient(135deg,#00B074,#056839);"
+                "display:inline-block;padding:16px 48px;"
+                "border-radius:22px;'><h1 style='color:"
+                "#fff;font-size:34px;margin:0;font-weight:"
+                "900;letter-spacing:3px;'>HMF</h1></div>"
+                "</div>", unsafe_allow_html=True)
+    st.markdown("<h2 style='text-align:center;'>" + ttl +
+                "</h2>", unsafe_allow_html=True)
 
-    un = st.text_input("Username", placeholder="username")
+    un = st.text_input("Username")
     if sup:
-        em = st.text_input("Email", placeholder="email")
+        em = st.text_input("Email")
     pw = st.text_input("Password", type="password")
 
     if st.button(btn, use_container_width=True):
@@ -740,26 +547,23 @@ elif SS.page == "auth":
         if not u or not pw:
             st.error("Dono fields bharin!")
         elif u in db["banned"]:
-            st.error("🚫 PERMANENTLY BANNED!")
+            st.error("🚫 BANNED!")
         elif sup:
             if u in db["users"]:
                 st.error("Username taken!")
             else:
-                made_owner = not db.get("owner")
-                if made_owner:
+                own = not db.get("owner")
+                if own:
                     db["owner"] = u
                 db["users"][u] = {
                     "email": em, "password": hash_pw(pw),
                     "display_name": u.title(), "bio": "Hi!",
-                    "birthday": "Not set", "gender": "Not set",
-                    "coins": 100, "followers": 0, "blocked": [],
+                    "coins": 100, "blocked": [],
                     "avatar": None, "fails": 0,
-                    "lock_until": 0, "app_lock": False,
-                    "app_pin": "", "finger_lock": False,
-                    "two_fa": False, "login_alerts": True,
-                    "auto_logout": 0, "comment_filter": True,
-                    "feed_sort": "Most Recent",
-                    "show_stories": True,
+                    "app_lock": False, "app_pin": "",
+                    "finger_lock": False, "two_fa": False,
+                    "login_alerts": True, "auto_logout": 0,
+                    "comment_filter": True, "private": False,
                     "notif": {"likes": True, "comments": True,
                               "follows": True,
                               "messages": True}}
@@ -767,89 +571,43 @@ elif SS.page == "auth":
                 SS.logged_in = True
                 SS.username = u
                 SS.page = "app"
-                SS.pin_unlocked = True
-                SS.finger_unlocked = True
-                SS.last_active = time.time()
-                add_notification(u, "👋 Welcome to HMF Book!")
-                if made_owner:
+                if own:
                     st.balloons()
-                safe_rerun()
+                rr()
         else:
             rec = db["users"].get(u)
-            if rec and rec.get("lock_until", 0) > time.time():
-                st.error("🔒 Locked! Wait " + str(int(
-                    rec["lock_until"] - time.time()) + 1) +
-                    "s")
+            if rec and rec.get("lock_until", 0) > \
+                    time.time():
+                st.error("🔒 Wait " + str(int(
+                    rec["lock_until"] - time.time()) + 1)
+                    + "s")
             elif rec and pw_ok(rec.get("password", ""), pw):
-                rec["fails"] = 0
-                rec["lock_until"] = 0
-                save_db(db)
                 SS.logged_in = True
                 SS.username = u
                 SS.blocked = rec.get("blocked", [])
+                SS.pin_ok = not rec.get("app_lock", False)
+                SS.fin_ok = not rec.get("finger_lock",
+                                        False)
+                SS.page = "app"
                 SS.last_active = time.time()
-                # 2FA check
-                if rec.get("two_fa"):
-                    SS.twofa_code = str(random.randint(
-                        100000, 999999))
-                    SS.page = "twofa"
-                else:
-                    SS.page = "app"
-                    SS.pin_unlocked = not rec.get(
-                        "app_lock", False)
-                    SS.finger_unlocked = not rec.get(
-                        "finger_lock", False)
-                    if rec.get("login_alerts"):
-                        add_notification(u, "📩 New login "
-                                         "detected")
-                safe_rerun()
+                if rec.get("login_alerts"):
+                    notify(u, "📩 New login detected")
+                rr()
             elif rec:
                 rec["fails"] = rec.get("fails", 0) + 1
                 if rec["fails"] >= 5:
                     rec["lock_until"] = time.time() + 60
                     rec["fails"] = 0
-                    st.error("🔒 5 wrong! Locked 60s.")
-                else:
-                    st.error("Wrong! " + str(5 - rec["fails"])
-                             + " left.")
                 save_db(db)
+                st.error("Wrong password!")
             else:
-                st.error("Invalid username or password!")
+                st.error("Invalid username!")
 
-    if st.button("Switch to " +
-                 ("Login" if sup else "Sign Up")):
+    if st.button("Switch to " + ("Login" if sup
+                                 else "Sign Up")):
         SS.auth_mode = "login" if sup else "signup"
-        safe_rerun()
-    st.caption("Demo: demo/1234 • First signup = Owner 👑")
-
-
-# ================= 2FA =================
-elif SS.page == "twofa" and SS.logged_in:
-    st.markdown(css_main(False), unsafe_allow_html=True)
-    st.markdown("<div class='lkscr'><div class='fbi'>🔑"
-                "</div><h2>Two-Factor Verification</h2>"
-                "<p style='color:#6b7280;'>6-digit code "
-                "enter karein</p></div>",
-                unsafe_allow_html=True)
-    st.info("Demo code: **" + SS.twofa_code + "**")
-    code_in = st.text_input("Enter code", max_chars=6)
-    if st.button("✅ Verify", use_container_width=True):
-        if code_in == SS.twofa_code:
-            rec = get_u(SS.username)
-            SS.page = "app"
-            SS.pin_unlocked = not rec.get("app_lock", False)
-            SS.finger_unlocked = not rec.get(
-                "finger_lock", False)
-            if rec.get("login_alerts"):
-                add_notification(SS.username,
-                                 "📩 New login detected")
-            safe_rerun()
-        else:
-            st.error("Wrong code!")
-    if st.button("🚪 Logout", use_container_width=True):
-        SS.logged_in = False
-        SS.page = "auth"
-        safe_rerun()
+        rr()
+    st.caption("Demo: demo/1234 • hoor/1234")
 
 
 # ================= MAIN =================
@@ -857,246 +615,226 @@ elif SS.page == "app" and SS.logged_in:
 
     db = load_db()
     me = db["users"].get(SS.username, {})
-    owner = db.get("owner", "")
-    is_owner = SS.username == owner
+    is_owner = SS.username == db.get("owner", "")
 
-    need_pin = me.get("app_lock") and not SS.pin_unlocked
-    need_f = me.get("finger_lock") and not SS.finger_unlocked
+    st.markdown(css(SS.dark), unsafe_allow_html=True)
 
-    # ---- LOCK SCREENS (asli mein kaam karte hain!) ----
-    if need_f or need_pin:
+    # auto logout
+    al = me.get("auto_logout", 0)
+    if al > 0 and SS.last_active > 0 and \
+            time.time() - SS.last_active > al * 60:
+        SS.logged_in = False
+        SS.page = "auth"
+        rr()
+    SS.last_active = time.time()
 
-        st.markdown(css_main(SS.dark_mode),
+    # ---- LOCK SCREENS ----
+    if me.get("app_lock") and not SS.pin_ok:
+        st.markdown("<div style='text-align:center;"
+                    "padding:25vh 0;'><div style="
+                    "'font-size:70px;'>🔐</div><h2>App "
+                    "Locked</h2></div>",
                     unsafe_allow_html=True)
-
-        if need_f:
-            st.markdown("<div class='lkscr'><div class="
-                        "'fbi'>👆</div><h2>Fingerprint "
-                        "Lock</h2><p style='color:"
-                        "#6b7280;'>Tap to scan</p></div>",
-                        unsafe_allow_html=True)
-            if st.button("👆 Scan Fingerprint",
-                         use_container_width=True):
-                time.sleep(1.2)
-                SS.finger_unlocked = True
-                add_notification(SS.username,
-                                 "👆 Unlocked with fingerprint")
-                safe_rerun()
-            if st.button("🚪 Logout",
-                         use_container_width=True):
-                SS.logged_in = False
-                SS.page = "auth"
-                safe_rerun()
+        if SS.pin_lock > time.time():
+            st.error("Locked " + str(int(SS.pin_lock -
+                                         time.time()) +
+                                     1) + "s")
         else:
-            st.markdown("<div class='lkscr'><div class="
-                        "'fbi'>🔐</div><h2>App Locked"
-                        "</h2><p style='color:#6b7280;'>"
-                        "4-digit PIN</p></div>",
-                        unsafe_allow_html=True)
-            if SS.pin_lock_until > time.time():
-                st.error("Locked " + str(int(
-                    SS.pin_lock_until - time.time()) + 1)
-                    + "s")
-            else:
-                pin_in = st.text_input("PIN",
-                                       type="password",
-                                       max_chars=4)
-                if st.button("🔓 Unlock",
-                             use_container_width=True):
-                    if pin_in == me.get("app_pin"):
-                        SS.pin_unlocked = True
-                        SS.pin_attempts = 0
-                        safe_rerun()
-                    else:
-                        SS.pin_attempts += 1
-                        if SS.pin_attempts >= 3:
-                            SS.pin_lock_until = \
-                                time.time() + 30
-                            SS.pin_attempts = 0
-                        st.error("Wrong PIN!")
+            pi = st.text_input("PIN", type="password",
+                               max_chars=4)
+            if st.button("🔓 Unlock",
+                         use_container_width=True):
+                if pi == me.get("app_pin"):
+                    SS.pin_ok = True
+                    rr()
+                else:
+                    SS.pin_att += 1
+                    if SS.pin_att >= 3:
+                        SS.pin_lock = time.time() + 30
+                        SS.pin_att = 0
+                    st.error("Wrong PIN!")
 
-    else:
-        st.markdown(css_main(SS.dark_mode),
+    elif me.get("finger_lock") and not SS.fin_ok:
+        st.markdown("<div style='text-align:center;"
+                    "padding:25vh 0;'><div style="
+                    "'font-size:70px;'>👆</div><h2>"
+                    "Fingerprint Lock</h2></div>",
                     unsafe_allow_html=True)
-        DB = load_db()
-
-        now = time.time()
-        al = me.get("auto_logout", 0)
-        if al > 0 and SS.last_active > 0 and \
-                now - SS.last_active > al * 60:
+        if st.button("👆 Scan", use_container_width=True):
+            time.sleep(1.2)
+            SS.fin_ok = True
+            rr()
+        if st.button("🚪 Logout",
+                     use_container_width=True):
             SS.logged_in = False
             SS.page = "auth"
-            safe_rerun()
-        SS.last_active = now
+            rr()
 
+    else:
+        # ---- TOPBAR (buttons only - NO links!) ----
         unread = unread_count(SS.username)
-        banned = DB.get("banned", [])
-
-        # ---- INCOMING CALL ----
-        inc = incoming_call(SS.username)
-        if inc:
-            st.markdown("<div class='call'><div style="
-                        "'font-size:24px;'>📞</div><div>"
-                        "<b>Incoming: @" + esc(inc["from"]) +
-                        "</b></div></div>",
-                        unsafe_allow_html=True)
-            i1, i2 = st.columns(2)
-            if i1.button("✅ Accept", key="ca"):
-                answer_call(inc["id"], True)
-                add_notification(inc["from"], "📞 " +
-                                 SS.username + " accepted!")
-                safe_rerun()
-            if i2.button("❌ Reject", key="cr"):
-                answer_call(inc["id"], False)
-                safe_rerun()
-
-        # ---- TOPBAR ----
-        if SS.dark_mode:
-            dh, di = "?dark=0", "☀️"
-        else:
-            dh, di = "?dark=1", "🌙"
-        nb = ""
+        st.markdown("<div class='tb'><div class='lg'>"
+                    "HMF Book</div></div>",
+                    unsafe_allow_html=True)
+        tq = st.columns(6)
+        if tq[0].button("✉️", key="tbm",
+                        use_container_width=True):
+            go("Messages")
+        btxt = "🔔"
         if unread > 0:
-            nb = "<span class='ndot'>" + str(unread) + \
-                 "</span>"
-        st.markdown("<div class='topbar'><div class="
-                    "'logo'>HMF Book</div><div class="
-                    "'ticons'><a href='?tab=Messages'>✉️</a>"
-                    "<a href='?tab=Notifications'>🔔" + nb +
-                    "</a><a href='" + dh + "'>" + di +
-                    "</a><a href='?tab=Settings'>⚙️</a></div>"
-                    "</div>", unsafe_allow_html=True)
+            btxt = "🔔" + str(unread)
+        if tq[1].button(btxt, key="tbn",
+                        use_container_width=True):
+            go("Notifications")
+        if tq[2].button("🌙" if not SS.dark else "☀️",
+                        key="tbd", use_container_width=True):
+            SS.dark = not SS.dark
+            rr()
+        if tq[3].button("⚙️", key="tbs",
+                        use_container_width=True):
+            go("Settings")
+        if tq[4].button("📞" if False else "👤",
+                        key="tbp", use_container_width=True):
+            go("Profile")
+        if tq[5].button("🚪", key="tbo",
+                        use_container_width=True):
+            SS.logged_in = False
+            SS.page = "auth"
+            rr()
+
+        # ---- NAV BAR (buttons - NO reload!) ----
+        nv = st.columns(8)
+        for i, (t, ic) in enumerate([
+                ("Home", "🏠"), ("Search", "🔍"),
+                ("Reels", "🎬"), ("Market", "🛒"),
+                ("Messages", "✉️"), ("Create", "➕"),
+                ("Friends", "👥"), ("Profile", "👤")]):
+            mark = "🔹" if SS.tab == t else ic
+            if nv[i].button(mark, key="nv_" + t,
+                            use_container_width=True):
+                go(t)
+        st.markdown("<div style='height:6px;'></div>",
+                    unsafe_allow_html=True)
 
         # ---- VIEW USER ----
         if SS.view_user and SS.view_user != SS.username:
             vu = SS.view_user
-            if vu not in DB["users"]:
+            if vu not in db["users"]:
                 SS.view_user = None
-                safe_rerun()
-            ud = DB["users"][vu]
-            mp = [p for p in DB["posts"]
+                rr()
+            ud = db["users"][vu]
+            mp = [p for p in db["posts"]
                   if p["user"] == vu]
-            tf = DB["friends"].get(vu, [])
+            fr = db["friends"].get(vu, [])
             st.markdown("<div class='fbc'></div>",
                         unsafe_allow_html=True)
             st.markdown("<div style='text-align:center;"
-                        "margin-top:-50px;'>" +
-                        av_html(vu, ud.get("avatar"), 100,
-                                border=True) + "</div>",
+                        "margin-top:-50px;'>" + av(
+                            vu, ud.get("avatar"), 100,
+                            border=True) + "</div>",
                         unsafe_allow_html=True)
             st.markdown("<h3 style='text-align:center;"
                         "margin:8px 0 2px;'>" +
                         esc(ud.get("display_name", vu)) +
                         "</h3><p style='text-align:center;"
-                        "color:#6b7280;font-size:13px;'>" +
-                        str(len(tf)) + " friends · " +
-                        str(len(mp)) + " posts</p>",
+                        "color:#6b7280;font-size:13px;'>"
+                        + str(len(fr)) + " friends · "
+                        + str(len(mp)) + " posts</p>",
                         unsafe_allow_html=True)
-            af = vu in DB["friends"].get(SS.username, [])
             v1, v2, v3 = st.columns(3)
-            if v1.button("✅ Friend" if af else "➕ Add",
-                         key="vfa"):
-                if not af:
-                    db = load_db()
-                    db["friend_requests"].append(
-                        {"from": SS.username, "to": vu,
-                         "time": now})
-                    save_db(db)
-                    add_notification(vu, "👋 @" +
-                                     SS.username +
-                                     " sent request!", "follows")
-                    safe_rerun()
-            if v2.button("✉️ Msg", key="vfm"):
+            if v1.button("➕ Add", key="vfa"):
+                db = load_db()
+                db["friend_requests"].append(
+                    {"from": SS.username, "to": vu,
+                     "time": time.time()})
+                save_db(db)
+                notify(vu, "👋 @" + SS.username +
+                       " requested!", "follows")
+                rr()
+            if v2.button("✉️", key="vfm"):
                 SS.msg_view = "chat"
                 SS.msg_target = vu
-                SS.msg_target_type = "direct"
-                SS.current_tab = "Messages"
+                SS.msg_ttype = "direct"
                 SS.view_user = None
-                safe_rerun()
-            if v3.button("📞 Call", key="vfc"):
-                start_call(SS.username, vu)
-                add_notification(vu, "📞 @" + SS.username +
-                                 " is calling!")
-                safe_rerun()
-            if st.button("← Back", key="vb"):
+                go("Messages")
+            if v3.button("📞", key="vfc"):
+                toast("Call sent (demo)!")
+            if st.button("← Back", key="vbk"):
                 SS.view_user = None
-                safe_rerun()
+                rr()
 
         else:
             if SS.view_user == SS.username:
                 SS.view_user = None
-                SS.current_tab = "Profile"
+                SS.tab = "Profile"
 
             # ============ HOME ============
-            if SS.current_tab == "Home":
+            if SS.tab == "Home":
 
                 if me.get("show_stories", True):
                     st.markdown("""
-                    <div class="stories">
-                    <div class="sc"><div class="ring ringg"><div class="rim">+</div></div><div class="snm">Your Story</div></div>
-                    <div class="sc"><div class="ring"><div class="rim">HJ</div></div><div class="snm">hoor_jannat</div></div>
-                    <div class="sc"><div class="ring"><div class="rim">FM</div></div><div class="snm">farrukh_m</div></div>
+                    <div class="st">
+                    <div class="sc"><div class="rg rgg"><div class="rm">+</div></div><div class="sn">Story</div></div>
+                    <div class="sc"><div class="rg"><div class="rm">HJ</div></div><div class="sn">hoor</div></div>
+                    <div class="sc"><div class="rg"><div class="rm">FM</div></div><div class="sn">farrukh</div></div>
                     </div>
                     """, unsafe_allow_html=True)
 
-                st.markdown(("<div class='qr'>"
-                             "<a href='?tab=Groups' class="
-                             "'qp'>👥 Groups</a>"
-                             "<a href='?tab=Pages' class="
-                             "'qp'>📄 Pages</a>"
-                             "<a href='?tab=Events' class="
-                             "'qp'>📅 Events</a>"
-                             "<a href='?tab=Marketplace' class="
-                             "'qp'>🛒 Market</a>"
-                             "<a href='?tab=Ads' class="
-                             "'qp'>📢 Ads</a>"
-                             "<a href='?tab=Ludo' class="
-                             "'qp'>🎲 Ludo</a></div>"),
-                            unsafe_allow_html=True)
+                q1, q2, q3, q4 = st.columns(4)
+                if q1.button("👥 Groups", key="hq1",
+                             use_container_width=True):
+                    go("Groups")
+                if q2.button("📄 Pages", key="hq2",
+                             use_container_width=True):
+                    go("Pages")
+                if q3.button("📅 Events", key="hq3",
+                             use_container_width=True):
+                    go("Events")
+                if q4.button("🎲 Games", key="hq4",
+                             use_container_width=True):
+                    go("Games")
 
-                vis = [p for p in DB["posts"]
+                vis = [p for p in db["posts"]
                        if p.get("type") != "reel"
-                       and p["user"] not in SS.blocked
-                       and p["user"] not in banned]
-                if me.get("feed_sort") == "Top Posts":
-                    vis = sorted(vis, key=lambda x: len(
-                        x.get("likes", {})), reverse=True)
-
-                ads = [a for a in DB["ads"]
+                       and p["user"] not in SS.blocked]
+                ads = [a for a in db["ads"]
                        if a.get("status") == "active"]
 
-                if SS.clear_cmt:
-                    SS[SS.clear_cmt] = ""
-                    SS.clear_cmt = ""
+                if SS.clear_c:
+                    SS[SS.clear_c] = ""
+                    SS.clear_c = ""
 
                 for idx, p in enumerate(vis):
 
-                    st.markdown("<div class='pc'><div class="
-                                "'ph2'>" + av_html(
+                    st.markdown("<div class='pc'><div "
+                                "class='ph2'>" + av(
                                     p["user"],
-                                    p.get("avatar"), 36) +
-                                "<div class='pun'>" +
-                                esc(p["user"]) + "</div>"
-                                "</div></div>",
+                                    p.get("avatar")) +
+                                "<div class='pu'>" +
+                                esc(p["user"]) +
+                                "</div></div></div>",
                                 unsafe_allow_html=True)
                     pt = p.get("type", "text")
                     if pt == "text":
-                        st.markdown("<div class='pph' style="
-                                    "'background:" +
-                                    p.get("grad", "#f0f0f0") +
-                                    ";color:#056839;font-"
-                                    "weight:bold;'>" +
-                                    esc(p.get("txt", "")) +
+                        st.markdown("<div class='pph' "
+                                    "style='background:"
+                                    + p.get("grad",
+                                            "#f0f0f0") +
+                                    ";color:#056839;"
+                                    "font-weight:bold;'>"
+                                    + esc(p.get("txt",
+                                                "")) +
                                     "</div>",
                                     unsafe_allow_html=True)
                     elif pt == "youtube":
                         components.html(
                             '<iframe width="100%" height="225" '
-                            'src="https://www.youtube.com/embed/'
-                            + p["ref"] + '" frameborder="0" '
+                            'src="https://www.youtube.com/'
+                            'embed/' + p["ref"] +
+                            '" frameborder="0" '
                             'allowfullscreen></iframe>',
                             height=235)
-                    elif pt == "image" and is_local(p["ref"]):
+                    elif pt == "image" and isfile(p["ref"]):
                         st.image(p["ref"],
                                  use_container_width=True)
                     elif pt == "video":
@@ -1108,32 +846,29 @@ elif SS.page == "app" and SS.logged_in:
                     if c1.button(ic, key="lk_" + p["id"],
                                  use_container_width=True):
                         db = load_db()
-                        for post in db["posts"]:
-                            if post["id"] == p["id"]:
-                                lk = post.setdefault(
+                        for po in db["posts"]:
+                            if po["id"] == p["id"]:
+                                lk = po.setdefault(
                                     "likes", {})
                                 if SS.username in lk:
                                     del lk[SS.username]
                                 else:
                                     lk[SS.username] = True
-                                    if post["user"] != \
-                                            SS.username:
-                                        add_notification(
-                                            post["user"],
-                                            "❤️ @" +
-                                            SS.username +
-                                            " liked!",
-                                            "likes")
+                                    notify(po["user"],
+                                           "❤️ @" +
+                                           SS.username +
+                                           " liked!",
+                                           "likes")
                                 break
                         save_db(db)
-                        safe_rerun()
+                        rr()
                     if c2.button("💬", key="cm_" + p["id"],
                                  use_container_width=True):
-                        st.info("Box neeche hai.")
+                        st.info("Box neeche.")
                     if c3.button("👤", key="vu_" + p["id"],
                                  use_container_width=True):
                         SS.view_user = p["user"]
-                        safe_rerun()
+                        rr()
                     if c4.button("🚫", key="bl_" + p["id"],
                                  use_container_width=True):
                         db = load_db()
@@ -1144,201 +879,446 @@ elif SS.page == "app" and SS.logged_in:
                             bl.append(p["user"])
                             save_db(db)
                             SS.blocked = list(bl)
-                        safe_rerun()
+                        rr()
 
-                    st.markdown("<p class='lk'>" + str(len(
-                        p.get("likes", {}))) + " likes</p>"
-                        "<p class='pd'><b>" + esc(p["user"]) +
-                        "</b> " + esc(p.get("cap", "")) +
-                        "</p>", unsafe_allow_html=True)
+                    st.markdown("<p class='lk'>" + str(
+                        len(p.get("likes", {}))) +
+                        " likes</p><p class='pd'><b>" +
+                        esc(p["user"]) + "</b> " +
+                        esc(p.get("cap", "")) + "</p>",
+                        unsafe_allow_html=True)
 
                     cm = st.text_input("comment",
-                                       key="cmt_" + p["id"],
+                                       key="c_" + p["id"],
                                        placeholder=
-                                       "Add a comment...",
+                                       "Comment...",
                                        label_visibility=
                                        "collapsed")
-                    if st.button("Post",
-                                 key="pc_" + p["id"]):
-                        if cm.strip():
-                            if me.get("comment_filter",
-                                      True) and \
-                                    not text_clean(cm):
-                                st.warning("🛡️ Blocked "
-                                           "by filter!")
-                            else:
-                                db = load_db()
-                                for post in db["posts"]:
-                                    if post["id"] == \
-                                            p["id"]:
-                                        post.setdefault(
-                                            "comments",
-                                            []).append(
-                                            {"user":
-                                             SS.username,
-                                             "text": cm})
-                                        break
-                                save_db(db)
-                                SS.clear_cmt = "cmt_" + \
-                                    p["id"]
-                                safe_rerun()
+                    if st.button("Post", key="p_" + p["id"]):
+                        if cm.strip() and \
+                                me.get("comment_filter",
+                                       True) and \
+                                not clean(cm):
+                            st.warning("🛡️ Filtered!")
+                        elif cm.strip():
+                            db = load_db()
+                            for po in db["posts"]:
+                                if po["id"] == p["id"]:
+                                    po.setdefault(
+                                        "comments",
+                                        []).append(
+                                        {"user":
+                                         SS.username,
+                                         "text": cm})
+                                    break
+                            save_db(db)
+                            notify(p["user"], "💬 @" +
+                                   SS.username +
+                                   " commented!",
+                                   "comments")
+                            SS.clear_c = "c_" + p["id"]
+                            rr()
 
                     for c in p.get("comments", []):
                         st.markdown("<p class='pd' style="
-                                    "'color:#6b7280;'><b>" +
-                                    esc(c["user"]) +
-                                    "</b> " + esc(c["text"]) +
-                                    "</p>",
+                                    "'color:#6b7280;'><b>"
+                                    + esc(c["user"]) +
+                                    "</b> " + esc(c["text"])
+                                    + "</p>",
                                     unsafe_allow_html=True)
 
                     if ads and (idx + 1) % 3 == 0:
                         ad = ads[(idx // 3) % len(ads)]
-                        st.markdown("<div class='adc'><span "
-                                    "class='adt'>📢 SPONSORED"
+                        st.markdown("<div class='ad'><span "
+                                    "class='at'>📢 SPONSORED"
                                     "</span><br><b>" +
                                     esc(ad["title"]) +
                                     "</b><br><span style="
-                                    "'font-size:13px;color:"
-                                    "#6b7280;'>" +
+                                    "'font-size:13px;"
+                                    "color:#6b7280;'>" +
                                     esc(ad.get("text", "")) +
-                                    "</span><br><a href='" +
-                                    esc(ad.get("link", "#")) +
-                                    "' target='_blank' style="
-                                    "'color:#00B074;'>🔗 "
-                                    "Learn More</a></div>",
+                                    "</span></div>",
                                     unsafe_allow_html=True)
 
-            # ============ GROUPS ============
-            elif SS.current_tab == "Groups":
+            # ============ REELS (click = OPEN!) ====
+            elif SS.tab == "Reels":
 
-                if SS.open_group:
-                    grp = next((g for g in DB["groups"]
-                                if g["id"] ==
-                                SS.open_group), None)
-                    if grp is None:
-                        SS.open_group = ""
-                        safe_rerun()
+                if SS.open_reel:
+                    rp = next((p for p in db["posts"]
+                               if p["id"] ==
+                               SS.open_reel), None)
+                    if rp is None:
+                        SS.open_reel = ""
+                        rr()
                     else:
-                        if st.button("← Back",
-                                     key="gb"):
-                            SS.open_group = ""
-                            safe_rerun()
-                        st.markdown("<div class='gc'><div "
-                                    "class='gcv'></div><div "
-                                    "class='gnm'>👥 " +
-                                    esc(grp["name"]) +
-                                    "</div><div class='gsb'>" +
-                                    str(len(grp["members"])) +
-                                    " members · " +
-                                    grp["privacy"] +
+                        if st.button("← Back to Reels",
+                                     key="rbk"):
+                            SS.open_reel = ""
+                            rr()
+                        st.markdown("<div class='ph2'>" +
+                                    av(rp["user"],
+                                       rp.get("avatar")) +
+                                    "<div class='pu'>@" +
+                                    esc(rp["user"]) +
                                     "</div></div>",
                                     unsafe_allow_html=True)
-                        ism = SS.username in grp["members"]
-                        if grp["privacy"] == "public":
-                            lbl = "✅ Leave" if ism \
-                                else "➕ Join"
-                            if st.button(lbl, key="gj",
-                                         use_container_width
-                                         =True):
+                        st.video(rp["ref"])
+                        liked = SS.username in \
+                            rp.get("likes", {})
+                        l1, l2, l3 = st.columns(3)
+                        ic = "❤️" if liked else "🤍"
+                        if l1.button(ic + " " + str(
+                                len(rp.get("likes", {}))),
+                                key="rlk"):
+                            db = load_db()
+                            for po in db["posts"]:
+                                if po["id"] == rp["id"]:
+                                    lk = po.setdefault(
+                                        "likes", {})
+                                    if SS.username in lk:
+                                        del lk[SS.username]
+                                    else:
+                                        lk[SS.username] \
+                                            = True
+                                    break
+                            save_db(db)
+                            rr()
+                        if l2.button("💬 Comment", key="rlc"):
+                            st.info("Comments neeche!")
+                        if l3.button("👤", key="rlu"):
+                            SS.view_user = rp["user"]
+                            rr()
+                        st.markdown("<p class='pd'><b>@" +
+                                    esc(rp["user"]) +
+                                    "</b> " +
+                                    esc(rp.get("cap", "")) +
+                                    "</p>",
+                                    unsafe_allow_html=True)
+                        rc = st.text_input("comment",
+                                           key="r_" +
+                                           rp["id"],
+                                           placeholder=
+                                           "Comment...")
+                        if st.button("Post", key="rp_" +
+                                     rp["id"]):
+                            if rc.strip():
                                 db = load_db()
-                                for g in db["groups"]:
-                                    if g["id"] == \
-                                            grp["id"]:
-                                        if ism:
-                                            g["members"]\
-                                                .remove(
-                                                    SS.username)
-                                        else:
-                                            g["members"]\
-                                                .append(
-                                                    SS.username)
+                                for po in db["posts"]:
+                                    if po["id"] == \
+                                            rp["id"]:
+                                        po.setdefault(
+                                            "comments",
+                                            []).append(
+                                            {"user":
+                                             SS.username,
+                                             "text": rc})
                                         break
                                 save_db(db)
-                                safe_rerun()
-                        else:
-                            if not ism:
-                                if st.button("➕ Request",
-                                             key="gr",
-                                             use_container_width
-                                             =True):
-                                    db = load_db()
-                                    for g in db["groups"]:
-                                        if g["id"] == \
-                                                grp["id"]:
-                                            g.setdefault(
-                                                "requests",
-                                                []).append(
-                                                SS.username)
-                                            break
-                                    save_db(db)
-                                    safe_rerun()
-                            else:
-                                st.success("Member ho aap!")
-
-                        if grp.get("requests"):
-                            st.markdown("**Requests:**")
-                            for rq in grp["requests"]:
-                                rc1, rc2 = st.columns(2)
-                                rc1.markdown("@" + esc(rq))
-                                if rc2.button("✅",
-                                              key="ga_" + rq):
-                                    db = load_db()
-                                    for g in db["groups"]:
-                                        if g["id"] == \
-                                                grp["id"]:
-                                            g["requests"]\
-                                                .remove(rq)
-                                            g["members"]\
-                                                .append(rq)
-                                            break
-                                    save_db(db)
-                                    safe_rerun()
-
-                        if ism:
-                            gt = st.text_input("Post...",
-                                               key="gpt")
-                            if st.button("🚀 Post",
-                                         key="gpb",
+                                notify(rp["user"],
+                                       "💬 Comment!",
+                                       "comments")
+                                SS.clear_c = "r_" + \
+                                    rp["id"]
+                                rr()
+                        for c in rp.get("comments", []):
+                            st.markdown("<p class='pd' "
+                                        "style='color:"
+                                        "#6b7280;'><b>" +
+                                        esc(c["user"]) +
+                                        "</b> " +
+                                        esc(c["text"]) +
+                                        "</p>",
+                                        unsafe_allow_html
+                                        =True)
+                else:
+                    st.markdown("<div class='ph'>🎬 Reels"
+                                "</div>",
+                                unsafe_allow_html=True)
+                    rl = [p for p in db["posts"]
+                          if p.get("type") in ("reel",
+                                               "video")]
+                    if not rl:
+                        st.info("No reels - upload video!")
+                    g1, g2 = st.columns(2)
+                    for i, r in enumerate(
+                            reversed(rl)):
+                        col = g1 if i % 2 == 0 else g2
+                        with col:
+                            if r.get("type") == "video" \
+                                    and isfile(
+                                        r["ref"]):
+                                st.video(r["ref"])
+                            elif str(r["ref"]).startswith(
+                                    "http"):
+                                st.video(r["ref"])
+                            if st.button("▶ " +
+                                         r.get("cap",
+                                               "Reel")[:15],
+                                         key="rop_" +
+                                         r["id"],
                                          use_container_width
                                          =True):
-                                if gt.strip():
-                                    db = load_db()
-                                    db["posts"].insert(0, {
-                                        "id": uuid.uuid4()
-                                        .hex[:8],
-                                        "user": SS.username,
-                                        "type": "text",
-                                        "grad": random.choice(
-                                            GRADS),
-                                        "txt": esc(gt)[:40],
-                                        "cap": gt.strip(),
-                                        "groupId":
-                                        grp["id"],
-                                        "likes": {},
-                                        "comments": []})
-                                    save_db(db)
-                                    safe_rerun()
-                        gp = [p for p in DB["posts"]
-                              if p.get("groupId") ==
-                              grp["id"]]
-                        for p in gp:
-                            st.markdown("<div class='gc'><b>@"
-                                        + esc(p["user"]) +
-                                        "</b><br>" +
-                                        esc(p.get("cap", "")) +
-                                        "</div>",
-                                        unsafe_allow_html=True)
+                                SS.open_reel = r["id"]
+                                rr()
+                            st.markdown("<p class='pv'>❤️ " +
+                                        str(len(r.get(
+                                            "likes",
+                                            {}))) +
+                                        " · @" +
+                                        esc(r["user"]) +
+                                        "</p>",
+                                        unsafe_allow_html
+                                        =True)
+
+            # ============ SEARCH (inline!) ============
+            elif SS.tab == "Search":
+                st.markdown("<div class='ph'>🔍 Search"
+                            "</div>",
+                            unsafe_allow_html=True)
+                q = st.text_input(
+                    "Users, posts, reels, listings...",
+                    key="sq")
+                if q.strip():
+                    ql = q.strip().lower()
+                    res = [u for u in db["users"]
+                           if ql in u.lower()]
+                    if res:
+                        st.markdown("<p class='sl'>👥 "
+                                    "Users</p>",
+                                    unsafe_allow_html=True)
+                        for u in res:
+                            ud = db["users"][u]
+                            r1, r2 = st.columns(
+                                [0.7, 0.3])
+                            r1.markdown("<div class='fr'>"
+                                        + av(u, ud.get(
+                                            "avatar"),
+                                            40) +
+                                        "<div><b>@" + u +
+                                        "</b></div></div>",
+                                        unsafe_allow_html
+                                        =True)
+                            if r2.button("Open",
+                                         key="so_" + u,
+                                         use_container_width
+                                         =True):
+                                SS.view_user = u
+                                rr()
+                    pres = [p for p in db["posts"]
+                            if ql in (p.get("cap", "") or
+                                      "").lower()]
+                    if pres:
+                        st.markdown("<p class='sl'>📱 "
+                                    "Posts & Reels</p>",
+                                    unsafe_allow_html=True)
+                        for p in pres:
+                            if st.button("▶ " +
+                                         p.get("cap",
+                                               "Post")[:20],
+                                         key="spo_" +
+                                         p["id"],
+                                         use_container_width
+                                         =True):
+                                if p.get("type") in \
+                                        ("reel", "video"):
+                                    SS.open_reel = p["id"]
+                                    SS.tab = "Reels"
+                                    rr()
+                                else:
+                                    SS.tab = "Home"
+                                    rr()
+                    lres = [l for l in db["listings"]
+                            if ql in l["title"].lower()]
+                    if lres:
+                        st.markdown("<p class='sl'>🛒 "
+                                    "Listings</p>",
+                                    unsafe_allow_html=True)
+                        for l in lres:
+                            if st.button("PKR " +
+                                         str(l["price"]) +
+                                         " - " +
+                                         l["title"][:20],
+                                         key="slo_" +
+                                         l["id"],
+                                         use_container_width
+                                         =True):
+                                SS.open_list = l["id"]
+                                SS.tab = "Market"
+                                rr()
+                    if not res and not pres and not lres:
+                        st.info("Kuch nahi mila! Google "
+                                "khol dein:")
+                        from urllib.parse import quote_plus
+                        gq = quote_plus(q.strip())
+                        st.markdown("[🌐 Google Search]"
+                                    "(https://www.google"
+                                    ".com/search?q=" + gq +
+                                    ")")
                 else:
-                    st.markdown("<div class='phdr'>👥 "
-                                "Groups</div>",
+                    st.caption("👆 Kuch bhi likhein...")
+
+            # ============ FRIENDS ============
+            elif SS.tab == "Friends":
+                st.markdown("<div class='ph'>👥 Friends"
+                            "</div>",
+                            unsafe_allow_html=True)
+                db = load_db()
+                inr = [r for r in db["friend_requests"]
+                       if r["to"] == SS.username]
+                frs = db["friends"].get(SS.username, [])
+                if inr:
+                    st.markdown("### 📨 Requests")
+                    for i, r in enumerate(inr):
+                        f = r["from"]
+                        r1, r2, r3 = st.columns(3)
+                        r1.markdown("<div class='fr'>" +
+                                    av(f, None, 40) +
+                                    "<b>@" + f + "</b>"
+                                    "</div>",
+                                    unsafe_allow_html=True)
+                        if r2.button("✅", key="fa_" +
+                                     str(i)):
+                            db = load_db()
+                            db["friend_requests"] = [
+                                x for x in db[
+                                    "friend_requests"]
+                                if not (x["from"] == f
+                                        and x["to"] ==
+                                        SS.username)]
+                            fa = db["friends"].setdefault(
+                                SS.username, [])
+                            fb = db["friends"].setdefault(
+                                f, [])
+                            if f not in fa:
+                                fa.append(f)
+                            if SS.username not in fb:
+                                fb.append(SS.username)
+                            save_db(db)
+                            notify(f, "✅ Accepted!",
+                                   "follows")
+                            rr()
+                        if r3.button("❌", key="fr_" +
+                                     str(i)):
+                            db = load_db()
+                            db["friend_requests"] = [
+                                x for x in db[
+                                    "friend_requests"]
+                                if not (x["from"] == f
+                                        and x["to"] ==
+                                        SS.username)]
+                            save_db(db)
+                            rr()
+                st.markdown("### Friends (" + str(len(frs))
+                            + ")")
+                for f in frs:
+                    r1, r2, r3 = st.columns(3)
+                    r1.markdown("<div class='fr'>" +
+                                av(f, None, 40) +
+                                "<b>@" + f + "</b></div>",
                                 unsafe_allow_html=True)
-                    with st.expander("➕ Create Group"):
-                        gn = st.text_input("Name", key="ngn")
-                        gp_ = st.selectbox("Privacy",
-                                           ["public",
-                                            "private"],
-                                           key="ngp")
-                        if st.button("Create", key="ngb",
+                    if r2.button("✉️", key="fm_" + f):
+                        SS.msg_view = "chat"
+                        SS.msg_target = f
+                        SS.msg_ttype = "direct"
+                        go("Messages")
+                    if r3.button("👤", key="fu_" + f):
+                        SS.view_user = f
+                        rr()
+                st.markdown("### 🌟 Suggestions")
+                for u in db["users"]:
+                    if u == SS.username or u in frs:
+                        continue
+                    if any(x["from"] == SS.username and
+                           x["to"] == u
+                           for x in db[
+                               "friend_requests"]):
+                        continue
+                    r1, r2 = st.columns(2)
+                    r1.markdown("<div class='fr'>" +
+                                av(u, None, 40) +
+                                "<b>@" + u + "</b></div>",
+                                unsafe_allow_html=True)
+                    if r2.button("➕", key="sg_" + u):
+                        db = load_db()
+                        db["friend_requests"].append(
+                            {"from": SS.username, "to": u,
+                             "time": time.time()})
+                        save_db(db)
+                        notify(u, "👋 Request!", "follows")
+                        rr()
+
+            # ============ GROUPS ============
+            elif SS.tab == "Groups":
+                if SS.open_group:
+                    g = next((x for x in db["groups"]
+                              if x["id"] ==
+                              SS.open_group), None)
+                    if g is None:
+                        SS.open_group = ""
+                        rr()
+                    if st.button("← Back", key="gbk"):
+                        SS.open_group = ""
+                        rr()
+                    st.markdown("<div class='gc'><div "
+                                "class='gv'></div><div "
+                                "class='gn'>👥 " +
+                                esc(g["name"]) +
+                                "</div><div class='gs'>" +
+                                str(len(g["members"])) +
+                                " members</div></div>",
+                                unsafe_allow_html=True)
+                    ism = SS.username in g["members"]
+                    if st.button("✅ Leave" if ism
+                                 else "➕ Join",
+                                 key="gjn",
+                                 use_container_width=True):
+                        db = load_db()
+                        for x in db["groups"]:
+                            if x["id"] == g["id"]:
+                                if ism:
+                                    x["members"].remove(
+                                        SS.username)
+                                else:
+                                    x["members"].append(
+                                        SS.username)
+                                break
+                        save_db(db)
+                        rr()
+                    gt = st.text_input("Post...", key="gpt")
+                    if st.button("🚀", key="gpb",
+                                 use_container_width=True):
+                        if gt.strip() and ism:
+                            db = load_db()
+                            db["posts"].insert(0, {
+                                "id": uuid.uuid4()
+                                .hex[:8],
+                                "user": SS.username,
+                                "type": "text",
+                                "grad": random.choice(
+                                    GRADS),
+                                "txt": esc(gt)[:40],
+                                "cap": gt,
+                                "groupId": g["id"],
+                                "likes": {},
+                                "comments": []})
+                            save_db(db)
+                            rr()
+                    for p in [x for x in db["posts"]
+                              if x.get("groupId") ==
+                              g["id"]]:
+                        st.markdown("<div class='gc'><b>@"
+                                    + esc(p["user"]) +
+                                    "</b><br>" +
+                                    esc(p.get("cap", "")) +
+                                    "</div>",
+                                    unsafe_allow_html=True)
+                else:
+                    st.markdown("<div class='ph'>👥 Groups"
+                                "</div>",
+                                unsafe_allow_html=True)
+                    with st.expander("➕ Create"):
+                        gn = st.text_input("Name", key="gn")
+                        if st.button("Create", key="gcr",
                                      use_container_width
                                      =True):
                             if gn.strip():
@@ -1347,127 +1327,83 @@ elif SS.page == "app" and SS.logged_in:
                                     "id": uuid.uuid4()
                                     .hex[:8],
                                     "name": gn.strip(),
-                                    "privacy": gp_,
-                                    "createdBy":
-                                    SS.username,
                                     "members":
                                     [SS.username],
-                                    "requests": [],
                                     "messages": []})
                                 save_db(db)
-                                safe_rerun()
-                    for g in DB["groups"]:
+                                rr()
+                    for g in db["groups"]:
                         st.markdown("<div class='gc'><div "
-                                    "class='gcv'></div><div "
-                                    "class='gnm'>" +
+                                    "class='gv'></div>"
+                                    "<div class='gn'>" +
                                     esc(g["name"]) +
-                                    "</div><div class='gsb'>"
-                                    + str(len(g["members"])) +
-                                    " members · " +
-                                    g["privacy"] +
-                                    "</div></div>",
+                                    "</div><div class="
+                                    "'gs'>" +
+                                    str(len(g["members"]))
+                                    + " members</div>"
+                                    "</div>",
                                     unsafe_allow_html=True)
-                        if st.button("Open",
-                                     key="go_" + g["id"],
+                        if st.button("Open", key="go_" +
+                                     g["id"],
                                      use_container_width
                                      =True):
                             SS.open_group = g["id"]
-                            safe_rerun()
+                            rr()
 
             # ============ PAGES ============
-            elif SS.current_tab == "Pages":
+            elif SS.tab == "Pages":
                 if SS.open_page:
-                    pg = next((p for p in DB["pages"]
-                                if p["id"] ==
-                                SS.open_page), None)
+                    pg = next((x for x in db["pages"]
+                               if x["id"] ==
+                               SS.open_page), None)
                     if pg is None:
                         SS.open_page = ""
-                        safe_rerun()
-                    else:
-                        if st.button("← Back", key="pb"):
-                            SS.open_page = ""
-                            safe_rerun()
-                        st.markdown("<div class='fbc'></div>",
-                                    unsafe_allow_html=True)
-                        st.markdown("<h3 style='text-align:"
-                                    "center;margin-top:-"
-                                    "30px;'>📄 " +
-                                    esc(pg["name"]) +
-                                    "</h3><p style='text-"
-                                    "align:center;color:"
-                                    "#6b7280;font-size:"
-                                    "13px;'>" +
-                                    esc(pg.get("category",
-                                               "")) + " · " +
-                                    str(len(pg.get(
-                                        "followers", []))) +
-                                    " followers</p>",
-                                    unsafe_allow_html=True)
-                        own = pg["owner"] == SS.username
-                        fol = SS.username in pg.get(
-                            "followers", [])
-                        if own:
-                            pt2 = st.text_input(
-                                "Post as page", key="ppt")
-                            if st.button("🚀 Post as Page",
-                                         key="ppb",
-                                         use_container_width
-                                         =True):
-                                if pt2.strip():
-                                    db = load_db()
-                                    db["posts"].insert(0, {
-                                        "id": uuid.uuid4()
-                                        .hex[:8],
-                                        "user": pg["name"],
-                                        "type": "text",
-                                        "grad": random.choice(
-                                            GRADS),
-                                        "txt": esc(pt2)[:40],
-                                        "cap": pt2.strip(),
-                                        "pageId":
-                                        pg["id"],
-                                        "likes": {},
-                                        "comments": []})
-                                    save_db(db)
-                                    safe_rerun()
-                        else:
-                            lbl = "❤️ Following" if fol \
-                                else "➕ Follow"
-                            if st.button(lbl, key="pf",
-                                         use_container_width
-                                         =True):
+                        rr()
+                    if st.button("← Back", key="pbk"):
+                        SS.open_page = ""
+                        rr()
+                    st.markdown("<h3 style='text-align:"
+                                "center;'>📄 " +
+                                esc(pg["name"]) +
+                                "</h3>",
+                                unsafe_allow_html=True)
+                    if pg["owner"] == SS.username:
+                        pt2 = st.text_input("Post as page",
+                                            key="ppt")
+                        if st.button("🚀 Post", key="ppb",
+                                     use_container_width
+                                     =True):
+                            if pt2.strip():
                                 db = load_db()
-                                for p in db["pages"]:
-                                    if p["id"] == pg["id"]:
-                                        fl = p.setdefault(
-                                            "followers", [])
-                                        if fol:
-                                            fl.remove(
-                                                SS.username)
-                                        else:
-                                            fl.append(
-                                                SS.username)
-                                        break
+                                db["posts"].insert(0, {
+                                    "id": uuid.uuid4()
+                                    .hex[:8],
+                                    "user": pg["name"],
+                                    "type": "text",
+                                    "grad": random.choice(
+                                        GRADS),
+                                    "txt": esc(pt2)[:40],
+                                    "cap": pt2,
+                                    "likes": {},
+                                    "comments": []})
                                 save_db(db)
-                                safe_rerun()
-                        pp = [p for p in DB["posts"]
-                              if p.get("pageId") == pg["id"]]
-                        for p in pp:
-                            st.markdown("<div class='gc'><b>📄"
-                                        + esc(p["user"]) +
-                                        "</b><br>" +
-                                        esc(p.get("cap", "")) +
-                                        "</div>",
-                                        unsafe_allow_html=True)
+                                rr()
+                    for p in [x for x in db["posts"]
+                              if x.get("pageId") ==
+                              pg["id"]]:
+                        st.markdown("<div class='gc'><b>📄 "
+                                    + esc(p["user"]) +
+                                    "</b><br>" +
+                                    esc(p.get("cap", "")) +
+                                    "</div>",
+                                    unsafe_allow_html=True)
                 else:
-                    st.markdown("<div class='phdr'>📄 "
-                                "Pages</div>",
+                    st.markdown("<div class='ph'>📄 Pages"
+                                "</div>",
                                 unsafe_allow_html=True)
                     with st.expander("➕ Create Page"):
-                        pn = st.text_input("Name", key="npn")
-                        pc_ = st.text_input("Category",
-                                            key="npc")
-                        if st.button("Create", key="npb",
+                        pn = st.text_input("Name", key="pn")
+                        if st.button("Create", key="pcr",
                                      use_container_width
                                      =True):
                             if pn.strip():
@@ -1476,110 +1412,87 @@ elif SS.page == "app" and SS.logged_in:
                                     "id": uuid.uuid4()
                                     .hex[:8],
                                     "name": pn.strip(),
-                                    "category": pc_,
                                     "owner": SS.username,
                                     "followers": []})
                                 save_db(db)
-                                safe_rerun()
-                    for pg in DB["pages"]:
+                                rr()
+                    for pg in db["pages"]:
                         st.markdown("<div class='gc'><div "
-                                    "class='gnm'>📄 " +
+                                    "class='gn'>📄 " +
                                     esc(pg["name"]) +
-                                    "</div><div class='gsb'>"
-                                    + esc(pg.get("category",
-                                                 "")) +
                                     "</div></div>",
                                     unsafe_allow_html=True)
-                        if st.button("Open",
-                                     key="po_" + pg["id"],
+                        if st.button("Open", key="po_" +
+                                     pg["id"],
                                      use_container_width
                                      =True):
                             SS.open_page = pg["id"]
-                            safe_rerun()
+                            rr()
 
             # ============ EVENTS ============
-            elif SS.current_tab == "Events":
+            elif SS.tab == "Events":
                 if SS.open_event:
-                    ev = next((e for e in DB["events"]
-                                if e["id"] ==
-                                SS.open_event), None)
+                    ev = next((x for x in db["events"]
+                               if x["id"] ==
+                               SS.open_event), None)
                     if ev is None:
                         SS.open_event = ""
-                        safe_rerun()
-                    else:
-                        if st.button("← Back", key="eb"):
-                            SS.open_event = ""
-                            safe_rerun()
-                        st.markdown("<div class='gc'><div "
-                                    "class='gcv'></div><div "
-                                    "class='gnm'>📅 " +
-                                    esc(ev["title"]) +
-                                    "</div><div class='gsb'>📍 "
-                                    + esc(ev.get("location",
-                                                 "")) + " · "
-                                    + esc(ev.get("date", "")) +
-                                    " " + esc(ev.get("time",
-                                                     "")) +
-                                    "</div></div>",
-                                    unsafe_allow_html=True)
-                        st.caption(ev.get("description", ""))
-                        going = sum(1 for r in ev.get(
-                            "rsvps", []) if r["status"] ==
-                            "going")
-                        st.markdown("✅ **" + str(going) +
-                                    " going**")
-                        e1, e2, e3 = st.columns(3)
-                        if e1.button("✅ Going", key="eg"):
-                            db = load_db()
-                            for e in db["events"]:
-                                if e["id"] == ev["id"]:
-                                    e["rsvps"] = [
-                                        r for r in e.get(
-                                            "rsvps", [])
-                                        if r["user"] !=
-                                        SS.username]
-                                    e["rsvps"].append(
-                                        {"user": SS.username,
-                                         "status": "going"})
-                            save_db(db)
-                            safe_rerun()
-                        if e2.button("🌟 Maybe", key="ei"):
-                            db = load_db()
-                            for e in db["events"]:
-                                if e["id"] == ev["id"]:
-                                    e["rsvps"] = [
-                                        r for r in e.get(
-                                            "rsvps", [])
-                                        if r["user"] !=
-                                        SS.username]
-                                    e["rsvps"].append(
-                                        {"user": SS.username,
-                                         "status":
-                                         "interested"})
-                            save_db(db)
-                            safe_rerun()
-                        if e3.button("❌ No", key="en"):
-                            db = load_db()
-                            for e in db["events"]:
-                                if e["id"] == ev["id"]:
-                                    e["rsvps"] = [
-                                        r for r in e.get(
-                                            "rsvps", [])
-                                        if r["user"] !=
-                                        SS.username]
-                            save_db(db)
-                            safe_rerun()
-                else:
-                    st.markdown("<div class='phdr'>📅 "
-                                "Events</div>",
+                        rr()
+                    if st.button("← Back", key="ebk"):
+                        SS.open_event = ""
+                        rr()
+                    st.markdown("<div class='gc'><div "
+                                "class='gv'></div><div "
+                                "class='gn'>📅 " +
+                                esc(ev["title"]) +
+                                "</div><div class='gs'>📍 "
+                                + esc(ev.get("location",
+                                             "")) +
+                                "</div></div>",
                                 unsafe_allow_html=True)
-                    with st.expander("➕ Create Event"):
-                        et = st.text_input("Title", key="net")
+                    going = sum(1 for r in ev.get("rsvps",
+                                                  [])
+                                if r["status"] == "going")
+                    st.write("✅ " + str(going) + " going")
+                    e1, e2 = st.columns(2)
+                    if e1.button("✅ Going", key="eg"):
+                        db = load_db()
+                        for x in db["events"]:
+                            if x["id"] == ev["id"]:
+                                x["rsvps"] = [
+                                    r for r in x.get(
+                                        "rsvps", [])
+                                    if r["user"] !=
+                                    SS.username]
+                                x["rsvps"].append(
+                                    {"user": SS.username,
+                                     "status": "going"})
+                        save_db(db)
+                        rr()
+                    if e2.button("🌟 Maybe", key="em"):
+                        db = load_db()
+                        for x in db["events"]:
+                            if x["id"] == ev["id"]:
+                                x["rsvps"] = [
+                                    r for r in x.get(
+                                        "rsvps", [])
+                                    if r["user"] !=
+                                    SS.username]
+                                x["rsvps"].append(
+                                    {"user": SS.username,
+                                     "status":
+                                     "interested"})
+                        save_db(db)
+                        rr()
+                else:
+                    st.markdown("<div class='ph'>📅 Events"
+                                "</div>",
+                                unsafe_allow_html=True)
+                    with st.expander("➕ Create"):
+                        et = st.text_input("Title", key="et")
                         el = st.text_input("Location",
-                                           key="nel")
-                        ed = st.text_input("Date (15 Mar "
-                                           "2026)", key="ned")
-                        if st.button("Create", key="neb",
+                                           key="el")
+                        if st.button("Create", key="ecr",
                                      use_container_width
                                      =True):
                             if et.strip():
@@ -1590,118 +1503,103 @@ elif SS.page == "app" and SS.logged_in:
                                     "title": et.strip(),
                                     "host": SS.username,
                                     "location": el,
-                                    "date": ed,
                                     "rsvps": []})
                                 save_db(db)
-                                safe_rerun()
-                    for ev in DB["events"]:
+                                rr()
+                    for ev in db["events"]:
                         st.markdown("<div class='gc'><div "
-                                    "class='gnm'>📅 " +
+                                    "class='gn'>📅 " +
                                     esc(ev["title"]) +
-                                    "</div><div class='gsb'>📍 "
-                                    + esc(ev.get("location",
-                                                 "")) +
+                                    "</div><div class="
+                                    "'gs'>📍 " +
+                                    esc(ev.get("location",
+                                               "")) +
                                     "</div></div>",
                                     unsafe_allow_html=True)
-                        if st.button("Open",
-                                     key="eo_" + ev["id"],
+                        if st.button("Open", key="eo_" +
+                                     ev["id"],
                                      use_container_width
                                      =True):
                             SS.open_event = ev["id"]
-                            safe_rerun()
+                            rr()
 
-            # ============ MARKETPLACE ============
-            elif SS.current_tab == "Marketplace":
-                if SS.open_listing:
-                    ls = next((l for l in DB["listings"]
-                                if l["id"] ==
-                                SS.open_listing), None)
+            # ============ MARKET ============
+            elif SS.tab == "Market":
+                if SS.open_list:
+                    ls = next((x for x in db["listings"]
+                               if x["id"] ==
+                               SS.open_list), None)
                     if ls is None:
-                        SS.open_listing = ""
-                        safe_rerun()
-                    else:
-                        if st.button("← Back", key="mb"):
-                            SS.open_listing = ""
-                            safe_rerun()
-                        st.markdown("<div class='phdr'>🛒 " +
-                                    esc(ls["title"]) +
-                                    "</div>",
-                                    unsafe_allow_html=True)
-                        if ls.get("image") and \
-                                is_local(ls["image"]):
-                            st.image(ls["image"],
+                        SS.open_list = ""
+                        rr()
+                    if st.button("← Back", key="mbk"):
+                        SS.open_list = ""
+                        rr()
+                    st.markdown("<div class='ph'>🛒 " +
+                                esc(ls["title"]) +
+                                "</div>",
+                                unsafe_allow_html=True)
+                    if ls.get("image") and \
+                            isfile(ls["image"]):
+                        st.image(ls["image"],
+                                 use_container_width=True)
+                    st.markdown("<h2 style='color:#00B074;"
+                                "'>PKR " + str(ls["price"])
+                                + "</h2>",
+                                unsafe_allow_html=True)
+                    st.write(ls.get("description", ""))
+                    st.caption("@" + ls["seller"] + " · " +
+                               ls["status"])
+                    if ls["seller"] != SS.username and \
+                            ls["status"] == "available":
+                        if st.button("✉️ Message Seller",
+                                     key="msl",
                                      use_container_width
-                                     =True)
-                        st.markdown("<h2 style='color:"
-                                    "#00B074;'>PKR " +
-                                    str(ls["price"]) +
-                                    "</h2>",
-                                    unsafe_allow_html=True)
-                        st.write(ls.get("description", ""))
-                        st.caption("📍 " + ls.get("location",
-                                                  "") +
-                                   " · @" + ls["seller"])
-                        if ls["status"] == "sold":
-                            st.error("❌ SOLD")
-                        elif ls["seller"] == SS.username:
-                            if st.button("✅ Mark Sold",
-                                         key="msold",
-                                         use_container_width
-                                         =True):
-                                db = load_db()
-                                for l in db["listings"]:
-                                    if l["id"] == ls["id"]:
-                                        l["status"] = "sold"
-                                        break
-                                save_db(db)
-                                safe_rerun()
-                        else:
-                            if st.button("✉️ Message Seller",
-                                         key="msgsl",
-                                         use_container_width
-                                         =True):
-                                send_msg(False, "",
-                                         ls["seller"],
-                                         "🛒 Interested in '"
-                                         + ls["title"] +
-                                         "'")
-                                SS.msg_view = "chat"
-                                SS.msg_target = ls["seller"]
-                                SS.msg_target_type = \
-                                    "direct"
-                                SS.current_tab = "Messages"
-                                SS.open_listing = ""
-                                safe_rerun()
+                                     =True):
+                            smsg(False, "", ls["seller"],
+                                 "🛒 Interested in '" +
+                                 ls["title"] + "'")
+                            SS.msg_view = "chat"
+                            SS.msg_target = ls["seller"]
+                            SS.msg_ttype = "direct"
+                            SS.open_list = ""
+                            go("Messages")
+                    elif ls["seller"] == SS.username:
+                        if st.button("✅ Mark Sold",
+                                     key="msd",
+                                     use_container_width
+                                     =True):
+                            db = load_db()
+                            for x in db["listings"]:
+                                if x["id"] == ls["id"]:
+                                    x["status"] = "sold"
+                                    break
+                            save_db(db)
+                            rr()
                 else:
-                    st.markdown("<div class='phdr'>🛒 "
-                                "Marketplace</div>",
+                    st.markdown("<div class='ph'>🛒 Market"
+                                "</div>",
                                 unsafe_allow_html=True)
                     with st.expander("➕ Sell"):
                         st_ = st.text_input("Title",
-                                            key="slt")
+                                            key="st")
                         sd = st.text_area("Desc",
-                                          key="sld",
+                                          key="sd",
                                           height=60)
                         sp = st.number_input("PKR",
                                              min_value=0,
-                                             key="slp")
-                        sc = st.selectbox("Cat",
-                                          ["Electronics",
-                                           "Clothes",
-                                           "Other"],
-                                          key="slc")
-                        si = st.file_uploader("Photo",
-                                              type=["png",
-                                                    "jpg",
-                                                    "jpeg"],
-                                              key="sli")
+                                             key="sp")
+                        si = st.file_uploader(
+                            "Photo", type=["png", "jpg",
+                                           "jpeg"],
+                            key="si")
                         if st.button("🚀 List", key="slb",
                                      use_container_width
                                      =True):
                             if st_.strip():
                                 img = None
                                 if si is not None:
-                                    img = save_upload(si)
+                                    img = supload(si)
                                 db = load_db()
                                 db["listings"].insert(0, {
                                     "id": uuid.uuid4()
@@ -1710,56 +1608,55 @@ elif SS.page == "app" and SS.logged_in:
                                     "title": st_.strip(),
                                     "description": sd,
                                     "price": int(sp),
-                                    "category": sc,
                                     "image": img,
-                                    "location": "PK",
                                     "status":
                                     "available"})
                                 save_db(db)
-                                safe_rerun()
-                    for l in DB["listings"]:
-                        stst = "✅" if l["status"] == \
-                            "available" else "❌ SOLD"
+                                rr()
+                    for l in db["listings"]:
+                        stt = "✅" if l["status"] == \
+                            "available" else "❌"
                         st.markdown("<div class='gc'><div "
-                                    "class='gnm'>" +
+                                    "class='gn'>" + stt +
+                                    " " +
                                     esc(l["title"]) +
-                                    "</div><div class='gsb'>"
-                                    "PKR " + str(l["price"]) +
-                                    " · " + stst + " · @" +
+                                    "</div><div class="
+                                    "'gs'>PKR " +
+                                    str(l["price"]) +
+                                    " · @" +
                                     esc(l["seller"]) +
                                     "</div></div>",
                                     unsafe_allow_html=True)
-                        if st.button("View",
-                                     key="lo_" + l["id"],
+                        if st.button("Open", key="lo_" +
+                                     l["id"],
                                      use_container_width
                                      =True):
-                            SS.open_listing = l["id"]
-                            safe_rerun()
+                            SS.open_list = l["id"]
+                            rr()
 
             # ============ ADS ============
-            elif SS.current_tab == "Ads":
-                st.markdown("<div class='phdr'>📢 Ads "
-                            "Manager</div>",
+            elif SS.tab == "Ads":
+                st.markdown("<div class='ph'>📢 Ads"
+                            "</div>",
                             unsafe_allow_html=True)
                 with st.expander("➕ Create Ad"):
-                    at = st.text_input("Title", key="adt")
-                    ax = st.text_area("Text", key="adx",
+                    at = st.text_input("Title", key="at")
+                    ax = st.text_area("Text", key="ax",
                                       height=60)
-                    al2 = st.text_input("Link", key="adl")
-                    ab = st.number_input("Budget coins",
+                    ab = st.number_input("Coins",
                                          min_value=10,
                                          value=50,
-                                         key="adb")
-                    if st.button("🚀 Submit", key="adb2",
+                                         key="ab")
+                    if st.button("🚀 Submit", key="asb",
                                  use_container_width=True):
                         if at.strip():
                             db = load_db()
-                            u = db["users"].get(SS.username)
-                            cost = int(ab)
+                            u = db["users"].get(
+                                SS.username)
                             if u is not None and \
-                                    u.get("coins", 0) >= \
-                                    cost:
-                                u["coins"] -= cost
+                                    u.get("coins",
+                                          0) >= int(ab):
+                                u["coins"] -= int(ab)
                                 db["ads"].append({
                                     "id": uuid.uuid4()
                                     .hex[:8],
@@ -1767,257 +1664,96 @@ elif SS.page == "app" and SS.logged_in:
                                     SS.username,
                                     "title": at.strip(),
                                     "text": ax,
-                                    "link": al2,
-                                    "budget": cost,
                                     "status": "pending"})
                                 save_db(db)
-                                if owner:
-                                    add_notification(
-                                        owner, "📢 Ad "
-                                        "pending by @" +
-                                        SS.username)
-                                st.success("Submitted! "
-                                           "Owner approve "
-                                           "karega.")
-                                safe_rerun()
+                                st.success("Submitted!")
+                                rr()
                             else:
-                                st.warning("Coins kam hain!")
+                                st.warning("Coins kam!")
                         else:
-                            st.warning("Title likhein!")
-                my_ads = [a for a in DB["ads"]
-                          if a["advertiser"] ==
-                          SS.username]
-                for a in my_ads:
-                    st.markdown("<div class='adc'><span "
-                                "class='adt'>" +
-                                a["status"].upper() +
-                                "</span><br><b>" +
-                                esc(a["title"]) + "</b></div>",
-                                unsafe_allow_html=True)
-                if is_owner:
-                    st.markdown("### 🛡️ Approve")
-                    pend = [a for a in DB["ads"]
-                            if a["status"] == "pending"]
-                    for i, a in enumerate(pend):
-                        a1, a2 = st.columns(2)
-                        a1.markdown("📢 **" + esc(a["title"])
-                                    + "**")
-                        if a2.button("✅", key="adp_" +
-                                     str(i)):
-                            db = load_db()
-                            for ad in db["ads"]:
-                                if ad["id"] == a["id"]:
-                                    ad["status"] = "active"
-                                    break
-                            save_db(db)
-                            safe_rerun()
-
-            # ============ SEARCH ============
-            elif SS.current_tab == "Search":
-                st.markdown("<div class='phdr'>🔍 "
-                            "Search</div>",
-                            unsafe_allow_html=True)
-                q = st.text_input("Search...",
-                                  key="sq")
-                if q.strip():
-                    res = [u for u in DB["users"]
-                           if q.lower() in u.lower()]
-                    if res:
-                        for un in res:
-                            st.markdown("<div class='sr'>" +
-                                        av_html(un, DB[
-                                            "users"][un].get(
-                                                "avatar"),
-                                            40) +
-                                        "<div><b>@" + un +
-                                        "</b></div></div>",
-                                        unsafe_allow_html
-                                        =True)
-                            if st.button("View",
-                                         key="sv_" + un,
+                            st.warning("Title!")
+                for a in db["ads"]:
+                    if a["advertiser"] == SS.username or \
+                            is_owner:
+                        st.markdown("<div class='ad'><span "
+                                    "class='at'>" +
+                                    a["status"].upper() +
+                                    "</span><br><b>" +
+                                    esc(a["title"]) +
+                                    "</b></div>",
+                                    unsafe_allow_html=True)
+                        if is_owner and a["status"] == \
+                                "pending":
+                            if st.button("✅ Approve",
+                                         key="aap_" +
+                                         a["id"],
                                          use_container_width
                                          =True):
-                                SS.view_user = un
-                                safe_rerun()
-                    else:
-                        st.info("Users nahi mile - Google:")
-                        from urllib.parse import quote_plus
-                        gq = quote_plus(q.strip())
-                        st.markdown("[🖼️ Google Images]"
-                                    "(https://www.google.com"
-                                    "/search?tbm=isch&q=" +
-                                    gq + ") · [🎬 YouTube]"
-                                    "(https://www.youtube.com"
-                                    "/results?search_query="
-                                    + gq + ")")
-
-            # ============ FRIENDS ============
-            elif SS.current_tab == "Friends":
-                st.markdown("<div class='phdr'>👥 "
-                            "Friends</div>",
-                            unsafe_allow_html=True)
-                inr = [r for r in DB["friend_requests"]
-                       if r["to"] == SS.username]
-                frs = DB["friends"].get(SS.username, [])
-                st.markdown("### 📨 Requests (" +
-                            str(len(inr)) + ")")
-                for i, r in enumerate(inr):
-                    st.markdown("<div class='fr'>" +
-                                av_html(r["from"], None,
-                                        40) +
-                                "<div><b>@" + r["from"] +
-                                "</b></div></div>",
-                                unsafe_allow_html=True)
-                    f1, f2 = st.columns(2)
-                    if f1.button("✅", key="fa_" + str(i),
-                                 use_container_width=True):
-                        db = load_db()
-                        db["friend_requests"] = [
-                            x for x in db[
-                                "friend_requests"]
-                            if not (x["from"] == r["from"]
-                                    and x["to"] ==
-                                    SS.username)]
-                        fa = db["friends"].setdefault(
-                            SS.username, [])
-                        fb = db["friends"].setdefault(
-                            r["from"], [])
-                        if r["from"] not in fa:
-                            fa.append(r["from"])
-                        if SS.username not in fb:
-                            fb.append(SS.username)
-                        save_db(db)
-                        add_notification(r["from"],
-                                         "✅ Accepted!",
-                                         "follows")
-                        safe_rerun()
-                    if f2.button("❌", key="fr_" + str(i),
-                                 use_container_width=True):
-                        db = load_db()
-                        db["friend_requests"] = [
-                            x for x in db[
-                                "friend_requests"]
-                            if not (x["from"] == r["from"]
-                                    and x["to"] ==
-                                    SS.username)]
-                        save_db(db)
-                        safe_rerun()
-                st.markdown("### Friends (" + str(len(frs))
-                            + ")")
-                for f in frs:
-                    st.markdown("<div class='fr'>" +
-                                av_html(f, None, 40) +
-                                "<div><b>@" + f +
-                                "</b></div></div>",
-                                unsafe_allow_html=True)
-                    b1, b2, b3 = st.columns(3)
-                    if b1.button("👤", key="fv_" + f):
-                        SS.view_user = f
-                        safe_rerun()
-                    if b2.button("✉️", key="fm_" + f):
-                        SS.msg_view = "chat"
-                        SS.msg_target = f
-                        SS.msg_target_type = "direct"
-                        SS.current_tab = "Messages"
-                        safe_rerun()
-                    if b3.button("📞", key="fc_" + f):
-                        start_call(SS.username, f)
-                        add_notification(f, "📞 Call!")
-                        safe_rerun()
-                st.markdown("### 🌟 Suggestions")
-                sugg = [u for u in DB["users"]
-                        if u != SS.username
-                        and u not in frs
-                        and u not in SS.blocked
-                        and not any(x["from"] ==
-                                    SS.username and
-                                    x["to"] == u
-                                    for x in DB[
-                                        "friend_requests"])]
-                for s in sugg:
-                    st.markdown("<div class='fr'>" +
-                                av_html(s, None, 40) +
-                                "<div><b>@" + s +
-                                "</b></div></div>",
-                                unsafe_allow_html=True)
-                    if st.button("➕", key="sg_" + s,
-                                 use_container_width=True):
-                        db = load_db()
-                        db["friend_requests"].append(
-                            {"from": SS.username, "to": s,
-                             "time": now})
-                        save_db(db)
-                        add_notification(s, "👋 Request!",
-                                         "follows")
-                        safe_rerun()
+                                db = load_db()
+                                for x in db["ads"]:
+                                    if x["id"] == a["id"]:
+                                        x["status"] = \
+                                            "active"
+                                        break
+                                save_db(db)
+                                rr()
 
             # ============ CHANNEL ============
-            elif SS.current_tab == "Channel":
-                st.markdown("<div class='phdr'>📺 "
-                            "Channel</div>",
+            elif SS.tab == "Channel":
+                st.markdown("<div class='ph'>📺 Channel"
+                            "</div>",
                             unsafe_allow_html=True)
-                st.markdown("[🔗 Color Pop Cartoons on "
-                            "YouTube](" + CHANNEL_URL + ")")
-                with st.expander("➕ Add Video"):
-                    yl = st.text_input("Link", key="cl")
-                    if st.button("Add", key="cb",
+                with st.expander("➕ Add YouTube Video"):
+                    yl = st.text_input("Link", key="yl")
+                    if st.button("Add", key="yb",
                                  use_container_width=True):
                         vid = parse_yt(yl)
                         if vid:
                             db = load_db()
                             db["posts"].insert(0, {
-                                "id": uuid.uuid4().hex[:8],
+                                "id": uuid.uuid4()
+                                .hex[:8],
                                 "user": SS.username,
                                 "type": "youtube",
                                 "ref": vid,
-                                "cap": "Channel",
+                                "cap": "Video",
                                 "likes": {},
-                                "comments": [],
-                                "channel": True})
+                                "comments": []})
                             save_db(db)
-                            safe_rerun()
-                for p in [x for x in DB["posts"]
-                          if x.get("channel")]:
+                            rr()
+                        else:
+                            st.error("Invalid!")
+                for p in [x for x in db["posts"]
+                          if x.get("type") == "youtube"]:
                     components.html(
                         '<iframe width="100%" height="190" '
-                        'src="https://www.youtube.com/embed/'
-                        + p["ref"] + '" frameborder="0" '
+                        'src="https://www.youtube.com/'
+                        'embed/' + p["ref"] +
+                        '" frameborder="0" '
                         'allowfullscreen></iframe>',
                         height=200)
 
-            # ============ REELS ============
-            elif SS.current_tab == "Reels":
-                st.markdown("<div class='phdr'>🎬 "
-                            "Reels</div>",
-                            unsafe_allow_html=True)
-                rl = [p for p in DB["posts"]
-                      if p.get("type") in ("reel", "video")]
-                for r in reversed(rl):
-                    st.caption("@" + r["user"])
-                    st.video(r["ref"])
-
             # ============ CREATE ============
-            elif SS.current_tab == "Create":
-                st.markdown("<div class='phdr'>➕ "
-                            "Create</div>",
+            elif SS.tab == "Create":
+                st.markdown("<div class='ph'>➕ Create"
+                            "</div>",
                             unsafe_allow_html=True)
                 kind = st.radio("Type:",
                                 ["Photo", "Video",
                                  "Camera 🎨",
                                  "YouTube"],
-                                horizontal=True,
-                                key="ck")
+                                horizontal=True, key="ck")
                 cap = st.text_input("Caption", key="uc")
                 if kind == "Camera 🎨":
-                    fl = st.selectbox("Filter:",
-                                      FILTER_NAMES,
+                    fl = st.selectbox("Filter:", FILTERS,
                                       key="cf")
-                    cam = st.camera_input("📸", key="ucam")
+                    cam = st.camera_input("📸",
+                                          key="cam")
                     fi = None
                     if cam is not None:
                         try:
                             pil = Image.open(cam)
-                            fi = apply_filter(pil, fl)
+                            fi = filt(pil, fl)
                             buf = io.BytesIO()
                             fi.save(buf, format="PNG")
                             st.image(buf.getvalue())
@@ -2034,12 +1770,11 @@ elif SS.page == "app" and SS.logged_in:
                                 .hex[:8],
                                 "user": SS.username,
                                 "type": "image",
-                                "ref": save_pil(fi),
+                                "ref": spil(fi),
                                 "cap": cap, "likes": {},
                                 "comments": []})
                             save_db(db)
-                            SS.current_tab = "Home"
-                            safe_rerun()
+                            go("Home")
                 elif kind == "YouTube":
                     yl = st.text_input("Link", key="uy")
                     if st.button("🚀", key="up1",
@@ -2056,8 +1791,7 @@ elif SS.page == "app" and SS.logged_in:
                                 "cap": cap, "likes": {},
                                 "comments": []})
                             save_db(db)
-                            SS.current_tab = "Home"
-                            safe_rerun()
+                            go("Home")
                         else:
                             st.error("Invalid link!")
                 else:
@@ -2065,7 +1799,7 @@ elif SS.page == "app" and SS.logged_in:
                         f = st.file_uploader(
                             "Photo", type=["png", "jpg",
                                           "jpeg"],
-                            key="up")
+                            key="uf")
                     else:
                         f = st.file_uploader(
                             "Video", type=["mp4", "mov"],
@@ -2080,27 +1814,25 @@ elif SS.page == "app" and SS.logged_in:
                                 "id": uuid.uuid4()
                                 .hex[:8],
                                 "user": SS.username,
-                                "type": "video" if kind ==
-                                "Video" else "image",
-                                "ref": save_upload(f),
+                                "type": "video" if kind == \
+                                    "Video" else "image",
+                                "ref": supload(f),
                                 "cap": cap, "likes": {},
                                 "comments": []})
                             save_db(db)
-                            SS.current_tab = "Home"
-                            safe_rerun()
+                            go("Home")
 
-            # ============ MESSAGES (sab ON!) ============
-            elif SS.current_tab == "Messages":
+            # ============ MESSAGES ============
+            elif SS.tab == "Messages":
 
                 if HAS_REFRESH:
                     st_autorefresh(interval=4000,
                                    key="mr")
                 db = load_db()
-                shot_install()
 
                 if SS.msg_view == "chat":
                     tgt = SS.msg_target
-                    isg = (SS.msg_target_type == "group")
+                    isg = (SS.msg_ttype == "group")
                     grp = None
                     if isg:
                         grp = next((g for g in db["groups"]
@@ -2108,45 +1840,39 @@ elif SS.page == "app" and SS.logged_in:
                                    None)
                         if grp is None:
                             SS.msg_view = "list"
-                            safe_rerun()
+                            rr()
                     elif tgt not in db["users"]:
                         SS.msg_view = "list"
-                        safe_rerun()
+                        rr()
 
                     hb, ha, hi, hc = st.columns(
-                        [0.1, 0.14, 0.5, 0.26])
+                        [0.1, 0.15, 0.5, 0.25])
                     if hb.button("←", key="cbk"):
                         SS.msg_view = "list"
-                        safe_rerun()
+                        rr()
                     if isg:
-                        ha.markdown(av_html(
-                            grp["name"], None, 40),
-                            unsafe_allow_html=True)
-                        hi.markdown("<b>" + esc(
-                            grp["name"]) + "</b><br>"
-                            "<span style='font-size:11px;"
-                            "color:#9ca3af;'>" +
-                            str(len(grp["members"])) +
-                            " members</span>",
-                            unsafe_allow_html=True)
+                        ha.markdown(av(grp["name"],
+                                       None, 40),
+                                    unsafe_allow_html=True)
+                        hi.markdown("<b>" +
+                                    esc(grp["name"]) +
+                                    "</b>",
+                                    unsafe_allow_html=True)
                         msgs = grp.get("messages", [])
                     else:
                         ud = db["users"][tgt]
-                        mark_seen(SS.username, tgt)
-                        ha.markdown(av_html(
-                            tgt, ud.get("avatar"), 40),
-                            unsafe_allow_html=True)
-                        hi.markdown("<b>" + esc(
-                            ud.get("display_name", tgt)) +
-                            "</b><br><span style='font-"
-                            "size:11px;color:#31a24c;'>"
-                            "● Active</span>",
-                            unsafe_allow_html=True)
-                        if hc.button("📞 Call", key="ccl"):
-                            start_call(SS.username, tgt)
-                            add_notification(
-                                tgt, "📞 Calling!")
-                            safe_rerun()
+                        seen(SS.username, tgt)
+                        ha.markdown(av(tgt,
+                                       ud.get("avatar"),
+                                       40),
+                                    unsafe_allow_html=True)
+                        hi.markdown("<b>" +
+                                    esc(ud.get(
+                                        "display_name",
+                                        tgt)) + "</b>",
+                                    unsafe_allow_html=True)
+                        if hc.button("📞", key="ccl"):
+                            toast("Call sent!")
                         msgs = [m for m in db["messages"]
                                 if (m["from"] ==
                                     SS.username and
@@ -2154,34 +1880,13 @@ elif SS.page == "app" and SS.logged_in:
                                 (m["from"] == tgt and
                                  m["to"] == SS.username)]
 
-                    st.markdown("<div class='enc'>🔒 "
-                                "End-to-end encrypted "
-                                "(demo)</div>",
+                    st.markdown("<div class='en'>🔒 "
+                                "encrypted (demo)</div>",
                                 unsafe_allow_html=True)
 
-                    # screenshot detection ON
-                    pend = shot_check()
-                    if pend and time.time() - \
-                            SS.last_shot_time > 5:
-                        SS.last_shot_time = time.time()
-                        if isg:
-                            for mm in grp["members"]:
-                                if mm != SS.username:
-                                    add_notification(
-                                        mm, "📸 @" +
-                                        SS.username +
-                                        " screenshot!")
-                        else:
-                            add_notification(
-                                tgt, "📸 @" +
-                                SS.username +
-                                " screenshot!")
-                        safe_toast("📸 Detected!")
-                        safe_rerun()
-
-                    if SS.clear_msg:
-                        SS[SS.clear_msg] = ""
-                        SS.clear_msg = ""
+                    if SS.clear_m:
+                        SS[SS.clear_m] = ""
+                        SS.clear_m = ""
 
                     for m in sorted(msgs,
                                     key=lambda x:
@@ -2192,17 +1897,17 @@ elif SS.page == "app" and SS.logged_in:
                             time.localtime(
                                 m["time"])).lower()
                         if m.get("photo") and \
-                                is_local(m["photo"]):
+                                isfile(m["photo"]):
                             st.image(m["photo"], width=180)
-                        cls = "bme" if mine else "bth"
+                        cls = "bm" if mine else "bh"
                         snd = ""
                         if isg and not mine:
-                            snd = "<b>@" + esc(m["from"]) + \
-                                  "</b><br>"
+                            snd = "<b>@" + esc(m["from"]) \
+                                  + "</b><br>"
                         st.markdown("<span class='" + cls +
                                     "'>" + snd +
                                     esc(m.get("text", "")) +
-                                    "<span class='btm'>" +
+                                    "<span class='bt'>" +
                                     ts + "</span></span>",
                                     unsafe_allow_html=True)
                         r = m.get("reactions", [])
@@ -2211,46 +1916,39 @@ elif SS.page == "app" and SS.logged_in:
                         lb = "👍 " + str(len(r)) if r \
                             else "👍"
                         if st.button(lb, key="rx_" + mk):
-                            toggle_rx(isg, tgt,
-                                      m.get("id"),
-                                      SS.username)
-                            safe_rerun()
+                            tog_rx(isg, tgt, m.get("id"),
+                                   SS.username)
+                            rr()
 
-                    # PHOTO send ON
-                    with st.expander("📷 Send Photo"):
+                    with st.expander("📷 Photo"):
                         ph = st.file_uploader(
                             "Photo", type=["png", "jpg",
                                            "jpeg"],
                             key="cph")
-                        if st.button("📷 Send",
-                                     key="csph",
+                        if st.button("Send", key="csp",
                                      use_container_width
                                      =True):
                             if ph is None:
                                 st.warning("Choose!")
                             else:
-                                path = save_upload(ph)
-                                send_msg(isg, tgt, tgt,
-                                         "📷 Photo",
-                                         photo=path)
-                                safe_rerun()
+                                smsg(isg, tgt, tgt,
+                                     "📷 Photo",
+                                     photo=supload(ph))
+                                rr()
 
-                    # VOICE send ON
                     if hasattr(st, "audio_input"):
-                        au = st.audio_input(
-                            "🎙️ Record", key="cvc")
+                        au = st.audio_input("🎙️",
+                                            key="cvc")
                         if au is not None:
                             st.audio(au)
-                            if st.button("➡️ Send Voice",
-                                         key="csvc",
+                            if st.button("🎤 Send",
+                                         key="csv",
                                          use_container_width
                                          =True):
-                                send_msg(isg, tgt, tgt,
-                                         "🎤 Voice note")
-                                st.success("Sent!")
-                                safe_rerun()
+                                smsg(isg, tgt, tgt,
+                                     "🎤 Voice")
+                                rr()
 
-                    # TEXT send ON (filter ke saath)
                     tx = st.text_input("Message...",
                                        key="ctx")
                     if st.button("➡️ Send", key="csd",
@@ -2258,17 +1956,17 @@ elif SS.page == "app" and SS.logged_in:
                         if tx.strip():
                             if me.get("comment_filter",
                                       True) and \
-                                    not text_clean(tx):
+                                    not clean(tx):
                                 st.warning("🛡️ Filtered!")
                             else:
-                                send_msg(isg, tgt, tgt,
-                                         tx.strip())
-                                SS.clear_msg = "ctx"
-                                safe_rerun()
+                                smsg(isg, tgt, tgt,
+                                     tx.strip())
+                                SS.clear_m = "ctx"
+                                rr()
 
                 else:
-                    st.markdown("<div class='phdr'>✉️ "
-                                "Chats</div>",
+                    st.markdown("<div class='ph'>✉️ Chats"
+                                "</div>",
                                 unsafe_allow_html=True)
                     partners = set()
                     for m in db["messages"]:
@@ -2293,37 +1991,26 @@ elif SS.page == "app" and SS.logged_in:
                         convs.append({"u": p,
                                       "last": cn[-1]
                                       if cn else None,
-                                      "un": unseen_count(
+                                      "un": unseen(
                                           SS.username,
                                           p)})
                     for g in db["groups"]:
                         if SS.username in g["members"]:
+                            gms = g.get("messages", [])
                             convs.append({"g": g,
-                                          "last": g.get(
-                                              "messages",
-                                              [None])[-1]
-                                          if g.get(
-                                              "messages")
-                                          else None})
+                                          "last":
+                                          gms[-1]
+                                          if gms else
+                                          None})
                     convs.sort(key=lambda c: c["last"]
                                ["time"] if c["last"]
                                else 0, reverse=True)
                     if not convs:
-                        st.info("No chats yet!")
+                        st.info("No chats!")
                     for c in convs:
                         if "u" in c:
                             p = c["u"]
                             ud = db["users"].get(p, {})
-                            if p in db.get("friends",
-                                           {}).get(
-                                               SS.username,
-                                               []):
-                                dot = ("<div class="
-                                       "'odot'></div>")
-                            else:
-                                dot = ""
-                            nm = esc(ud.get(
-                                "display_name", p))
                             if c["last"]:
                                 if c["last"]["from"] == \
                                         SS.username:
@@ -2332,18 +2019,16 @@ elif SS.page == "app" and SS.logged_in:
                                     pre = ""
                                 pv = pre + esc(
                                     c["last"].get(
-                                        "text", ""))[:30]
-                                tm = time.strftime(
-                                    "%I:%M %p",
-                                    time.localtime(
-                                        c["last"]
-                                        ["time"])).lower()
+                                        "text", ""))[:28]
                             else:
                                 pv = "Say hello 👋"
-                                tm = ""
-                            av = av_html(
-                                p, ud.get("avatar"), 46)
+                            nm = esc(ud.get(
+                                "display_name", p))
+                            avh = av(p,
+                                     ud.get("avatar"),
+                                     46)
                             kid = p
+                            isg2 = False
                             bd = ""
                             if c["un"] > 0:
                                 bd = ("<span class="
@@ -2352,57 +2037,35 @@ elif SS.page == "app" and SS.logged_in:
                                       "</span>")
                         else:
                             g = c["g"]
-                            dot = ""
                             nm = "👥 " + esc(g["name"])
-                            if c["last"]:
-                                pv = ("@" +
-                                      esc(c["last"]
-                                          ["from"]) +
-                                      ": " + esc(
-                                          c["last"].get(
-                                              "text",
-                                              ""))[:25])
-                                tm = time.strftime(
-                                    "%I:%M %p",
-                                    time.localtime(
-                                        c["last"]
-                                        ["time"])).lower()
-                            else:
-                                pv = "Group"
-                                tm = ""
-                            av = av_html(g["name"], None,
-                                         46)
+                            pv = "Group chat"
+                            avh = av(g["name"], None, 46)
                             kid = g["id"]
+                            isg2 = True
                             bd = ""
                         st.markdown("<div class='ci'>"
-                                    "<div class='aw'>" +
-                                    av + dot +
+                                    "<div class='aw od'>"
+                                    + avh +
                                     "</div><div class="
-                                    "'cinf'><div class="
-                                    "'cnm'>" + nm +
+                                    "'cn'><div class="
+                                    "'nm'>" + nm +
                                     "</div><div class="
-                                    "'cpv'>" + pv +
-                                    "</div></div><div "
-                                    "style='text-align:"
-                                    "right;'><div class="
-                                    "'ctm'>" + tm +
-                                    "</div>" + bd +
-                                    "</div></div>",
+                                    "'pv'>" + pv +
+                                    "</div></div>" + bd +
+                                    "</div>",
                                     unsafe_allow_html=True)
                         if st.button("💬", key="op_" + kid,
                                      use_container_width
                                      =True):
                             SS.msg_view = "chat"
                             SS.msg_target = kid
-                            if "u" in c:
-                                SS.msg_target_type = \
-                                    "direct"
+                            if isg2:
+                                SS.msg_ttype = "group"
                             else:
-                                SS.msg_target_type = \
-                                    "group"
-                            safe_rerun()
+                                SS.msg_ttype = "direct"
+                            rr()
 
-                    with st.expander("➕ New Chat/Group"):
+                    with st.expander("➕ New"):
                         others = [x for x in db["users"]
                                   if x != SS.username]
                         pick = st.selectbox("Chat:",
@@ -2413,15 +2076,15 @@ elif SS.page == "app" and SS.logged_in:
                                      =True):
                             SS.msg_view = "chat"
                             SS.msg_target = pick
-                            SS.msg_target_type = "direct"
-                            safe_rerun()
+                            SS.msg_ttype = "direct"
+                            rr()
                         gn = st.text_input("Group name",
-                                           key="ngn2")
+                                           key="gn2")
                         gm = st.multiselect("Members",
                                             others,
-                                            key="ngm")
+                                            key="gm2")
                         if st.button("Create Group",
-                                     key="ngb2",
+                                     key="gcb",
                                      use_container_width
                                      =True):
                             if gn.strip() and gm:
@@ -2430,34 +2093,30 @@ elif SS.page == "app" and SS.logged_in:
                                     "id": uuid.uuid4()
                                     .hex[:8],
                                     "name": gn.strip(),
-                                    "privacy": "public",
-                                    "createdBy":
-                                    SS.username,
                                     "members":
                                     [SS.username] + gm,
-                                    "requests": [],
                                     "messages": []})
                                 save_db(db)
-                                safe_rerun()
+                                rr()
 
             # ============ NOTIFICATIONS ============
-            elif SS.current_tab == "Notifications":
-                st.markdown("<div class='phdr'>🔔 "
-                            "Notifications</div>",
+            elif SS.tab == "Notifications":
+                st.markdown("<div class='ph'>🔔 Notifs"
+                            "</div>",
                             unsafe_allow_html=True)
                 db = load_db()
                 mn = [n for n in db["notifications"]
                       if n.get("to") == SS.username][:40]
-                if st.button("✅ Mark all read", key="mr2",
+                if st.button("✅ Mark read", key="mkr",
                              use_container_width=True):
                     db = load_db()
                     for n in db["notifications"]:
                         if n.get("to") == SS.username:
                             n["read"] = True
                     save_db(db)
-                    safe_rerun()
+                    rr()
                 if not mn:
-                    st.info("No notifications!")
+                    st.info("Empty!")
                 for n in mn:
                     ts = time.strftime(
                         "%d %b %H:%M",
@@ -2469,9 +2128,9 @@ elif SS.page == "app" and SS.logged_in:
                                 "</span></div>",
                                 unsafe_allow_html=True)
 
-            # ============ LUDO ============
-            elif SS.current_tab == "Ludo":
-                st.markdown("<div class='phdr'>🎲 Ludo"
+            # ============ GAMES ============
+            elif SS.tab == "Games":
+                st.markdown("<div class='ph'>🎲 Games"
                             "</div>",
                             unsafe_allow_html=True)
                 if st.button("🎲 Roll Dice",
@@ -2484,36 +2143,42 @@ elif SS.page == "app" and SS.logged_in:
                             u["coins"] = \
                                 u.get("coins", 0) + 5
                             save_db(db)
-                    safe_rerun()
+                    rr()
                 if SS.dice:
-                    st.markdown("<h3 style='text-align:"
+                    st.markdown("<h2 style='text-align:"
                                 "center;color:#00B074;'>🎯 "
-                                + str(SS.dice) + "</h3>",
+                                + str(SS.dice) +
+                                (" (+5!)" if SS.dice == 6
+                                 else "") + "</h2>",
                                 unsafe_allow_html=True)
+                st.caption("6 aane par 5 coins milte "
+                           "hain!")
 
             # ============ PROFILE ============
-            elif SS.current_tab == "Profile":
-                me = DB["users"].get(SS.username, {})
-                mp = [p for p in DB["posts"]
+            elif SS.tab == "Profile":
+                me = db["users"].get(SS.username, {})
+                mp = [p for p in db["posts"]
                       if p["user"] == SS.username]
-                fr = DB["friends"].get(SS.username, [])
+                fr = db["friends"].get(SS.username, [])
                 st.markdown("<div class='fbc'></div>",
                             unsafe_allow_html=True)
-                st.markdown("<div style='text-align:center;"
-                            "margin-top:-50px;'>" +
-                            av_html(SS.username,
-                                    me.get("avatar"), 100,
-                                    border=True) + "</div>",
+                st.markdown("<div style='text-align:"
+                            "center;margin-top:-50px;'>"
+                            + av(SS.username,
+                                 me.get("avatar"), 100,
+                                 border=True) + "</div>",
                             unsafe_allow_html=True)
                 st.markdown("<h3 style='text-align:center;"
                             "margin:8px 0 2px;'>" +
                             esc(me.get("display_name",
                                        SS.username)) +
                             "</h3><p style='text-align:"
-                            "center;color:#6b7280;font-size:"
-                            "13px;'>" + str(len(fr)) +
+                            "center;color:#6b7280;font-"
+                            "size:13px;'>" + str(len(fr)) +
                             " friends · " + str(len(mp)) +
-                            " posts</p>",
+                            " posts · 💰" +
+                            str(me.get("coins", 0)) +
+                            "</p>",
                             unsafe_allow_html=True)
                 if is_owner:
                     st.markdown("<p style='text-align:"
@@ -2521,172 +2186,126 @@ elif SS.page == "app" and SS.logged_in:
                                 "'ob'>👑 OWNER</span></p>",
                                 unsafe_allow_html=True)
                 b1, b2 = st.columns(2)
-                if b1.button("✏️ Edit Profile", key="pe"):
-                    SS.current_tab = "Settings"
-                    SS.settings_page = "personal"
-                    safe_rerun()
-                if b2.button("💰 " + str(me.get("coins", 0))
-                             + " Coins · Payout", key="pp"):
+                if b1.button("✏️ Edit", key="pe"):
+                    go("Settings")
+                    SS.setpage = "personal"
+                if b2.button("💰 Payout (100)", key="pp"):
                     db = load_db()
                     u = db["users"].get(SS.username)
                     if u is not None and \
                             u.get("coins", 0) >= 100:
                         u["coins"] -= 100
                         save_db(db)
-                        st.success("Payout submitted!")
-                        safe_rerun()
+                        st.success("Payout!")
+                        rr()
                     else:
                         st.warning("Min 100 coins!")
-                with st.expander("🖼️ Change Pic"):
-                    fl = st.selectbox("Filter:",
-                                      FILTER_NAMES,
+                with st.expander("🖼️ Pic"):
+                    fl = st.selectbox("Filter:", FILTERS,
                                       key="pf")
                     pi = st.file_uploader(
                         "Upload", type=["png", "jpg",
                                         "jpeg"],
                         key="pi")
-                    if st.button("💾 Update", key="pu",
+                    if st.button("💾", key="pu",
                                  use_container_width=True):
                         if pi is None:
                             st.warning("Choose!")
                         else:
                             pil = Image.open(pi)
-                            pil = apply_filter(pil, fl)
-                            set_pref(SS.username,
-                                     "avatar",
-                                     save_pil(pil))
+                            setp(SS.username, "avatar",
+                                 spil(filt(pil, fl)))
                             st.success("Updated!")
-                            safe_rerun()
-                for p in mp[:5]:
+                            rr()
+                for p in mp[:6]:
                     if p.get("type") == "text":
                         st.markdown("<div class='pph' "
-                                    "style='background:" +
-                                    p.get("grad", "#f0f0f0")
-                                    + ";height:90px;'>"
-                                    + esc(p.get("txt", ""))
-                                    + "</div>",
+                                    "style='background:"
+                                    + p.get("grad",
+                                            "#f0f0f0") +
+                                    ";height:90px;'>" +
+                                    esc(p.get("txt", "")) +
+                                    "</div>",
                                     unsafe_allow_html=True)
                     elif p.get("type") == "image" and \
-                            is_local(p["ref"]):
+                            isfile(p["ref"]):
                         st.image(p["ref"],
                                  use_container_width=True)
 
-            # ============ SETTINGS (sab asli!) ========
-            elif SS.current_tab == "Settings":
+            # ============ SETTINGS (HEAVY!) ============
+            elif SS.tab == "Settings":
 
-                if SS.settings_page == "menu":
-                    st.markdown("<div class='phdr'>⚙️ "
+                if SS.setpage == "menu":
+                    st.markdown("<div class='ph'>⚙️ "
                                 "Settings</div>",
                                 unsafe_allow_html=True)
                     st.caption("@" + SS.username)
-                    if is_owner:
-                        if st.button("🛡️ OWNER PANEL ›",
-                                     key="mo",
-                                     use_container_width
-                                     =True):
-                            SS.settings_page = "admin"
-                            safe_rerun()
-                    for label, pg in [
-                            ("🔐 Security & Locks",
-                             "security"),
-                            ("📋 Personal Info",
-                             "personal"),
-                            ("📰 Feed & Messages",
-                             "feed"),
-                            ("🔔 Notifications",
-                             "notifs"),
-                            ("🚫 Blocked", "blocked"),
-                            ("⚠️ Report", "reports"),
-                            ("ℹ️ About", "about")]:
+                    items = [
+                        ("🔐 Security & Locks",
+                         "security"),
+                        ("📋 Personal Info",
+                         "personal"),
+                        ("📰 Feed Preferences",
+                         "feed"),
+                        ("🔔 Notifications",
+                         "notifs"),
+                        ("🔒 Privacy", "privacy"),
+                        ("🎨 Appearance",
+                         "appearance"),
+                        ("🚫 Blocked Users",
+                         "blocked"),
+                        ("⚠️ Report User",
+                         "reports"),
+                        ("📊 My Stats",
+                         "stats"),
+                        ("ℹ️ About HMF", "about")]
+                    for label, pg in items:
                         if st.button(label + " ›",
                                      key="m_" + pg,
                                      use_container_width
                                      =True):
-                            SS.settings_page = pg
-                            safe_rerun()
+                            SS.setpage = pg
+                            rr()
+                    if is_owner:
+                        if st.button("🛡️ OWNER PANEL ›",
+                                     key="mown",
+                                     use_container_width
+                                     =True):
+                            SS.setpage = "admin"
+                            rr()
                     if st.button("🚪 Logout", key="mlo",
                                  use_container_width=True):
                         SS.logged_in = False
                         SS.page = "auth"
-                        safe_rerun()
+                        rr()
 
-                elif SS.settings_page == "admin":
-                    if st.button("← Back", key="ba"):
-                        SS.settings_page = "menu"
-                        safe_rerun()
-                    st.markdown("<div class='phdr'>🛡️ "
-                                "Owner</div>",
-                                unsafe_allow_html=True)
-                    db = load_db()
-                    c1, c2, c3 = st.columns(3)
-                    c1.metric("Users", len(db["users"]))
-                    c2.metric("Posts", len(db["posts"]))
-                    c3.metric("Reports",
-                              len(db["reports"]))
-                    st.markdown("### 🚩 Reports → Ban")
-                    for i, r in enumerate(
-                            reversed(db["reports"][:10])):
-                        r1, r2 = st.columns([0.6, 0.4])
-                        r1.markdown("🚩 **@" +
-                                    esc(r.get("user",
-                                              "")) +
-                                    "** by @" +
-                                    esc(r.get("from",
-                                              "")))
-                        if r.get("user") in db["banned"]:
-                            if r2.button("Unban",
-                                         key="ru_" +
-                                         str(i),
-                                         use_container_width
-                                         =True):
-                                db = load_db()
-                                db["banned"].remove(
-                                    r["user"])
-                                save_db(db)
-                                safe_rerun()
-                        else:
-                            if r2.button("🔨 BAN",
-                                         key="rb_" +
-                                         str(i),
-                                         use_container_width
-                                         =True):
-                                db = load_db()
-                                db["banned"].append(
-                                    r["user"])
-                                save_db(db)
-                                safe_rerun()
-
-                elif SS.settings_page == "security":
+                elif SS.setpage == "security":
                     if st.button("← Back", key="bs"):
-                        SS.settings_page = "menu"
-                        safe_rerun()
-                    st.markdown("<div class='phdr'>🔐 "
-                                "Security</div>",
-                                unsafe_allow_html=True)
+                        SS.setpage = "menu"
+                        rr()
 
-                    # --- APP LOCK PIN (asli!) ---
                     st.markdown("<p class='sl'>🔢 App "
                                 "Lock (PIN)</p>",
                                 unsafe_allow_html=True)
                     if not me.get("app_lock"):
                         npin = st.text_input(
-                            "4-digit PIN chunein",
-                            type="password",
+                            "4-digit PIN", type="password",
                             max_chars=4, key="spn")
-                        if st.button("🔒 Enable App Lock",
+                        if st.button("🔒 Enable",
                                      key="sae",
                                      use_container_width
                                      =True):
                             if len(npin) == 4 and \
                                     npin.isdigit():
-                                set_pref(SS.username,
-                                         "app_pin", npin)
-                                set_pref(SS.username,
-                                         "app_lock", True)
-                                st.success("Enabled! Ab "
-                                           "Lock Now "
-                                           "dabayein.")
-                                safe_rerun()
+                                setp(SS.username,
+                                     "app_pin", npin)
+                                setp(SS.username,
+                                     "app_lock", True)
+                                st.success("ON! Lock "
+                                           "Now dabayein"
+                                           " test karne "
+                                           "ke liye.")
+                                rr()
                             else:
                                 st.warning("4 digits!")
                     else:
@@ -2696,95 +2315,97 @@ elif SS.page == "app" and SS.logged_in:
                                      key="sln",
                                      use_container_width
                                      =True):
-                            SS.pin_unlocked = False
-                            safe_rerun()
+                            SS.pin_ok = False
+                            rr()
                         if l2.button("❌ Disable",
                                      key="sdn",
                                      use_container_width
                                      =True):
-                            set_pref(SS.username,
-                                     "app_lock", False)
-                            set_pref(SS.username,
-                                     "app_pin", "")
-                            st.success("Disabled!")
-                            safe_rerun()
+                            setp(SS.username,
+                                 "app_lock", False)
+                            setp(SS.username,
+                                 "app_pin", "")
+                            rr()
 
-                    # --- FINGERPRINT (asli!) ---
                     st.markdown("<p class='sl'>👆 "
-                                "Fingerprint Lock</p>",
+                                "Fingerprint</p>",
                                 unsafe_allow_html=True)
-                    cur_f = me.get("finger_lock", False)
-                    nf = st.checkbox("Enable Fingerprint",
-                                     value=cur_f,
+                    cf = st.checkbox("Enable",
+                                     value=me.get(
+                                         "finger_lock",
+                                         False),
                                      key="sfl")
-                    if nf != cur_f:
-                        set_pref(SS.username,
-                                 "finger_lock", nf)
-                        if nf:
-                            SS.finger_unlocked = False
-                            st.success("Enabled! Lock "
-                                       "screen aayega.")
+                    if cf != me.get("finger_lock",
+                                    False):
+                        setp(SS.username,
+                             "finger_lock", cf)
+                        if cf:
+                            SS.fin_ok = False
                         else:
-                            SS.finger_unlocked = True
-                        safe_rerun()
+                            SS.fin_ok = True
+                        rr()
 
-                    # --- 2FA (asli!) ---
                     st.markdown("<p class='sl'>🔑 "
-                                "Two-Factor (2FA)</p>",
+                                "2FA</p>",
                                 unsafe_allow_html=True)
-                    cur_2 = me.get("two_fa", False)
-                    n2 = st.checkbox("Login par code "
-                                     "maangein",
-                                     value=cur_2,
+                    c2 = st.checkbox("Login code",
+                                     value=me.get(
+                                         "two_fa",
+                                         False),
                                      key="s2f")
-                    if n2 != cur_2:
-                        set_pref(SS.username,
-                                 "two_fa", n2)
-                        if n2:
-                            st.success("2FA ON! Agli "
-                                       "baar login "
-                                       "par code "
-                                       "aayega.")
-                        else:
-                            st.success("2FA OFF.")
-                        safe_rerun()
+                    if c2 != me.get("two_fa", False):
+                        setp(SS.username, "two_fa", c2)
+                        rr()
 
-                    # --- LOGIN ALERTS (asli!) ---
-                    cur_la = me.get("login_alerts", True)
-                    nla = st.checkbox("📩 Login Alerts",
-                                      value=cur_la,
-                                      key="sla")
-                    if nla != cur_la:
-                        set_pref(SS.username,
-                                 "login_alerts", nla)
-                        safe_rerun()
+                    st.markdown("<p class='sl'>📩 Login "
+                                "Alerts</p>",
+                                unsafe_allow_html=True)
+                    cla = st.checkbox(
+                        "Notify on login",
+                        value=me.get("login_alerts",
+                                     True),
+                        key="sla")
+                    if cla != me.get("login_alerts",
+                                     True):
+                        setp(SS.username,
+                             "login_alerts", cla)
+                        rr()
 
-                    # --- AUTO LOGOUT (asli!) ---
                     st.markdown("<p class='sl'>⏱️ Auto "
                                 "Logout</p>",
                                 unsafe_allow_html=True)
-                    cur_al = me.get("auto_logout", 0)
+                    opts = [0, 5, 10, 30]
+                    cur = me.get("auto_logout", 0)
                     nal = st.selectbox(
-                        "Idle minutes:",
-                        [0, 5, 10, 30],
-                        index=[0, 5, 10, 30].index(cur_al)
-                        if cur_al in [0, 5, 10, 30] else 0,
+                        "Minutes:", opts,
+                        index=opts.index(cur)
+                        if cur in opts else 0,
                         key="sal")
-                    if nal != cur_al:
-                        set_pref(SS.username,
-                                 "auto_logout", nal)
-                        if nal > 0:
-                            st.success(str(nal) +
-                                       " min idle par "
-                                       "auto logout!")
-                        safe_rerun()
+                    if nal != cur:
+                        setp(SS.username,
+                             "auto_logout", nal)
+                        rr()
 
-                elif SS.settings_page == "personal":
+                    st.markdown("<p class='sl'>🛡️ Word "
+                                "Filter</p>",
+                                unsafe_allow_html=True)
+                    ccf = st.checkbox(
+                        "Block bad words",
+                        value=me.get("comment_filter",
+                                     True),
+                        key="scf")
+                    if ccf != me.get("comment_filter",
+                                     True):
+                        setp(SS.username,
+                             "comment_filter", ccf)
+                        rr()
+
+                elif SS.setpage == "personal":
                     if st.button("← Back", key="bp"):
-                        SS.settings_page = "menu"
-                        safe_rerun()
+                        SS.setpage = "menu"
+                        rr()
                     dn = st.text_input(
-                        "Display Name",
+                        "Name",
                         value=me.get("display_name", ""),
                         key="pdn")
                     bio = st.text_input(
@@ -2794,85 +2415,64 @@ elif SS.page == "app" and SS.logged_in:
                         "Birthday",
                         value=me.get("birthday", ""),
                         key="pbd")
-                    gn = st.selectbox(
-                        "Gender", ["Male", "Female",
-                                   "Other"],
-                        key="pgn")
                     if st.button("💾 Save", key="psv",
                                  use_container_width=True):
-                        set_pref(SS.username,
-                                 "display_name", dn)
-                        set_pref(SS.username, "bio", bio)
-                        set_pref(SS.username,
-                                 "birthday", bd)
-                        set_pref(SS.username, "gender", gn)
+                        setp(SS.username,
+                             "display_name", dn)
+                        setp(SS.username, "bio", bio)
+                        setp(SS.username, "birthday", bd)
                         st.success("Saved!")
 
-                elif SS.settings_page == "feed":
+                elif SS.setpage == "feed":
                     if st.button("← Back", key="bf"):
-                        SS.settings_page = "menu"
-                        safe_rerun()
-                    st.markdown("<p class='sl'>📰 Feed"
-                                "</p>",
-                                unsafe_allow_html=True)
-                    cur_fs = me.get("feed_sort",
-                                    "Most Recent")
-                    nfs = st.radio("Sort:",
-                                   ["Most Recent",
-                                    "Top Posts"],
-                                   index=0 if cur_fs ==
-                                   "Most Recent" else 1,
-                                   key="nfs")
-                    if nfs != cur_fs:
-                        set_pref(SS.username,
-                                 "feed_sort", nfs)
-                        st.success("Feed sort saved!")
-                        safe_rerun()
-                    cur_ss = me.get("show_stories", True)
-                    nss = st.checkbox("Show Stories",
-                                      value=cur_ss,
-                                      key="nss")
-                    if nss != cur_ss:
-                        set_pref(SS.username,
-                                 "show_stories", nss)
-                        safe_rerun()
-                    st.markdown("<p class='sl'>🛡️ Message "
-                                "& Comment Filter</p>",
-                                unsafe_allow_html=True)
-                    cur_cf = me.get("comment_filter", True)
-                    ncf = st.checkbox(
-                        "Bad words block karein",
-                        value=cur_cf, key="ncf")
-                    if ncf != cur_cf:
-                        set_pref(SS.username,
-                                 "comment_filter", ncf)
-                        safe_rerun()
+                        SS.setpage = "menu"
+                        rr()
+                    cfs = st.radio(
+                        "Sort:", ["Recent", "Top"],
+                        index=0 if me.get("feed_sort",
+                                          "Recent") ==
+                        "Recent" else 1,
+                        key="nfs")
+                    if cfs != me.get("feed_sort",
+                                     "Recent"):
+                        setp(SS.username, "feed_sort",
+                             cfs)
+                        rr()
+                    css2 = st.checkbox(
+                        "Show Stories",
+                        value=me.get("show_stories",
+                                     True),
+                        key="nss")
+                    if css2 != me.get("show_stories",
+                                      True):
+                        setp(SS.username,
+                             "show_stories", css2)
+                        rr()
 
-                elif SS.settings_page == "notifs":
+                elif SS.setpage == "notifs":
                     if st.button("← Back", key="bn"):
-                        SS.settings_page = "menu"
-                        safe_rerun()
-                    st.markdown("<div class='phdr'>🔔 "
-                                "Notifications</div>",
-                                unsafe_allow_html=True)
-                    st.caption("Ye settings har user ki "
-                               "apni hain - notifications "
-                               "is ke mutabiq aate hain!")
+                        SS.setpage = "menu"
+                        rr()
+                    st.caption("Ye aapki apni settings "
+                               "hain - notifications "
+                               "is ke mutabiq!")
                     prefs = me.get("notif",
                                    {"likes": True,
                                     "comments": True,
                                     "follows": True,
                                     "messages": True})
-                    for kind, label in [
+                    for kind, lab in [
                             ("likes", "❤️ Likes"),
-                            ("comments", "💬 Comments"),
-                            ("follows", "👥 Follows"),
-                            ("messages", "✉️ Messages")]:
-                        cur = prefs.get(kind, True)
-                        nv = st.checkbox(label,
-                                         value=cur,
-                                         key="ntf_" + kind)
-                        if nv != cur:
+                            ("comments",
+                             "💬 Comments"),
+                            ("follows",
+                             "👥 Friend requests"),
+                            ("messages",
+                             "✉️ Messages")]:
+                        cv = prefs.get(kind, True)
+                        nv = st.checkbox(lab, value=cv,
+                                         key="nt_" + kind)
+                        if nv != cv:
                             db = load_db()
                             u = db["users"].get(
                                 SS.username)
@@ -2881,12 +2481,58 @@ elif SS.page == "app" and SS.logged_in:
                                     "notif", {})[kind] \
                                     = nv
                                 save_db(db)
-                            safe_rerun()
+                            rr()
 
-                elif SS.settings_page == "blocked":
-                    if st.button("← Back", key="bb"):
-                        SS.settings_page = "menu"
-                        safe_rerun()
+                elif SS.setpage == "privacy":
+                    if st.button("← Back", key="bpr"):
+                        SS.setpage = "menu"
+                        rr()
+                    cp = st.checkbox(
+                        "🔒 Private Account",
+                        value=me.get("private", False),
+                        key="cpr")
+                    if cp != me.get("private", False):
+                        setp(SS.username, "private", cp)
+                        rr()
+                    ca = st.checkbox(
+                        "🟢 Show Online Status",
+                        value=me.get("activity_status",
+                                     True),
+                        key="cas")
+                    if ca != me.get("activity_status",
+                                    True):
+                        setp(SS.username,
+                             "activity_status", ca)
+                        rr()
+                    if st.button("📦 Download My Data",
+                                 key="dd",
+                                 use_container_width=True):
+                        st.success("Data email hoga "
+                                   "(demo)!")
+                    if st.button("🗑️ Delete Account",
+                                 key="da",
+                                 use_container_width=True):
+                        SS.logged_in = False
+                        SS.page = "auth"
+                        rr()
+
+                elif SS.setpage == "appearance":
+                    if st.button("← Back", key="bap"):
+                        SS.setpage = "menu"
+                        rr()
+                    st.caption("Theme: " +
+                               ("Dark 🌙" if SS.dark
+                                else "Light ☀️"))
+                    if st.button("🔄 Toggle Theme",
+                                 key="tg",
+                                 use_container_width=True):
+                        SS.dark = not SS.dark
+                        rr()
+
+                elif SS.setpage == "blocked":
+                    if st.button("← Back", key="bbl"):
+                        SS.setpage = "menu"
+                        rr()
                     bi = st.text_input("Username",
                                        key="bki")
                     if st.button("🚫 Block", key="bkb",
@@ -2903,12 +2549,13 @@ elif SS.page == "app" and SS.logged_in:
                                 save_db(db)
                                 SS.blocked = list(
                                     rec["blocked"])
-                            safe_rerun()
+                            rr()
                     for i, u in enumerate(SS.blocked):
-                        b1, b2 = st.columns([0.6, 0.4])
+                        b1, b2 = st.columns(
+                            [0.6, 0.4])
                         b1.markdown("**🚫 @" + u + "**")
                         if b2.button("Unblock",
-                                     key="ub3_" +
+                                     key="ubk_" +
                                      str(i),
                                      use_container_width
                                      =True):
@@ -2921,15 +2568,20 @@ elif SS.page == "app" and SS.logged_in:
                                 rec["blocked"].remove(u)
                                 save_db(db)
                             SS.blocked.remove(u)
-                            safe_rerun()
+                            rr()
 
-                elif SS.settings_page == "reports":
-                    if st.button("← Back", key="br"):
-                        SS.settings_page = "menu"
-                        safe_rerun()
-                    ri = st.text_input("Member ID",
+                elif SS.setpage == "reports":
+                    if st.button("← Back", key="brp"):
+                        SS.setpage = "menu"
+                        rr()
+                    ri = st.text_input("User ID",
                                        key="rki")
-                    if st.button("🚩 Report", key="rkb",
+                    rs = st.selectbox(
+                        "Reason", ["Harassment",
+                                   "Abusive", "Spam",
+                                   "Scam", "Other"],
+                        key="rks")
+                    if st.button("🚩 Submit", key="rkb",
                                  use_container_width=True):
                         u = ri.strip().lower()
                         if u:
@@ -2937,68 +2589,110 @@ elif SS.page == "app" and SS.logged_in:
                             db["reports"].append(
                                 {"from": SS.username,
                                  "user": u,
-                                 "reason": "report",
-                                 "time": now})
+                                 "reason": rs,
+                                 "time":
+                                 time.time()})
                             save_db(db)
-                            if owner:
-                                add_notification(
-                                    owner,
-                                    "🚩 Report: @" + u)
-                            st.success("Owner ko gayi!")
+                            if db.get("owner"):
+                                notify(db["owner"],
+                                       "🚩 Report @"
+                                       + u)
+                            st.success("Sent to owner!")
                         else:
                             st.warning("ID likhein!")
 
-                elif SS.settings_page == "about":
-                    if st.button("← Back", key="baf"):
-                        SS.settings_page = "menu"
-                        safe_rerun()
-                    st.markdown("### ℹ️ " +
-                                APP_INFO["name"])
-                    st.markdown(
-                        "**🏢 Parent:** " +
-                        APP_INFO["parent"] + "\n\n" +
-                        "**👑 Founders:** " +
-                        APP_INFO["founders"] + "\n\n" +
-                        "**📍 HQ:** " + APP_INFO["hq"] +
-                        "\n\n**📅 Founded:** " +
-                        APP_INFO["founded"] + "\n\n" +
-                        "**Type:** " + APP_INFO["type"] +
-                        "\n\n---\n**Features:** Feed • "
-                        "Stories • Groups • Pages • "
-                        "Events • Marketplace • Ads • "
-                        "Messenger • Voice • Calls • "
-                        "Games • Wallet\n\n© 2026 " +
-                        APP_INFO["parent"])
+                elif SS.setpage == "stats":
+                    if st.button("← Back", key="bst"):
+                        SS.setpage = "menu"
+                        rr()
+                    db = load_db()
+                    my_posts = [p for p in db["posts"]
+                                if p["user"] ==
+                                SS.username]
+                    my_msgs = sum(
+                        1 for m in db["messages"]
+                        if m["from"] == SS.username)
+                    likes_got = sum(
+                        len(p.get("likes", {}))
+                        for p in my_posts)
+                    c1, c2, c3, c4 = st.columns(2)
+                    c1.metric("Posts",
+                              len(my_posts))
+                    c2.metric("Messages", my_msgs)
+                    c3.metric("Likes Got",
+                              likes_got)
+                    c4.metric("Coins",
+                              me.get("coins", 0))
 
-        # ---- BOTTOM NAV ----
-        st.markdown("<div class='nav'>" +
-                    "<a href='?tab=Home' class='" +
-                    ("on" if SS.current_tab == "Home"
-                     else "") + "'>🏠</a>" +
-                    "<a href='?tab=Search' class='" +
-                    ("on" if SS.current_tab == "Search"
-                     else "") + "'>🔍</a>" +
-                    "<a href='?tab=Groups' class='" +
-                    ("on" if SS.current_tab == "Groups"
-                     else "") + "'>👥</a>" +
-                    "<a href='?tab=Marketplace' class='" +
-                    ("on" if SS.current_tab ==
-                     "Marketplace" else "") +
-                    "'>🛒</a>" +
-                    "<a href='?tab=Create' class='" +
-                    ("on" if SS.current_tab == "Create"
-                     else "") + "'>➕</a>" +
-                    "<a href='?tab=Messages' class='" +
-                    ("on" if SS.current_tab == "Messages"
-                     else "") + "'>✉️</a>" +
-                    "<a href='?tab=Profile' class='" +
-                    ("on" if SS.current_tab == "Profile"
-                     else "") + "'>👤</a></div>",
-                    unsafe_allow_html=True)
+                elif SS.setpage == "about":
+                    if st.button("← Back", key="baf"):
+                        SS.setpage = "menu"
+                        rr()
+                    st.markdown("### ℹ️ HMF Book")
+                    st.markdown(
+                        "**🏢 Parent:** HMF Group\n\n"
+                        "**👑 Founders:** Mehmood Sial, "
+                        "Hoor-e-Jannat, Farwa\n\n"
+                        "**📍 HQ:** Bahawalpur / Okara, "
+                        "Pakistan\n\n"
+                        "**📅 Founded:** Feb 4, 2026\n\n"
+                        "---\n"
+                        "Feed • Reels • Groups • Pages • "
+                        "Events • Marketplace • Ads • "
+                        "Messenger • Games\n\n"
+                        "© 2026 HMF Group")
+
+                elif SS.setpage == "admin":
+                    if st.button("← Back", key="bad"):
+                        SS.setpage = "menu"
+                        rr()
+                    st.markdown("<div class='ph'>🛡️ "
+                                "Owner</div>",
+                                unsafe_allow_html=True)
+                    db = load_db()
+                    c1, c2, c3 = st.columns(3)
+                    c1.metric("Users",
+                              len(db["users"]))
+                    c2.metric("Posts",
+                              len(db["posts"]))
+                    c3.metric("Reports",
+                              len(db["reports"]))
+                    st.markdown("### 🚩 Reports → Ban")
+                    for i, r in enumerate(
+                            reversed(db["reports"]
+                                     [:10])):
+                        r1, r2 = st.columns(
+                            [0.6, 0.4])
+                        r1.markdown("🚩 **@" +
+                                    esc(r.get("user",
+                                              "")) +
+                                    "**")
+                        if r.get("user") in \
+                                db["banned"]:
+                            if r2.button("Unban",
+                                         key="ru_" +
+                                         str(i),
+                                         use_container_
+                                         width=True):
+                                db = load_db()
+                                db["banned"].remove(
+                                    r["user"])
+                                save_db(db)
+                                rr()
+                        else:
+                            if r2.button("🔨 BAN",
+                                         key="rbn_" +
+                                         str(i),
+                                         use_container_
+                                         width=True):
+                                db = load_db()
+                                db["banned"].append(
+                                    r["user"])
+                                save_db(db)
+                                rr()
 
 
 # ---------- SAFETY ----------
 else:
     SS.page = "splash"
-    safe_rerun()
-  
+    rr()
