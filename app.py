@@ -429,31 +429,26 @@ elif SS.page == "app" and SS.logged_in:
     else:
         un = unread(SS.username)
         st.markdown("<div class='tb'><div class='lg'>HMF Book</div></div>", unsafe_allow_html=True)
-        tq = st.columns(5)
-        if tq[0].button("✉️", key="tbm", use_container_width=True):
-            go("Messages")
-        bl = "🔔"
-        if un > 0:
-            bl = "🔔" + str(un)
-        if tq[1].button(bl, key="tbn", use_container_width=True):
-            go("Notifications")
-        if tq[2].button("🌙" if not SS.dark else "☀️", key="tbd", use_container_width=True):
-            SS.dark = not SS.dark
-            rr()
-        if tq[3].button("⚙️", key="tbs", use_container_width=True):
-            go("Settings")
-        if tq[4].button("🚪", key="tbo", use_container_width=True):
-            SS.logged_in = False
-            SS.page = "auth"
-            rr()
 
-        nv = st.columns(7)
-        for i, (t, ic) in enumerate([("Home", "🏠"), ("Search", "🔍"), ("Reels", "🎬"), ("Messages", "✉️"), ("Create", "➕"), ("Friends", "👥"), ("Profile", "👤")]):
+        # ===== TASKBAR (Row 1) =====
+        nv1 = st.columns(6)
+        for i, (t, ic) in enumerate([("Home", "🏠"), ("Search", "🔍"), ("Reels", "🎬"), ("Messages", "✉️"), ("Create", "➕"), ("Friends", "👥")]):
             mk = ic
             if SS.tab == t:
                 mk = "🔹"
-            if nv[i].button(mk, key="nv_" + t, use_container_width=True):
+            if nv1[i].button(mk, key="nv_" + t, use_container_width=True):
                 go(t)
+
+        # ===== TASKBAR (Row 2) =====
+        nv2 = st.columns(5)
+        for i, (t, ic) in enumerate([("Games", "🎲"), ("Channel", "📺"), ("Notifications", "🔔" + str(un) if un > 0 else "🔔"), ("Profile", "👤"), ("Settings", "⚙️")]):
+            mk = ic
+            if SS.tab == t:
+                mk = "🔹"
+            if nv2[i].button(mk, key="nv_" + t, use_container_width=True):
+                go(t)
+
+        st.markdown("<div style='height:4px;'></div>", unsafe_allow_html=True)
 
         if SS.view_user and SS.view_user != SS.username:
             vu = SS.view_user
@@ -479,13 +474,6 @@ elif SS.page == "app" and SS.logged_in:
                 SS.tab = "Profile"
 
             if SS.tab == "Home":
-                q1, q2, q3 = st.columns(3)
-                if q1.button("🎲 Games", key="hq1", use_container_width=True):
-                    go("Games")
-                if q2.button("📺 Channel", key="hq2", use_container_width=True):
-                    go("Channel")
-                if q3.button("👥 Friends", key="hq3", use_container_width=True):
-                    go("Friends")
                 vis = []
                 for p in db["posts"]:
                     if p.get("type") != "reel" and p["user"] not in SS.blocked:
