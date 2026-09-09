@@ -254,4 +254,3 @@ else:
         st.info("Settings page — yahan aapki settings aayengi.")
 
     bottom_nav(page)
-    
