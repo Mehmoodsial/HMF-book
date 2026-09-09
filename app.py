@@ -1,7 +1,6 @@
 import os
 import json
 import html
-from urllib.parse import quote
 
 import streamlit as st
 
@@ -22,12 +21,7 @@ def get_param(key, default=""):
             value = value[0] if value else default
         return value or default
     except Exception:
-        try:
-            params = st.experimental_get_query_params()
-            value = params.get(key, [default])
-            return value[0] if value else default
-        except Exception:
-            return default
+        return default
 
 
 def set_param(key, value):
@@ -86,12 +80,13 @@ def save_chats(chats):
 page = get_param("page", "home")
 
 
-# ================== AUTO REFRESH (har 5 second) ==================
-try:
-    from streamlit_autorefresh import st_autorefresh
-    st_autorefresh(interval=5000, key="chat_autorefresh")
-except Exception:
-    pass
+# ================== AUTO REFRESH (SIRF CHATS PAGE PAR) ==================
+if page == "chats" and is_logged_in():
+    try:
+        from streamlit_autorefresh import st_autorefresh
+        st_autorefresh(interval=5000, key="chat_autorefresh")
+    except Exception:
+        pass
 
 
 # ================== CSS (GREEN THEME + MENU BAR) ==================
@@ -106,7 +101,6 @@ st.markdown(
             padding-right: 1rem;
         }
 
-        /* Green title */
         .green-title {
             color: #10b981;
             text-align: center;
@@ -115,13 +109,6 @@ st.markdown(
             margin-top: 30px;
         }
 
-        /* Login box */
-        .login-box {
-            max-width: 380px;
-            margin: 20px auto;
-        }
-
-        /* Green button */
         .stButton > button {
             background: #10b981;
             color: #ffffff;
@@ -134,7 +121,6 @@ st.markdown(
             color: #ffffff;
         }
 
-        /* Chat bubbles */
         .chat-box {
             background: #f1f1f1;
             border-radius: 14px;
@@ -144,7 +130,7 @@ st.markdown(
         .chat-name { font-size: 12px; color: #888888; }
         .chat-text { font-size: 15px; color: #262626; word-wrap: break-word; }
 
-        /* ===== BOTTOM MENU BAR (Instagram style, app ke andar) ===== */
+        /* ===== BOTTOM MENU BAR ===== */
         .bottom-nav {
             position: fixed;
             bottom: 0;
@@ -209,16 +195,8 @@ def login_page():
                 st.warning("Pehle apna naam likhein.")
 
 
-# ================== LOGOUT ==================
-def logout():
-    st.session_state["user_name"] = ""
-    set_param("page", "home")
-    do_rerun()
-
-
 # ================== MAIN ==================
 if not is_logged_in():
-    # Pehle login hoga, tab menu bar dikhegi
     login_page()
 
 else:
@@ -254,7 +232,7 @@ else:
 
         with st.form("message_form", clear_on_submit=True):
             msg = st.text_input("Message", placeholder="Type a message...", label_visibility="collapsed")
-            send = st.form_submit_button("Send", type="primary", use_container_width=True)
+            send = st.form_submit_button("Send", use_container_width=True)
 
         if send and msg.strip():
             chats.append({"name": user_name, "message": msg.strip()})
@@ -267,11 +245,13 @@ else:
         st.title("👤 Profile")
         st.success("Logged in as: " + user_name)
         if st.button("Logout"):
-            logout()
+            st.session_state["user_name"] = ""
+            set_param("page", "home")
+            do_rerun()
 
-    else:  # settings
+    else:
         st.title("⚙️ Settings")
         st.info("Settings page — yahan aapki settings aayengi.")
 
-    # Menu bar sirf login ke baad
     bottom_nav(page)
+    
