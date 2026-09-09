@@ -1,1992 +1,1183 @@
-import streamlit as st
-import streamlit.components.v1 as components
-import random
-import json
-import os
-import time
-import uuid
-from html import escape as esc
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Instagram</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Grand+Hotel&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* ===== base ===== */
+:root{--blue:#0095f6;--red:#ed4956;--line:#efefef;--line2:#dbdbdb;--t2:#737373}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{font-family:'Plus Jakarta Sans',sans-serif;background:#0d0d10;color:#0a0a0a;display:flex;align-items:center;justify-content:center;padding:26px}
+button{background:none;border:0;font:inherit;color:inherit;cursor:pointer}
+img{display:block;-webkit-user-drag:none;user-select:none}
+input,textarea{font:inherit}
+.iconw{display:inline-flex;align-items:center;justify-content:center}
+.ic{width:25px;height:25px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.ic .fg{fill:currentColor;stroke:none}
+.ic .cutk{stroke:#fff;stroke-width:2.3}
+.vbadge{width:13px;height:13px}
+.vbadge .fg{fill:#0095f6}
 
-st.set_page_config(
-    page_title="HMF book",
-    page_icon="🟢",
-    layout="centered",
-)
+/* ===== phone frame ===== */
+.phone{position:relative;width:min(400px,100%);height:min(860px,calc(100vh - 52px));background:#fff;border-radius:46px;overflow:hidden;border:1px solid #2a2a30;box-shadow:0 0 0 10px #17171b,0 40px 90px rgba(0,0,0,.6);display:flex;flex-direction:column}
+.statusbar{height:36px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:8px 26px 0;background:#fff}
+.sb-time{font-size:13.5px;font-weight:700}
+.sb-ic{display:flex;gap:6px;align-items:center}
+.app{position:relative;flex:1;overflow:hidden;background:#fff}
 
-try:
-    from streamlit_autorefresh import st_autorefresh
-    HAS_REFRESH = True
-except Exception:
-    HAS_REFRESH = False
+/* ===== screens ===== */
+.screen{position:absolute;inset:0;overflow-y:auto;overscroll-behavior:contain;display:none;background:#fff;padding-bottom:calc(60px + env(safe-area-inset-bottom));scrollbar-width:none}
+.screen::-webkit-scrollbar{display:none}
+.screen.on{display:block;animation:scrIn .22s ease}
+@keyframes scrIn{from{opacity:.4}to{opacity:1}}
+.hd{position:sticky;top:0;z-index:6;display:flex;align-items:center;gap:12px;height:52px;padding:0 12px;background:rgba(255,255,255,.94);backdrop-filter:blur(10px);transition:transform .28s ease}
+.hd.hid{transform:translateY(-110%)}
+.hd .title{font-size:16.5px}
+.logo{font-family:'Grand Hotel',cursive;font-size:28px;line-height:1;padding-top:4px}
+.ml-auto{margin-left:auto}
+.ib{display:flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:50%;position:relative;flex:none;transition:transform .15s ease}
+.ib:active{transform:scale(.85)}
+.rel{position:relative}
+.bdg{position:absolute;top:3px;right:1px;min-width:17px;height:17px;background:#ff3040;color:#fff;font-size:10.5px;font-weight:700;border-radius:9px;display:flex;align-items:center;justify-content:center;padding:0 4px;border:2px solid #fff}
 
+/* ===== stories ===== */
+.ring{display:block;padding:2.5px;border-radius:50%;background:conic-gradient(from 210deg,#feda75,#fa7e1e,#d62976,#962fbf,#4f5bd5,#feda75)}
+.ring.seen{background:var(--line2)}
+.ring .in{display:block;padding:2.5px;background:#fff;border-radius:50%;width:100%;height:100%}
+.ring img{width:100%;aspect-ratio:1;border-radius:50%;object-fit:cover}
+.stories{display:flex;gap:6px;padding:10px 10px 12px;overflow-x:auto;border-bottom:1px solid var(--line);scrollbar-width:none}
+.stories::-webkit-scrollbar{display:none}
+.st-it{display:flex;flex-direction:column;align-items:center;gap:5px;width:72px;flex:none;position:relative}
+.st-it .ring{width:66px;height:66px}
+.st-nm{font-size:11.5px;color:#333;max-width:72px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.st-plus{position:absolute;top:40px;right:6px;width:20px;height:20px;border-radius:50%;background:var(--blue);color:#fff;border:2.5px solid #fff;display:flex;align-items:center;justify-content:center}
+.st-plus .ic{width:11px;height:11px;stroke-width:3}
 
-# ---------- SAFE HELPERS ----------
-def safe_rerun():
-    if hasattr(st, "rerun"):
-        st.rerun()
-    else:
-        st.experimental_rerun()
+/* ===== posts ===== */
+.post{padding-bottom:8px}
+.post.new{animation:pIn .5s ease}
+@keyframes pIn{from{opacity:0;transform:translateY(16px)}}
+.p-hd{display:flex;align-items:center;gap:10px;padding:8px 12px}
+.p-av{width:38px;height:38px;flex:none;display:flex;align-items:center;justify-content:center}
+.p-av .ring{width:38px;height:38px}
+.avw{display:flex;align-items:center;justify-content:center}
+.avw img{width:34px;height:34px;border-radius:50%;object-fit:cover}
+.p-handle{font-weight:700;font-size:13.5px;display:inline-flex;align-items:center;gap:3px}
+.pd{color:var(--t2)}
+.p-time{color:var(--t2);font-size:13px}
+.flw{color:var(--blue);font-weight:700;font-size:13.5px;margin-left:6px}
+.p-img{position:relative;aspect-ratio:4/5;background:#f4f4f4;overflow:hidden;cursor:pointer}
+.p-img img{width:100%;height:100%;object-fit:cover}
+.burst{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;opacity:0}
+.burst .ic{width:96px;height:96px;fill:#fff;stroke:none;filter:drop-shadow(0 6px 18px rgba(0,0,0,.35))}
+.burst.go{animation:burst 1s ease forwards}
+@keyframes burst{0%{opacity:0;transform:scale(.3)}18%{opacity:1;transform:scale(1.15)}32%{transform:scale(.95)}46%{transform:scale(1)}75%{opacity:1}100%{opacity:0;transform:scale(.9)}}
+.p-act{display:flex;align-items:center;gap:5px;padding:4px 6px}
+.likebtn.on .ic{fill:var(--red);stroke:var(--red)}
+.likebtn.pop .ic{animation:pop .35s ease}
+@keyframes pop{40%{transform:scale(1.3)}}
+.savebtn.on .ic{fill:currentColor}
+.p-likes{padding:0 12px;font-weight:700;font-size:13.5px}
+.p-cap{padding:4px 12px 0;font-size:14px;line-height:1.45;cursor:pointer}
+.p-cap b{margin-right:4px}
+.p-cap.clamped{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.p-cm{display:block;padding:4px 12px 0;color:var(--t2);font-size:13.5px}
 
+/* ===== explore ===== */
+.srch{flex:1;display:flex;align-items:center;gap:8px;background:#efefef;border-radius:10px;padding:9px 12px}
+.srch .ic{width:16px;height:16px;stroke-width:2;color:var(--t2)}
+.srch input{flex:1;background:transparent;border:0;outline:0;font-size:14px;min-width:0}
+.xbtn{color:var(--t2);display:flex}
+.xbtn .ic{width:15px;height:15px;stroke-width:2.4}
+.ex-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;grid-auto-flow:dense}
+.tile{position:relative;aspect-ratio:1;overflow:hidden;background:#eee}
+.tile.tall{grid-row:span 2;aspect-ratio:auto}
+.tile img{width:100%;height:100%;object-fit:cover;transition:transform .35s ease}
+.tile:active img{transform:scale(.94)}
+.ex-empty{padding:70px 30px;text-align:center;color:var(--t2)}
+.ex-empty b{display:block;font-size:17px;color:#000;margin-bottom:6px}
 
-def safe_toast(msg):
-    if hasattr(st, "toast"):
-        st.toast(msg)
-    else:
-        st.info(msg)
+/* ===== reels ===== */
+#scr-reels{padding-bottom:0;bottom:calc(52px + env(safe-area-inset-bottom));background:#000}
+.rscroll{position:absolute;inset:0;overflow-y:auto;scroll-snap-type:y mandatory;scrollbar-width:none}
+.rscroll::-webkit-scrollbar{display:none}
+.reel{position:relative;height:100%;scroll-snap-align:start;scroll-snap-stop:always;overflow:hidden;background:#111}
+.reel video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.r-scrim{position:absolute;left:0;right:0;bottom:0;height:38%;background:linear-gradient(to top,rgba(0,0,0,.62),transparent);pointer-events:none}
+.r-info{position:absolute;left:12px;right:78px;bottom:18px;color:#fff;z-index:3}
+.r-user{display:flex;align-items:center;gap:9px;font-size:13.5px}
+.r-user img{width:32px;height:32px;border-radius:50%;object-fit:cover;border:1.5px solid #fff}
+.r-flw{border:1.2px solid rgba(255,255,255,.85);color:#fff;font-size:12px;font-weight:700;border-radius:8px;padding:4px 10px;margin-left:2px}
+.r-flw.fed{border-color:rgba(255,255,255,.4);color:rgba(255,255,255,.85)}
+.r-cap{font-size:13px;margin:9px 0 7px;line-height:1.4;text-shadow:0 1px 8px rgba(0,0,0,.45)}
+.r-music{display:flex;align-items:center;gap:7px;font-size:12.5px;overflow:hidden}
+.r-music .ic{width:13px;height:13px}
+.marq{overflow:hidden;flex:1;-webkit-mask-image:linear-gradient(90deg,#000 85%,transparent)}
+.marq span{display:inline-block;white-space:nowrap;animation:mq 10s linear infinite}
+@keyframes mq{to{transform:translateX(-50%)}}
+.r-rail{position:absolute;right:6px;bottom:18px;display:flex;flex-direction:column;align-items:center;gap:15px;z-index:3;color:#fff}
+.rr{display:flex;flex-direction:column;align-items:center;gap:3px;color:#fff;font-size:11.5px;font-weight:700}
+.rr .ic{width:27px;height:27px;filter:drop-shadow(0 1px 6px rgba(0,0,0,.45))}
+.rr.likebtn.on .ic{fill:var(--red);stroke:var(--red)}
+.rr-disc{width:28px;height:28px;border-radius:50%;border:1.5px solid rgba(255,255,255,.7);overflow:hidden;animation:spin 7s linear infinite}
+.rr-disc img{width:100%;height:100%;object-fit:cover}
+@keyframes spin{to{transform:rotate(360deg)}}
+.r-tap{position:absolute;inset:0 60px 0 0;z-index:2}
+.r-flash{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff;opacity:0;pointer-events:none;z-index:4}
+.r-flash .ic{width:74px;height:74px;fill:rgba(255,255,255,.88);stroke:none}
+.r-flash.go{animation:flash .5s ease}
+@keyframes flash{15%{opacity:.9}100%{opacity:0;transform:scale(1.5)}}
+.reels-top{position:absolute;top:8px;left:0;right:0;display:flex;align-items:center;justify-content:space-between;padding:2px 10px;z-index:6;color:#fff;pointer-events:none}
+.reels-top b{font-size:17px;text-shadow:0 1px 10px rgba(0,0,0,.5)}
+.mute{pointer-events:auto;width:36px;height:36px;border-radius:50%;background:rgba(15,15,15,.45);display:flex;align-items:center;justify-content:center;color:#fff}
+.mute .ic{width:19px;height:19px}
 
+/* ===== activity ===== */
+.act-g{padding:12px 14px 4px;font-weight:700;font-size:14px}
+.act-r{display:flex;align-items:center;gap:12px;padding:9px 14px}
+.act-av{position:relative;width:44px;height:44px;flex:none}
+.act-av img{width:100%;height:100%;border-radius:50%;object-fit:cover}
+.act-av .mini{position:absolute;right:-4px;bottom:-4px;width:20px;height:20px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center}
+.mini .ic{width:12px;height:12px;stroke-width:2.6}
+.mini.red .ic{fill:var(--red);stroke:var(--red)}
+.mini.blue .ic{stroke:#0095f6}
+.act-tx{flex:1;font-size:13.5px;line-height:1.45}
+.act-tx .tm{color:var(--t2)}
+.act-thumb{width:44px;height:44px;object-fit:cover;border-radius:4px}
+.afb{background:var(--blue);color:#fff;font-weight:700;font-size:13px;border-radius:8px;padding:7px 14px;flex:none}
+.afb.fed,.afb.ghost{background:#efefef;color:#000}
+.req-btns{display:flex;gap:6px}
 
-# ---------- SHARED DATABASE (multi-user) ----------
-DB_FILE = "hmf_db.json"
-UPLOAD_DIR = "uploads"
+/* ===== messages (IG inbox) ===== */
+.dm-srch{padding:6px 14px 10px}
+.dm-srch .srch{border-radius:12px}
+.notes{display:flex;gap:20px;padding:14px;overflow-x:auto;border-bottom:1px solid var(--line);scrollbar-width:none}
+.notes::-webkit-scrollbar{display:none}
+.note{display:flex;flex-direction:column;align-items:center;gap:6px;width:76px;flex:none}
+.note-b{position:relative;background:#efefef;border-radius:16px;padding:7px 11px;font-size:12px;font-weight:600;white-space:nowrap;max-width:110px;overflow:hidden;text-overflow:ellipsis}
+.note-b:after{content:'';position:absolute;bottom:-6px;left:22px;border:6px solid transparent;border-top-color:#efefef;border-bottom:0}
+.note img{width:56px;height:56px;border-radius:50%;object-fit:cover;border:2px solid var(--line2)}
+.note .nm{font-size:11.5px}
+.req-row{display:flex;align-items:center;gap:12px;width:100%;padding:10px 16px;border-bottom:1px solid var(--line);text-align:left}
+.req-ic{width:44px;height:44px;border-radius:50%;background:#efefef;display:flex;align-items:center;justify-content:center;color:#000;flex:none}
+.req-ic .ic{width:20px;height:20px;stroke-width:1.8}
+.req-row b{font-size:14px}
+.req-n{margin-left:auto;color:var(--t2);font-weight:700;font-size:13px}
+.req-row .ic.rrc{width:16px;height:16px;color:#c7c7c7;transform:rotate(-90deg);stroke-width:2.2}
+.ch-row{display:flex;align-items:center;gap:12px;padding:9px 14px;cursor:pointer}
+.ch-row:active{background:#fafafa}
+.ch-av{position:relative;width:56px;height:56px;flex:none}
+.ch-av img{width:100%;height:100%;border-radius:50%;object-fit:cover}
+.on-dot{position:absolute;right:1px;bottom:1px;width:13px;height:13px;border-radius:50%;background:#2fd05a;border:2.5px solid #fff}
+.ch-mid{flex:1;min-width:0}
+.ch-mid>b{font-size:14px;display:flex;gap:3px;align-items:center}
+.ch-prev{font-size:13px;color:var(--t2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+.ch-prev.un{color:#000;font-weight:700}
+.ch-cam{color:#000}
 
+/* ===== chat (IG style) ===== */
+#scr-chat{display:none;flex-direction:column;padding-bottom:0;overflow:hidden}
+#scr-chat.on{display:flex}
+#scr-chat .hd{border-bottom:1px solid var(--line)}
+.chat-id{display:flex;align-items:center;gap:10px;min-width:0}
+.chat-id img{width:32px;height:32px;border-radius:50%;object-fit:cover}
+.cname{font-size:14.5px;display:flex;align-items:center;gap:4px;font-weight:700}
+.cstat{display:block;font-size:11.5px;color:var(--t2);font-weight:500}
+.msgs{flex:1;overflow-y:auto;padding:0 12px 14px;display:flex;flex-direction:column;gap:5px;scrollbar-width:none}
+.msgs::-webkit-scrollbar{display:none}
+.intro{display:flex;flex-direction:column;align-items:center;text-align:center;padding:30px 20px 8px;gap:2px}
+.intro-av img{width:84px;height:84px;border-radius:50%;object-fit:cover;margin-bottom:10px}
+.intro b{font-size:15px;display:inline-flex;align-items:center;gap:4px}
+.intro .iun{color:var(--t2);font-size:13px}
+.intro .pbtn{margin-top:12px;width:auto;padding:7px 20px;flex:none}
+.mrow{display:flex;max-width:80%}
+.mrow.me{align-self:flex-end}
+.mrow.them{align-self:flex-start}
+.bub{padding:10px 14px;border-radius:22px;font-size:14.5px;line-height:1.4;word-break:break-word}
+.them .bub{background:#efefef;border-bottom-left-radius:6px}
+.me .bub{background:linear-gradient(135deg,#4F5BD5,#962FBF);color:#fff;border-bottom-right-radius:6px}
+.imgb{padding:3px}
+.imgb img{width:170px;border-radius:17px}
+.hb{background:transparent!important;padding:2px}
+.hb .ic{width:46px;height:46px;fill:var(--red);stroke:var(--red)}
+.unsent{font-size:12.5px;color:var(--t2);font-style:italic;padding:4px 6px}
+.day{align-self:center;font-size:11.5px;color:var(--t2);margin:6px 0 10px}
+#typing .bub{display:flex;gap:4px;padding:13px 15px}
+#typing i{width:7px;height:7px;border-radius:50%;background:#8e8e8e;animation:tp 1s infinite}
+#typing i:nth-child(2){animation-delay:.15s}
+#typing i:nth-child(3){animation-delay:.3s}
+@keyframes tp{30%{transform:translateY(-4px);opacity:.5}}
+.cbar{display:flex;align-items:center;gap:8px;padding:8px 10px calc(10px + env(safe-area-inset-bottom));border-top:1px solid var(--line);background:#fff}
+.pill{flex:1;display:flex;align-items:center;gap:2px;border:1px solid var(--line2);border-radius:24px;padding:4px 6px 4px 8px;min-width:0}
+.pill:focus-within{border-color:#bbb}
+.pill .ib{width:30px;height:30px}
+.pill .ib .ic{width:21px;height:21px;stroke-width:2}
+#chat-inp{flex:1;border:0;padding:8px 6px 8px 2px;font-size:14px;outline:0;min-width:0}
+.chat-r{display:flex;align-items:center;gap:2px}
+.chat-r .ib .ic{width:22px;height:22px;stroke-width:1.8}
+.snd{color:var(--blue);font-weight:700;font-size:14.5px;padding:6px}
 
-def load_db():
-    try:
-        with open(DB_FILE, "r", encoding="utf-8") as f:
-            db = json.load(f)
-    except Exception:
-        db = {}
-    if "users" not in db:
-        db["users"] = {}
-    if "messages" not in db:
-        db["messages"] = []
-    if "posts" not in db:
-        db["posts"] = []
-    return db
+/* ===== profile ===== */
+.pf-top{display:flex;align-items:center;gap:26px;padding:8px 20px 4px}
+.pf-av{width:88px;height:88px;flex:none}
+.pf-av .ring{width:88px;height:88px}
+.pf-stats{display:flex;flex:1;justify-content:space-around;text-align:center}
+.pf-stats b{display:block;font-size:16.5px}
+.pf-stats span{font-size:13px}
+.pf-bio{padding:10px 20px 0;font-size:13.5px;line-height:1.5;white-space:pre-line}
+.pf-bio b{display:block;margin-bottom:2px;white-space:normal}
+.pf-link{margin:4px 20px 0;color:#00376b;font-weight:600;font-size:13.5px}
+.pf-btns{display:flex;gap:8px;padding:14px 20px 10px}
+.pbtn{flex:1;background:#efefef;border-radius:9px;padding:8px 0;font-weight:700;font-size:13.5px}
+.pbtn:active{background:#e2e2e2}
+.pf-hls{display:flex;gap:16px;padding:6px 20px 14px;overflow-x:auto;scrollbar-width:none}
+.pf-hls::-webkit-scrollbar{display:none}
+.hl{display:flex;flex-direction:column;align-items:center;gap:5px;font-size:11.5px;flex:none}
+.hlc{width:62px;height:62px;border-radius:50%;border:1px solid var(--line2);padding:3px}
+.hlc img{width:100%;height:100%;border-radius:50%;object-fit:cover}
+.pf-tabs{display:flex;border-top:1px solid var(--line);margin-top:4px}
+.pf-tabs button{flex:1;display:flex;justify-content:center;padding:11px 0;color:var(--line2);border-top:1.5px solid transparent;margin-top:-1px}
+.pf-tabs button.on{color:#000;border-top-color:#000}
+.pf-tabs .ic{width:22px;height:22px}
+.pf-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;padding-bottom:20px}
+.pf-t{position:relative;aspect-ratio:1;overflow:hidden;background:#f3f3f3}
+.pf-t img{width:100%;height:100%;object-fit:cover}
+.rvw .rv{position:absolute;left:6px;bottom:5px;color:#fff;font-size:11.5px;font-weight:700;display:flex;align-items:center;gap:4px;text-shadow:0 1px 4px rgba(0,0,0,.5)}
+.rvw .rv .ic{width:13px;height:13px;fill:#fff;stroke:none}
 
+/* ===== bottom nav (Instagram style) ===== */
+.bnav{position:absolute;left:0;right:0;bottom:0;height:calc(52px + env(safe-area-inset-bottom));padding-bottom:env(safe-area-inset-bottom);display:flex;background:#fff;border-top:1px solid var(--line);z-index:40}
+.bnav button{flex:1;display:flex;align-items:center;justify-content:center;transition:transform .12s}
+.bnav button:active{transform:scale(.88)}
+.bnav .ic{width:24px;height:24px}
+.bnav button.on .ic{fill:currentColor;stroke-width:1.9}
+.bnav button.on .cut{stroke:#fff}
+.bnav button.on .cutf{fill:#fff}
+.pavw{width:25px;height:25px;border-radius:50%;overflow:hidden;border:1.6px solid transparent;display:block}
+.pavw.on{border-color:#000}
+.pavw img{width:100%;height:100%;object-fit:cover}
 
-def save_db(db):
-    try:
-        with open(DB_FILE, "w", encoding="utf-8") as f:
-            json.dump(db, f, ensure_ascii=False, indent=1)
-        return True
-    except Exception:
-        return False
+/* ===== sheets / overlays ===== */
+.veil{position:absolute;inset:0;background:rgba(0,0,0,.5);opacity:0;pointer-events:none;transition:opacity .3s;z-index:84}
+.veil.on{opacity:1;pointer-events:auto}
+.sheet{position:absolute;left:0;right:0;bottom:0;z-index:85;background:#fff;border-radius:18px 18px 0 0;transform:translateY(105%);transition:transform .34s cubic-bezier(.32,.72,.24,1);max-height:78%;display:flex;flex-direction:column;padding-bottom:env(safe-area-inset-bottom)}
+.sheet.up{transform:none}
+.grab{width:36px;height:4px;background:#ddd;border-radius:2px;margin:8px auto 0;flex:none}
+.sh-hd{position:relative;display:flex;align-items:center;padding:10px 12px;border-bottom:1px solid var(--line);flex:none;min-height:52px}
+.sh-hd.ctr{justify-content:space-between;border-bottom:0;padding-top:4px}
+.sh-hd.ctr b{position:absolute;left:50%;transform:translateX(-50%);font-size:15px}
+.sh-blue{color:var(--blue);font-weight:700;font-size:14.5px;margin-left:auto}
+.sh-blue:disabled{opacity:.35}
+.sh-body{overflow-y:auto;scrollbar-width:none}
+.sh-body::-webkit-scrollbar{display:none}
+.cr-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2px}
+.cr-t{position:relative;aspect-ratio:1;overflow:hidden}
+.cr-t img{width:100%;height:100%;object-fit:cover}
+.cr-t.sel:after{content:'';position:absolute;inset:0;border:3px solid #000}
+.cr-up{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:var(--t2);font-size:12px;font-weight:600;background:#fafafa}
+.cr-up .ic{width:26px;height:26px}
+.cr-prev img{width:100%;max-height:44vh;object-fit:contain;background:#000}
+#cr-cap{width:100%;border:0;outline:0;padding:14px 16px;font-size:14px;resize:none}
+.cm-list{overflow-y:auto;padding:6px 0;min-height:120px;scrollbar-width:none}
+.cm-list::-webkit-scrollbar{display:none}
+.cm-r{display:flex;gap:11px;padding:8px 16px;font-size:13.5px;line-height:1.45}
+.cm-r img{width:32px;height:32px;border-radius:50%;object-fit:cover;flex:none}
+.cm-r b{margin-right:5px}
+.cm-r .ct{color:var(--t2);font-size:12px;margin-top:3px}
+.cm-foot{display:flex;align-items:center;gap:9px;border-top:1px solid var(--line);padding:9px 14px}
+.cm-foot img{width:30px;height:30px;border-radius:50%}
+#cm-inp{flex:1;border:0;outline:0;font-size:14px;min-width:0}
+#cm-post{color:var(--blue);font-weight:700;font-size:14px}
+.shr-list{overflow-y:auto;padding:4px 0 10px;scrollbar-width:none}
+.shr-list::-webkit-scrollbar{display:none}
+.shr-r{display:flex;align-items:center;gap:12px;padding:8px 16px;cursor:pointer}
+.shr-r img{width:44px;height:44px;border-radius:50%;object-fit:cover}
+.shr-avw{position:relative;width:44px;height:44px;flex:none}
+.shr-n{flex:1;font-size:14px;font-weight:600;min-width:0}
+.shr-n small{display:block;color:var(--t2);font-weight:500;font-size:12px}
+.shr-send{color:var(--blue);font-weight:700;font-size:13.5px;padding:8px}
+.shr-chev{color:#bbb;display:flex}
+.menu-list{padding:6px 0 10px}
+.mn{display:block;width:100%;padding:14px 18px;font-size:14.5px;font-weight:600;text-align:center;border-top:1px solid var(--line)}
+.mn:first-child{border-top:0}
+.mn.danger{color:var(--red);font-weight:700}
+.ed-body{padding:16px;display:flex;flex-direction:column;gap:14px}
+.ed-body label{font-size:12.5px;font-weight:700;color:var(--t2);display:flex;flex-direction:column;gap:6px}
+.ed-body input,.ed-body textarea{border:1px solid var(--line2);border-radius:10px;padding:10px 12px;font-size:14px;outline:0;resize:none}
 
+/* photo viewer */
+.pv{position:absolute;inset:0;background:#050505;z-index:70;display:none;flex-direction:column}
+.pv.on{display:flex}
+.pv-hd{display:flex;justify-content:flex-end;padding:6px;color:#fff}
+.pv-imgw{flex:1;display:flex;align-items:center;justify-content:center;min-height:0}
+.pv-imgw img{max-width:100%;max-height:100%;object-fit:contain}
+.pv-meta{display:flex;align-items:center;gap:10px;padding:8px 14px;color:#fff}
+.pv-meta>img{width:32px;height:32px;border-radius:50%;object-fit:cover}
+.pv-user{flex:1;font-size:13.5px;font-weight:700;display:flex;gap:5px;align-items:center}
+.pv-acts{display:flex;gap:2px}
+.pv-likes{padding:0 16px 22px;font-weight:700;font-size:13.5px}
 
-DB = load_db()
+/* story viewer */
+.sv{position:absolute;inset:0;background:#000;z-index:80;display:none}
+.sv.on{display:block}
+.sv-imgw{position:absolute;inset:0;overflow:hidden}
+.sv-imgw img{width:100%;height:100%;object-fit:cover}
+.sv-imgw img.kb{animation:kb 6.5s linear forwards}
+@keyframes kb{from{transform:scale(1)}to{transform:scale(1.1) translate(-1.5%,1%)}}
+.sv-segs{position:absolute;top:8px;left:10px;right:10px;display:flex;gap:4px;z-index:6}
+.sv-segs i{flex:1;height:2.5px;background:rgba(255,255,255,.35);border-radius:2px;overflow:hidden}
+.sv-segs b{display:block;height:100%;width:0;background:#fff}
+.sv-hd{position:absolute;top:20px;left:0;right:0;display:flex;align-items:center;gap:10px;padding:8px 12px;color:#fff;z-index:6}
+.sv-hd .sv-av img{width:34px;height:34px;border-radius:50%;object-fit:cover;border:1.5px solid rgba(255,255,255,.9)}
+.sv-hd b{font-size:13.5px}
+.sv-t{color:rgba(255,255,255,.75);font-size:12.5px}
+.sv-zone{position:absolute;top:70px;bottom:70px;z-index:5}
+.sv-zone.l{left:0;width:32%}
+.sv-zone.r{right:0;width:68%}
+.sv-ft{position:absolute;left:0;right:0;bottom:0;display:flex;align-items:center;gap:8px;padding:10px 12px calc(14px + env(safe-area-inset-bottom));z-index:6}
+#sv-inp{flex:1;border:1.2px solid rgba(255,255,255,.75);background:transparent;border-radius:22px;padding:9px 15px;color:#fff;font-size:13.5px;outline:0;min-width:0}
+#sv-inp::placeholder{color:rgba(255,255,255,.8)}
+.sv-ft .ib{color:#fff}
 
-SEED_USERS = [
-    ("demo", "demo@hmfbook.com", "1234", "Demo User"),
-    ("hoor_jannat", "hoor@hmfbook.com", "1234", "Hoor Jannat"),
-    ("farrukh_m", "farrukh@hmfbook.com", "1234", "Farrukh M"),
-    ("zara_x", "zara@hmfbook.com", "1234", "Zara X"),
-]
+/* toast */
+.toast{position:absolute;left:50%;bottom:80px;transform:translate(-50%,16px);background:#262626;color:#fff;padding:10px 18px;border-radius:24px;font-size:13.5px;font-weight:600;opacity:0;transition:.28s;z-index:99;pointer-events:none;white-space:nowrap;max-width:92%;overflow:hidden;text-overflow:ellipsis}
+.toast.on{opacity:1;transform:translate(-50%,0)}
 
-changed = False
-for uname, mail, pw, name in SEED_USERS:
-    if uname not in DB["users"]:
-        DB["users"][uname] = {
-            "email": mail,
-            "password": pw,
-            "display_name": name,
-            "bio": "Living life one post at a time.",
-            "coins": 550,
-            "followers": 1240,
-            "following": 356,
-            "blocked": [],
-        }
-        changed = True
+@media(max-width:520px){
+ body{padding:0;background:#fff}
+ .phone{width:100%;height:100dvh;border-radius:0;border:0;box-shadow:none}
+ .statusbar{display:none}
+}
+</style>
+</head>
+<body>
+<div class="phone">
+ <div class="statusbar">
+  <span class="sb-time">9:41</span>
+  <span class="sb-ic">
+   <svg width="18" height="12"><rect y="7" width="3" height="5" rx="1" fill="#000"/><rect x="5" y="5" width="3" height="7" rx="1" fill="#000"/><rect x="10" y="2.5" width="3" height="9.5" rx="1" fill="#000"/><rect x="15" width="3" height="12" rx="1" fill="#000"/></svg>
+   <svg width="17" height="12" viewBox="0 0 17 12"><path d="M2 5a9.2 9.2 0 0 1 13 0" stroke="#000" fill="none" stroke-width="1.7" stroke-linecap="round"/><path d="M4.6 7.7a5.5 5.5 0 0 1 7.8 0" stroke="#000" fill="none" stroke-width="1.7" stroke-linecap="round"/><circle cx="8.5" cy="10.3" r="1.5" fill="#000"/></svg>
+   <svg width="25" height="12" viewBox="0 0 25 12"><rect x=".5" y=".5" width="21" height="11" rx="3" fill="none" stroke="#000" opacity=".4"/><rect x="2" y="2" width="15" height="8" rx="1.8" fill="#000"/><path d="M23 4v4c1-.2 1.7-1 1.7-2S24 4.2 23 4z" fill="#000" opacity=".4"/></svg>
+  </span>
+ </div>
 
-if not DB["posts"]:
-    DB["posts"] = [
-        {
-            "id": "s1",
-            "user": "hoor_jannat",
-            "type": "youtube",
-            "ref": "aqz-KE-bpKQ",
-            "cap": "Big Buck Bunny - my favorite animation!",
-            "likes": {},
-            "comments": [],
-        },
-        {
-            "id": "s2",
-            "user": "farrukh_m",
-            "type": "text",
-            "grad": "linear-gradient(45deg,#d1fae5,#a7f3d0)",
-            "txt": "🎲 Ludo Night Tournament",
-            "cap": "Tonight 8 PM - winner takes all coins!",
-            "likes": {},
-            "comments": [],
-        },
-        {
-            "id": "s3",
-            "user": "zara_x",
-            "type": "youtube",
-            "ref": "eRsGyueVLvQ",
-            "cap": "Sintel - a beautiful short film!",
-            "likes": {},
-            "comments": [],
-        },
-        {
-            "id": "s4",
-            "user": "demo",
-            "type": "text",
-            "grad": "linear-gradient(45deg,#ecfdf5,#6ee7b7)",
-            "txt": "🌿 Green Vibes Only",
-            "cap": "Loving this new HMF book app!",
-            "likes": {},
-            "comments": [],
-        },
-    ]
-    changed = True
+ <div class="app" id="app">
 
-REEL_URLS = [
-    ("https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4",
-     "Fun times!"),
-    ("https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
-     "Fire content!"),
-    ("https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
-     "Bunny life"),
-    ("https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4",
-     "Dream big"),
-]
+  <!-- ===== FEED ===== -->
+  <section class="screen on" id="scr-feed">
+   <header class="hd" id="feed-hd">
+    <span class="logo">Instagram</span>
+    <span class="ml-auto"></span>
+    <button class="ib rel" id="hb-act"><span class="iconw" data-icon="heart"></span><span class="bdg" id="bdg-act">3</span></button>
+    <button class="ib rel" id="hb-dm"><span class="iconw" data-icon="plane"></span><span class="bdg" id="bdg-dm">3</span></button>
+   </header>
+   <div class="stories" id="stories"></div>
+   <div id="feed"></div>
+  </section>
 
-seed_members = ["demo", "hoor_jannat", "farrukh_m", "zara_x"]
-for i, (url, cap) in enumerate(REEL_URLS):
-    rid = "reel_seed" + str(i)
-    exists = False
-    for p in DB["posts"]:
-        if p.get("id") == rid:
-            exists = True
-            break
-    if not exists:
-        DB["posts"].append({
-            "id": rid,
-            "user": seed_members[i % len(seed_members)],
-            "type": "reel",
-            "ref": url,
-            "cap": cap,
-            "likes": {},
-            "comments": [],
-        })
-        changed = True
+  <!-- ===== EXPLORE ===== -->
+  <section class="screen" id="scr-explore">
+   <header class="hd">
+    <div class="srch">
+     <span class="iconw" data-icon="search"></span>
+     <input id="ex-q" placeholder="Search" autocomplete="off">
+     <button class="xbtn" id="ex-clear" hidden><span class="iconw" data-icon="x"></span></button>
+    </div>
+   </header>
+   <div class="ex-grid" id="ex-grid"></div>
+   <div class="ex-empty" id="ex-empty" hidden><b>Kuch nahi mila</b>Dusre keywords se try karo</div>
+  </section>
 
-if changed:
-    save_db(DB)
+  <!-- ===== REELS ===== -->
+  <section class="screen" id="scr-reels">
+   <div class="rscroll" id="rscroll"></div>
+   <div class="reels-top"><b>Reels</b><button class="mute" id="reels-mute"></button></div>
+  </section>
 
+  <!-- ===== ACTIVITY ===== -->
+  <section class="screen" id="scr-activity">
+   <header class="hd"><button class="ib" data-back="feed"><span class="iconw" data-icon="back"></span></button><b class="title">Notifications</b></header>
+   <div id="act-list"></div>
+  </section>
 
-# ---------- SESSION STATE ----------
-SS = st.session_state
+  <!-- ===== MESSAGES (IG inbox) ===== -->
+  <section class="screen" id="scr-messages">
+   <header class="hd">
+    <button class="ib" data-back="feed"><span class="iconw" data-icon="back"></span></button>
+    <b class="title">aarav_wanders</b>
+    <span class="iconw" data-icon="chev" style="color:#888"></span>
+    <span class="ml-auto"></span>
+    <button class="ib" id="dm-new"><span class="iconw" data-icon="compose"></span></button>
+   </header>
+   <div class="dm-srch">
+    <div class="srch">
+     <span class="iconw" data-icon="search"></span>
+     <input id="dm-q" placeholder="Ask Meta AI or search" autocomplete="off">
+    </div>
+   </div>
+   <div class="notes" id="notes"></div>
+   <button class="req-row" id="req-row">
+    <span class="req-ic"><span class="iconw" data-icon="heart"></span></span>
+    <b>Requests</b>
+    <span class="req-n" id="req-n">2</span>
+    <span class="iconw" data-icon="chev"></span>
+   </button>
+   <div id="chat-list"></div>
+  </section>
 
-defaults = {
-    "page": "splash",
-    "logged_in": False,
-    "username": "",
-    "email": "",
-    "auth_mode": "login",
-    "current_tab": "Home",
-    "settings_page": "menu",
-    "privacy_step": 0,
-    "blocked": [],
-    "clear_cmt": "",
-    "clear_msg": "",
-    "block_msg": "",
-    "report_msg": "",
-    "help_msg": "",
-    "withdraw_msg": "",
-    "social_msg": "",
-    "data_msg": "",
-    "pin_msg": "",
-    "app_lock": False,
-    "app_pin": "",
-    "pin_unlocked": True,
-    "pin_attempts": 0,
-    "pin_lock_until": 0,
-    "auto_logout": 0,
-    "last_active": 0,
-    "dark_mode": False,
-    "language": "English",
-    "region": "Worldwide",
-    "feed_sort": "Most Recent",
-    "show_stories": True,
-    "comment_filter": True,
-    "private_account": False,
-    "activity_status": True,
-    "searchable": True,
-    "hide_last_seen": False,
-    "profile_lock": False,
-    "friend_requests": "Everyone",
-    "messages_privacy": "Friends",
-    "story_privacy": "Friends",
-    "tagging_privacy": "Friends",
-    "ad_personalization": False,
-    "strong_password": False,
-    "two_factor": False,
-    "two_fa_code": "",
-    "login_alerts": True,
-    "post_visibility": "Friends",
-    "reports": [],
-    "security_log": [],
-    "login_history": [],
-    "tx_history": [],
-    "room_code": "",
-    "joined": False,
-    "dice": 0,
-    "notif": {
-        "likes": True,
-        "comments": True,
-        "follows": True,
-        "messages": True,
-    },
+  <!-- ===== CHAT ===== -->
+  <section class="screen" id="scr-chat">
+   <header class="hd">
+    <button class="ib" data-back="messages"><span class="iconw" data-icon="back"></span></button>
+    <div class="chat-id"><span class="rel"><img id="ch-av" alt=""><i class="on-dot" id="ch-dot" hidden></i></span><div><span class="cname" id="ch-name"></span><span class="cstat" id="ch-stat"></span></div></div>
+    <span class="ml-auto"></span>
+    <button class="ib" data-call="phone"><span class="iconw" data-icon="phone"></span></button>
+    <button class="ib" data-call="video"><span class="iconw" data-icon="video"></span></button>
+   </header>
+   <div class="msgs" id="msgs"></div>
+   <footer class="cbar">
+    <div class="pill">
+     <button class="ib" id="chat-cam"><span class="iconw" data-icon="camera"></span></button>
+     <input id="chat-inp" placeholder="Message…" autocomplete="off">
+    </div>
+    <span class="chat-r" id="chat-r">
+     <button class="ib" id="chat-mic"><span class="iconw" data-icon="mic"></span></button>
+     <button class="ib" id="chat-img"><span class="iconw" data-icon="img"></span></button>
+     <button class="ib" id="chat-smile"><span class="iconw" data-icon="smile"></span></button>
+     <button class="ib" id="chat-heart"><span class="iconw" data-icon="heart"></span></button>
+    </span>
+    <button class="snd" id="chat-send" hidden>Send</button>
+   </footer>
+   <input type="file" id="chat-file" accept="image/*" hidden>
+  </section>
+
+  <!-- ===== PROFILE ===== -->
+  <section class="screen" id="scr-profile">
+   <header class="hd">
+    <b class="title">aarav_wanders</b>
+    <span class="ml-auto"></span>
+    <button class="ib" id="pf-add"><span class="iconw" data-icon="plusS"></span></button>
+    <button class="ib" id="pf-menu"><span class="iconw" data-icon="menu"></span></button>
+   </header>
+   <div class="pf-top">
+    <span class="pf-av" id="pf-av"></span>
+    <div class="pf-stats">
+     <div><b id="st-posts">0</b><span>posts</span></div>
+     <div><b id="st-followers">0</b><span>followers</span></div>
+     <div><b id="st-following">0</b><span>following</span></div>
+    </div>
+   </div>
+   <div class="pf-bio"><b id="pf-name">Aarav</b><span id="pf-bio">Delhi NCR · Chai over coffee
+Travel · Street · Films</span></div>
+   <button class="pf-link" id="pf-link">bit.ly/aarav-films</button>
+   <div class="pf-btns"><button class="pbtn" id="pf-edit">Edit profile</button><button class="pbtn" id="pf-share">Share profile</button></div>
+   <div class="pf-hls" id="pf-hls"></div>
+   <div class="pf-tabs">
+    <button class="on" data-tab="posts"><span class="iconw" data-icon="grid"></span></button>
+    <button data-tab="reels"><span class="iconw" data-icon="reels"></span></button>
+    <button data-tab="tagged"><span class="iconw" data-icon="tag"></span></button>
+   </div>
+   <div class="pf-grid" id="pf-grid"></div>
+  </section>
+
+  <!-- ===== SAVED ===== -->
+  <section class="screen" id="scr-saved">
+   <header class="hd"><button class="ib" data-back="profile"><span class="iconw" data-icon="back"></span></button><b class="title">Saved</b></header>
+   <div class="ex-grid" id="sv-grid"></div>
+   <div class="ex-empty" id="sv-empty" hidden><b>Kuch saved nahi hai</b>Post mein bookmark icon dabao, yahan dikhega</div>
+  </section>
+
+  <!-- ===== bottom nav ===== -->
+  <nav class="bnav" id="bnav">
+   <button data-go="feed" class="on"><span class="iconw" data-icon="home"></span></button>
+   <button data-go="explore"><span class="iconw" data-icon="search"></span></button>
+   <button data-go="create" id="nav-create"><span class="iconw" data-icon="plus"></span></button>
+   <button data-go="reels"><span class="iconw" data-icon="reels"></span></button>
+   <button data-go="profile"><span class="pavw" id="nav-pav"><img alt=""></span></button>
+  </nav>
+
+  <!-- ===== overlays ===== -->
+  <div class="pv" id="pv">
+   <div class="pv-hd"><button class="ib" id="pv-x"><span class="iconw" data-icon="x"></span></button></div>
+   <div class="pv-imgw"><img id="pv-img" alt=""></div>
+   <div class="pv-meta">
+    <img id="pv-av" alt=""><span class="pv-user" id="pv-user"></span>
+    <div class="pv-acts">
+     <button class="ib likebtn" id="pv-like"></button>
+     <button class="ib" id="pv-cm"></button>
+     <button class="ib" id="pv-share"></button>
+    </div>
+   </div>
+   <div class="pv-likes" id="pv-likes"></div>
+  </div>
+
+  <div class="sv" id="sv">
+   <div class="sv-imgw"><img id="sv-img" alt=""></div>
+   <div class="sv-segs" id="sv-segs"></div>
+   <header class="sv-hd"><span class="sv-av" id="sv-av"></span><b id="sv-name"></b><span class="sv-t" id="sv-time"></span><button class="ib sv-x" id="sv-x"><span class="iconw" data-icon="x"></span></button></header>
+   <div class="sv-zone l" id="sv-prev"></div>
+   <div class="sv-zone r" id="sv-next"></div>
+   <footer class="sv-ft">
+    <input id="sv-inp" placeholder="Reply to story…" autocomplete="off">
+    <button class="ib" id="sv-like"><span class="iconw" data-icon="heart"></span></button>
+    <button class="ib" id="sv-share"><span class="iconw" data-icon="plane"></span></button>
+   </footer>
+  </div>
+
+  <div class="veil" id="veil"></div>
+
+  <div class="sheet" id="sh-share">
+   <div class="grab"></div>
+   <header class="sh-hd ctr"><span></span><b id="shr-title">Share</b><button class="ib" id="shr-x"><span class="iconw" data-icon="x"></span></button></header>
+   <div class="shr-list" id="shr-list"></div>
+  </div>
+
+  <div class="sheet" id="sh-cm">
+   <div class="grab"></div>
+   <header class="sh-hd ctr"><span></span><b>Comments</b><button class="ib" id="cm-x"><span class="iconw" data-icon="x"></span></button></header>
+   <div class="cm-list" id="cm-list"></div>
+   <footer class="cm-foot"><img id="cm-av" alt=""><input id="cm-inp" placeholder="Comment add karo…" autocomplete="off"><button id="cm-post">Post</button></footer>
+  </div>
+
+  <div class="sheet" id="sh-create">
+   <header class="sh-hd"><button class="ib" id="cr-x"><span class="iconw" data-icon="x"></span></button><b id="cr-title">New post</b><button class="sh-blue" id="cr-next" disabled>Next</button></header>
+   <div class="sh-body" id="cr-step1"><div class="cr-grid" id="cr-grid"></div></div>
+   <div class="sh-body" id="cr-step2" hidden><div class="cr-prev"><img id="cr-img" alt=""></div><textarea id="cr-cap" rows="3" placeholder="Caption likho…"></textarea></div>
+  </div>
+
+  <div class="sheet" id="sh-menu"><div class="grab"></div><div class="menu-list" id="menu-list"></div></div>
+
+  <div class="sheet" id="sh-edit">
+   <header class="sh-hd"><button class="ib" id="ed-x"><span class="iconw" data-icon="x"></span></button><b>Edit profile</b><button class="sh-blue" id="ed-save">Save</button></header>
+   <div class="ed-body">
+    <label>Name<input id="ed-name"></label>
+    <label>Bio<textarea id="ed-bio" rows="3"></textarea></label>
+   </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+ </div>
+</div>
+
+<script>
+/* ================= helpers ================= */
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const ph=(seed,w=900,h=1125)=>`https://picsum.photos/seed/${seed}/${w}/${h}`;
+const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const fmt=n=>n.toLocaleString('en-IN');
+const kfmt=n=>n>=1e6?(n/1e6).toFixed(1).replace('.0','')+'M':n>=1e3?(n/1e3).toFixed(1).replace('.0','')+'K':n;
+const nowT=()=>new Date().toTimeString().slice(0,5);
+
+/* ================= icons ================= */
+const ICONS={
+home:'<path d="M9.3 20.5v-5.3a1.2 1.2 0 0 1 1.2-1.2h3a1.2 1.2 0 0 1 1.2 1.2v5.3h3.9a1.4 1.4 0 0 0 1.4-1.4v-8.5c0-.43-.2-.83-.53-1.1l-7.35-6.02a1.4 1.4 0 0 0-1.77 0L3.13 9.5c-.33.27-.53.67-.53 1.1v8.5a1.4 1.4 0 0 0 1.4 1.4z"/>',
+search:'<circle cx="10.7" cy="10.7" r="7.2"/><path d="m16 16 5.2 5.2"/>',
+plus:'<rect x="3" y="3" width="18" height="18" rx="4.6"/><path class="cut" d="M12 7.8v8.4M7.8 12h8.4"/>',
+reels:'<rect x="2.8" y="2.8" width="18.4" height="18.4" rx="4.8"/><path d="M2.8 8.7h18.4M8.6 2.9 5.7 8.7M15.5 2.9l-2.9 5.8"/><path class="cut cutf" d="m10.7 11.9 4.9 2.8-4.9 2.8z"/>',
+user:'<circle cx="12" cy="7.9" r="4.1"/><path d="M4.6 20.4c.9-3.4 3.9-5.4 7.4-5.4s6.5 2 7.4 5.4"/>',
+heart:'<path d="M12 20.8S3.4 15.5 3.4 9.8c0-2.9 2.3-5.2 5.1-5.2 1.6 0 3 .9 3.5 2 .5-1.1 1.9-2 3.5-2 2.8 0 5.1 2.3 5.1 5.2 0 5.7-8.6 11-8.6 11z"/>',
+comment:'<path d="M12 3.1c-5 0-9.1 3.6-9.1 8.1 0 2.5 1.3 4.8 3.3 6.3v3.4l3.3-1.9c.8.2 1.6.3 2.5.3 5 0 9.1-3.6 9.1-8.1S17 3.1 12 3.1z"/>',
+plane:'<path d="M21.5 2.5a1 1 0 0 0-1.05-.22L2.8 8.7a1 1 0 0 0 .07 1.9l6.9 2.13a1 1 0 0 1 .65.65l2.14 6.9a1 1 0 0 0 1.9.07l6.4-17.65a1 1 0 0 0-.36-1.1z"/><path d="M21.3 2.7 10.3 13.7"/>',
+bookmark:'<path d="M6.5 3.5h11a1.3 1.3 0 0 1 1.3 1.3v15.9l-6.8-4.5-6.8 4.5V4.8a1.3 1.3 0 0 1 1.3-1.3z"/>',
+ellipsis:'<circle class="fg" cx="4.7" cy="12" r="1.55"/><circle class="fg" cx="12" cy="12" r="1.55"/><circle class="fg" cx="19.3" cy="12" r="1.55"/>',
+back:'<path d="M15 4.6 7.6 12l7.4 7.4"/>',
+chev:'<path d="m6.5 9.3 5.5 5.4 5.5-5.4"/>',
+camera:'<path d="M4 8.4c0-1.1.9-2 2-2h1.5l1.2-1.8c.28-.42.75-.6 1.2-.6h4.2c.45 0 .92.18 1.2.6l1.3 1.8H18a2 2 0 0 1 2 2v8.4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/><circle cx="12" cy="12.4" r="3.5"/>',
+x:'<path d="M5.8 5.8 18.2 18.2M18.2 5.8 5.8 18.2"/>',
+volx:'<path class="fg" d="M11.4 4.9 6.9 8.6H4.1a1 1 0 0 0-1 1v4.8a1 1 0 0 0 1 1h2.8l4.5 3.7c.66.54 1.6.07 1.6-.78V5.68c0-.85-.94-1.32-1.6-.78z"/><path d="m15.8 9.7 4.6 4.6M20.4 9.7l-4.6 4.6"/>',
+vol:'<path class="fg" d="M11.4 4.9 6.9 8.6H4.1a1 1 0 0 0-1 1v4.8a1 1 0 0 0 1 1h2.8l4.5 3.7c.66.54 1.6.07 1.6-.78V5.68c0-.85-.94-1.32-1.6-.78z"/><path d="M16 9a4.3 4.3 0 0 1 0 6M18.6 6.6a8 8 0 0 1 0 10.8"/>',
+play:'<path class="fg" d="M8.2 5.9c0-.83.9-1.34 1.6-.92l8.5 5.1c.68.4.68 1.4 0 1.8l-8.5 5.1c-.7.42-1.6-.09-1.6-.92z"/>',
+pause:'<path class="fg" d="M7.2 5h3v14h-3zM13.8 5h3v14h-3z"/>',
+grid:'<path class="fg" d="M3.8 3.8h4.9v4.9H3.8zM9.55 3.8h4.9v4.9h-4.9zM15.3 3.8h4.9v4.9h-4.9zM3.8 9.55h4.9v4.9H3.8zM9.55 9.55h4.9v4.9h-4.9zM15.3 9.55h4.9v4.9h-4.9zM3.8 15.3h4.9v4.9H3.8zM9.55 15.3h4.9v4.9h-4.9zM15.3 15.3h4.9v4.9h-4.9z"/>',
+tag:'<circle cx="10.6" cy="8.4" r="3.4"/><path d="M4.1 19.7c.8-3.3 3.4-5.1 6.5-5.1 1 0 2 .2 2.8.6"/><path d="m17.6 12.9 3 3-4.6 4.6-2.9.6.6-2.9z"/>',
+menu:'<path d="M4 7h16M4 12h16M4 17h16"/>',
+compose:'<path d="M20 12.6v5.2a2.2 2.2 0 0 1-2.2 2.2H6.2A2.2 2.2 0 0 1 4 17.8V6.2A2.2 2.2 0 0 1 6.2 4h5.2"/><path d="M18.7 3.5a1.9 1.9 0 0 1 2.7 2.7l-8 8-3.6.9.9-3.6z"/>',
+verified:'<circle class="fg" cx="12" cy="12" r="10"/><path class="cutk" d="m7.7 12.4 2.9 2.9 5.7-6.1"/>',
+music:'<path class="fg" d="M9.6 18.1a2.6 2.6 0 1 1-1.7-2.45V6.4c0-.47.33-.88.8-.98l7.5-1.55a1 1 0 0 1 1.2.98v10.75a2.6 2.6 0 1 1-1.7-2.45V7.5l-6.1 1.26z"/>',
+plusS:'<path d="M12 5.3v13.4M5.3 12h13.4"/>',
+phone:'<path d="M6.8 3.6 8.9 3a1.1 1.1 0 0 1 1.3.7l1 2.9a1.1 1.1 0 0 1-.3 1.2L9.6 8.9a12.7 12.7 0 0 0 5.5 5.5l1.1-1.3a1.1 1.1 0 0 1 1.2-.3l2.9 1a1.1 1.1 0 0 1 .7 1.3l-.6 2.1a2 2 0 0 1-2 1.5C10.7 18.4 5.6 13.3 5.3 5.6a2 2 0 0 1 1.5-2z"/>',
+video:'<rect x="2.8" y="6" width="13" height="12" rx="3.4"/><path d="m15.8 12.6 4.2 2.7c.7.44 1.6-.06 1.6-.88V7.6c0-.82-.9-1.32-1.6-.88l-4.2 2.7"/>',
+mic:'<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/>',
+img:'<rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="8.8" cy="8.8" r="1.7"/><path d="m4 17 4.8-4.8a1.4 1.4 0 0 1 2 0l6.4 6.4M14 14l1.8-1.8a1.4 1.4 0 0 1 2 0l3 3"/>',
+smile:'<circle cx="12" cy="12" r="8.6"/><path d="M8.7 14a4.2 4.2 0 0 0 6.6 0"/><circle class="fg" cx="9.2" cy="10" r="1.1"/><circle class="fg" cx="14.8" cy="10" r="1.1"/>'
+};
+const ic=(n,c='')=>`<svg class="ic ${c}" viewBox="0 0 24 24" aria-hidden="true">${ICONS[n]}</svg>`;
+ $$('[data-icon]').forEach(el=>el.innerHTML=ic(el.dataset.icon));
+
+/* ================= data ================= */
+const U={
+ you:{h:'aarav_wanders',n:'Aarav',av:'https://i.pravatar.cc/150?img=12'},
+ kabir:{h:'mehra_films',n:'Kabir Mehra',v:1,av:'https://i.pravatar.cc/150?img=53',lastSeen:'1h ago'},
+ sneha:{h:'sneha.klicks',n:'Sneha Kapoor',av:'https://i.pravatar.cc/150?img=44',online:1},
+ rohan:{h:'rohan_trails',n:'Rohan Iyer',av:'https://i.pravatar.cc/150?img=68',lastSeen:'2h ago'},
+ ananya:{h:'ananya.ink',n:'Ananya Rao',v:1,av:'https://i.pravatar.cc/150?img=25',lastSeen:'1d ago'},
+ dfr:{h:'delhifoodroute',n:'Delhi Food Route',av:'https://i.pravatar.cc/150?img=20',lastSeen:'3h ago',followed:1},
+ tanya:{h:'tanya.moves',n:'Tanya Sharma',av:'https://i.pravatar.cc/150?img=47',online:1},
+ vihaan:{h:'imvihaan',n:'Vihaan',av:'https://i.pravatar.cc/150?img=15',lastSeen:'23m ago'},
+ leaf:{h:'leafandlens',n:'Leaf & Lens',av:'https://i.pravatar.cc/150?img=60',lastSeen:'2d ago',followed:1},
+};
+const avImg=(u,st='')=>`<img ${st} src="${U[u].av}" alt="${esc(U[u].n)}" onerror="this.onerror=null;this.src='https://picsum.photos/seed/av-${u}/150'">`;
+
+const posts=[
+ {id:'p1',u:'sneha',img:ph('ig-sunrise'),likes:1284,t:'3h',cap:'4 baje ki alarm ki keemat… Golden hour hi asli hai.',cm:[{u:'rohan',t:'Worth it. Kya frame hai',tm:'2h'},{u:'ananya',t:'Colours bilkul unreal lag rahe hain',tm:'2h'},{u:'tanya',t:'Location batao na please!',tm:'1h'}]},
+ {id:'p2',u:'dfr',img:ph('ig-butter'),likes:3402,t:'5h',cap:'Chandni Chowk ka asli butter chicken. Line lagane ke bhi din aa gaye.',cm:[{u:'kabir',t:'Ab raat ko bhookh nahi lagegi, thanks',tm:'4h'},{u:'vihaan',t:'Kal wahan ja rahe hain, table book karwado',tm:'3h'},{u:'sneha',t:'50mm pe shoot kiya na?',tm:'2h'}]},
+ {id:'p3',u:'ananya',img:ph('ig-mural'),likes:892,t:'8h',cap:'Naya wall, purani galli. 3 din ka kaam, 6 spray cans.',cm:[{u:'leaf',t:'Wall ne toh gallery ban gayi',tm:'6h'},{u:'dfr',t:'Next mural cafe ke bahar karo',tm:'5h'}]},
+ {id:'p4',u:'kabir',img:ph('ig-bts'),likes:2133,t:'12h',cap:'BTS from yesterday. Monitor dekhte hi pata chal gaya tha shot set hai.',cm:[{u:'rohan',t:'BTS hamesha best hota hai',tm:'9h'},{u:'tanya',t:'Light setup dekh ke maza aa gaya',tm:'8h'}]},
+ {id:'p5',u:'rohan',img:ph('ig-trail'),likes:647,t:'1d',cap:'Triund done. 9 km, zero regrets. Next stop — Bijli Mahadev.',cm:[{u:'kabir',t:'Wapas kab?',tm:'20h'},{u:'vihaan',t:'Agli baar main bhi chalunga pakka',tm:'18h'}]},
+];
+const stories=[
+ {u:'you',items:[],seen:1},
+ {u:'sneha',items:[{img:ph('st-sneha1',720,1280),t:'2h'},{img:ph('st-sneha2',720,1280),t:'1h'}]},
+ {u:'kabir',items:[{img:ph('st-kabir1',720,1280),t:'3h'},{img:ph('st-kabir2',720,1280),t:'2h'},{img:ph('st-kabir3',720,1280),t:'1h'}]},
+ {u:'tanya',items:[{img:ph('st-tanya1',720,1280),t:'4h'},{img:ph('st-tanya2',720,1280),t:'3h'}]},
+ {u:'rohan',items:[{img:ph('st-rohan1',720,1280),t:'5h'},{img:ph('st-rohan2',720,1280),t:'4h'}]},
+ {u:'ananya',items:[{img:ph('st-ananya1',720,1280),t:'7h'}]},
+];
+const V='https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/';
+const reels=[
+ {id:'r1',u:'tanya',vid:V+'ForBiggerBlazes.mp4',poster:ph('rl-tanya',720,1280),cap:'200th take tha, but finally perfect.',music:'Tanya Sharma · Original audio',likes:12500,liked:0,cmN:214,cm:[{u:'kabir',t:'Killer moves',tm:'1h'},{u:'sneha',t:'Song kaun sa hai?',tm:'1h'}]},
+ {id:'r2',u:'kabir',vid:V+'ForBiggerEscapes.mp4',poster:ph('rl-kabir',720,1280),cap:'Golden hour b-roll. Colour grade bhi khud kiya.',music:'cinematic loops · kabir',likes:8400,liked:0,cmN:98,cm:[{u:'rohan',t:'Grade next time mujhe sikha de',tm:'2h'}]},
+ {id:'r3',u:'dfr',vid:V+'ForBiggerFun.mp4',poster:ph('rl-dfr',720,1280),cap:'POV: first bite of the day.',music:'trending · food sounds',likes:25300,liked:0,cmN:512,cm:[{u:'vihaan',t:'Bhai muh mein pani aa gaya',tm:'40m'},{u:'tanya',t:'Diet kal se, aaj nahi',tm:'30m'}]},
+ {id:'r4',u:'vihaan',vid:V+'ForBiggerJoyrides.mp4',poster:ph('rl-vihaan',720,1280),cap:'Sunday ride. Sirf vibes.',music:'Original audio · vihaan',likes:4100,liked:0,cmN:67,cm:[{u:'rohan',t:'Next ride mein main bhi',tm:'3h'}]},
+];
+const explore=[
+ {seed:'ex-street',tags:['city','street'],u:'vihaan',likes:842,cm:[],liked:0},
+ {seed:'ex-cafe',tags:['food','cafe'],u:'dfr',likes:1930,cm:[],liked:0},
+ {seed:'ex-peak',tags:['travel','nature','mountain'],u:'rohan',likes:3204,cm:[],liked:0,tall:1},
+ {seed:'ex-neon',tags:['city','night'],u:'kabir',likes:2140,cm:[],liked:0,tall:1},
+ {seed:'ex-mural',tags:['art'],u:'ananya',likes:964,cm:[],liked:0},
+ {seed:'ex-thali',tags:['food'],u:'dfr',likes:1530,cm:[],liked:0},
+ {seed:'ex-dune',tags:['travel','desert'],u:'rohan',likes:1102,cm:[],liked:0},
+ {seed:'ex-monsoon',tags:['nature','rain'],u:'leaf',likes:1877,cm:[],liked:0,tall:1},
+ {seed:'ex-vinyl',tags:['music'],u:'vihaan',likes:630,cm:[],liked:0},
+ {seed:'ex-ghat',tags:['city','travel'],u:'sneha',likes:1450,cm:[],liked:0},
+ {seed:'ex-court',tags:['sport'],u:'tanya',likes:720,cm:[],liked:0},
+ {seed:'ex-bloom',tags:['nature'],u:'leaf',likes:2380,cm:[],liked:0,tall:1},
+ {seed:'ex-rooftop',tags:['city','night'],u:'kabir',likes:1670,cm:[],liked:0},
+ {seed:'ex-classic',tags:['car'],u:'vihaan',likes:940,cm:[],liked:0},
+ {seed:'ex-fog',tags:['nature','travel'],u:'sneha',likes:1250,cm:[],liked:0},
+];
+const chats=[
+ {u:'sneha',unread:2,msgs:[{f:'them',t:'Bhai kal ka plan pakka na?',tm:'10:02'},{f:'me',t:'Pakka. 6 baje nikalenge',tm:'10:04'},{f:'them',t:'Tripod le lena, sunset shoot karna hai',tm:'10:05'}]},
+ {u:'kabir',unread:1,msgs:[{f:'me',t:'Reel edit ho gayi?',tm:'9:04'},{f:'them',t:'Haan bas audio adjust karna hai',tm:'9:10'},{f:'them',t:'Dekh ke batana',tm:'9:12'}]},
+ {u:'vihaan',msgs:[{f:'them',t:'Bhai wo wali meme dekhi?',tm:'8:30'},{f:'me',t:'LOL forward kar',tm:'8:32'},{f:'them',t:'College group mein daal di hai',tm:'8:33'}]},
+ {u:'tanya',msgs:[{f:'them',t:'Practice video bheji hai, dekhna',tm:'Yest'},{f:'me',t:'Dekh liya, kill ho gayi',tm:'Yest'},{f:'them',t:'Thankyou thanyou',tm:'Yest'}]},
+ {u:'dfr',msgs:[{f:'them',t:'Is weekend ka new reel live hai',tm:'Tue'},{f:'them',t:'Butter chicken wala dekha?',tm:'Tue'}]},
+ {u:'ananya',msgs:[{f:'me',t:'Mural wali post bahut achi lagi',tm:'Mon'},{f:'them',t:'Thanks yaar! Next week naya wall hai',tm:'Mon'}]},
+];
+const acts=[
+ {g:'Aaj'},
+ {t:'like',u:'tanya',when:'2h',thumb:ph('ig-mural',120)},
+ {t:'follow',u:'leaf',when:'4h'},
+ {g:'Is hafte'},
+ {t:'req',u:'vihaan',when:'1d'},
+ {t:'like',u:'sneha',when:'2d',thumb:ph('ig-sunrise',120)},
+ {t:'comment',u:'rohan',when:'2d',txt:'"frame hi alag hai"',thumb:ph('ig-butter',120)},
+ {t:'mention',u:'kabir',when:'3d',txt:'reel mein',thumb:ph('rl-kabir',120)},
+ {g:'Is mahine'},
+ {t:'follow',u:'dfr',when:'2w'},
+ {t:'like',u:'ananya',when:'3w',thumb:ph('ex-mural',120)},
+];
+const NOTES=[{u:'kabir',t:'Reel bana raha hu'},{u:'tanya',t:'Practice at 6'},{u:'vihaan',t:'kab milenge?'},{u:'sneha',t:'Trip kal hai!'}];
+const REPL=['Hahaha sahi mein','Achha theek hai, done','Sun kal milte hain phir dekhte hain','Reel ka link bhej na jaldi','Chal baad mein baat karte hain','Haan bilkul!','Arey wah kya baat','Hmm sochke batata hu','2 min, photo bhej raha hu','LOL ekdum','Yaar ye toh bhool gaya tha'];
+
+/* ================= navigation ================= */
+const TABS=['feed','explore','reels','profile'];
+function go(id){
+ $$('.screen').forEach(s=>s.classList.toggle('on',s.id==='scr-'+id));
+ $('#bnav').style.display=TABS.includes(id)?'flex':'none';
+ $$('.bnav [data-go]').forEach(b=>b.classList.toggle('on',b.dataset.go===id));
+ hideSheets();
+ if(id==='reels'){initReels();requestAnimationFrame(playVisibleReels)}else pauseVideos();
+ if(id==='profile')statUp();
+ if(id==='activity'){actUnread=0;updateBadges()}
+ if(id==='messages'){chats.forEach(c=>c.unread=0);renderChatList();updateBadges()}
+}
+document.addEventListener('click',e=>{const b=e.target.closest('[data-back]');if(b)go(b.dataset.back)});
+ $('#bnav').addEventListener('click',e=>{
+ const b=e.target.closest('button');if(!b)return;
+ if(b.id==='nav-create'){openCreate('post');return}
+ if(b.dataset.go)go(b.dataset.go);
+});
+
+/* ================= toast / clipboard / menu ================= */
+let toastT;
+function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('on'),1900)}
+function copyTxt(s){
+ if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(s).then(()=>toast('Copy ho gaya')).catch(()=>toast(s));
+ else toast(s);
+}
+let menuItems=[];
+function menu(items){menuItems=items;$('#menu-list').innerHTML=items.map((it,i)=>`<button class="mn ${it.d?'danger':''}" data-mn="${i}">${it.l}</button>`).join('');openSheet('#sh-menu')}
+ $('#sh-menu').addEventListener('click',e=>{const b=e.target.closest('[data-mn]');if(!b)return;const it=menuItems[+b.dataset.mn];hideSheets();it.f&&it.f()});
+
+/* ================= sheets ================= */
+function openSheet(id){$('#veil').classList.add('on');$(id).classList.add('up')}
+function hideSheets(){$$('.sheet').forEach(s=>s.classList.remove('up'));$('#veil').classList.remove('on')}
+ $('#veil').addEventListener('click',hideSheets);
+[['#shr-x'],['#cm-x'],['#cr-x'],['#ed-x']].forEach(([s])=>$(s).addEventListener('click',hideSheets));
+
+/* ================= feed ================= */
+const postById=id=>posts.find(p=>p.id===id);
+function pavInner(u){const s=stories.find(x=>x.u===u);
+ if(s&&s.items.length&&!s.seen)return `<span class="ring"><span class="in"><img src="${U[u].av}" alt=""></span></span>`;
+ return `<span class="avw"><img src="${U[u].av}" alt=""></span>`}
+function buildPost(p){const u=U[p.u];
+ return `<article class="post" data-pid="${p.id}">
+  <header class="p-hd">
+   <button class="p-av" data-pav="${p.u}">${pavInner(p.u)}</button>
+   <span><span class="p-handle">${u.h}${u.v?ic('verified','vbadge'):''}</span> <span class="pd">·</span> <span class="p-time">${p.t}</span></span>
+   ${p.u!=='you'&&!u.followed?`<button class="flw" data-follow="${p.u}">Follow</button>`:''}
+   <button class="ib ml-auto" data-menu="${p.id}">${ic('ellipsis')}</button>
+  </header>
+  <div class="p-img"><img src="${p.img}" alt="" loading="lazy"><div class="burst">${ic('heart')}</div></div>
+  <div class="p-act">
+   <button class="ib likebtn ${p.liked?'on':''}" data-like="${p.id}">${ic('heart')}</button>
+   <button class="ib" data-cm="${p.id}">${ic('comment')}</button>
+   <button class="ib" data-share="${p.id}">${ic('plane')}</button>
+   <button class="ib savebtn ml-auto ${p.saved?'on':''}" data-save="${p.id}">${ic('bookmark')}</button>
+  </div>
+  <div class="p-likes" data-likes="${p.id}">${fmt(p.likes)} likes</div>
+  <div class="p-cap clamped"><b>${u.h}</b> ${esc(p.cap)}</div>
+  <button class="p-cm" data-cm="${p.id}">View all ${p.cm.length} comments</button>
+ </article>`;
+}
+function renderFeed(){$('#feed').innerHTML=posts.map(buildPost).join('')}
+function renderStories(){$('#stories').innerHTML=stories.map((s,i)=>{
+ const mine=s.u==='you',has=s.items.length;
+ const ring=has&&!s.seen?'ring':'ring seen';
+ return `<button class="st-it" data-story="${i}">
+  <span class="${ring}"><span class="in"><img src="${U[s.u].av}" alt=""></span></span>
+  ${mine&&!has?`<span class="st-plus">${ic('plusS')}</span>`:''}
+  <span class="st-nm">${mine?'Your story':U[s.u].h}</span></button>`}).join('')}
+
+function updLikeUI(pid){const p=postById(pid);const art=$(`[data-pid="${pid}"]`);
+ art.querySelector('[data-like]').classList.toggle('on',p.liked);
+ art.querySelector('[data-likes]').textContent=fmt(p.likes)+' likes'}
+function likeOn(pid,burstIt){const p=postById(pid);if(!p.liked){p.liked=true;p.likes++}
+ const art=$(`[data-pid="${pid}"]`);updLikeUI(pid);
+ const b=art.querySelector('.likebtn');b.classList.remove('pop');void b.offsetWidth;b.classList.add('pop');
+ if(burstIt){const bu=art.querySelector('.burst');bu.classList.remove('go');void bu.offsetWidth;bu.classList.add('go')}}
+function toggleLike(pid){const p=postById(pid);p.liked=!p.liked;p.likes+=p.liked?1:-1;updLikeUI(pid)}
+function toggleSave(pid){const p=postById(pid);p.saved=!p.saved;
+ $(`[data-pid="${pid}"] [data-save]`).classList.toggle('on',p.saved);
+ toast(p.saved?'Save ho gaya':'Saved se hata diya')}
+function toggleFollow(uid){const u=U[uid];u.followed=!u.followed;
+ $$(`[data-follow="${uid}"]`).forEach(b=>{b.textContent=u.followed?'Following':'Follow'});
+ toast(u.followed?`@${u.h} ko follow kar diya`:`@${u.h} ko unfollow kar diya`)}
+
+function dblTap(el){const n=Date.now();if(el._lt&&n-el._lt<330){el._lt=0;return true}el._lt=n;return false}
+
+ $('#scr-feed').addEventListener('click',e=>{
+ const t=s=>e.target.closest(s);let el;
+ if(el=t('.p-img')){if(dblTap(el))likeOn(el.closest('.post').dataset.pid,true);return}
+ if(el=t('[data-like]')){toggleLike(el.dataset.like);return}
+ if(el=t('[data-save]')){toggleSave(el.dataset.save);return}
+ if(el=t('.p-cap')){el.classList.toggle('clamped');return}
+ if(el=t('[data-cm]')){openComments({type:'post',obj:postById(el.dataset.cm)});return}
+ if(el=t('[data-share]')){const p=postById(el.dataset.share);openShare({img:p.img,text:p.cap});return}
+ if(el=t('[data-follow]')){toggleFollow(el.dataset.follow);return}
+ if(el=t('[data-pav]')){const uid=el.dataset.pav;const i=stories.findIndex(s=>s.u===uid);
+  if(uid==='you'&&!(stories[0].items.length)){openCreate('story')}else if(i>-1)openStory(i);return}
+ if(el=t('[data-menu]')){const pid=el.dataset.menu;const p=postById(pid);
+  const items=[{l:'Copy link',f:()=>copyTxt('instagram.com/p/'+pid)},
+        {l:'Share to…',f:()=>openShare({img:p.img,text:p.cap})},
+        {l:'About this account',f:()=>toast('Ye account 2021 se Instagram par hai')}];
+  if(p.u==='you')items.push({l:'Delete post',d:1,f:()=>{
+    const i2=posts.indexOf(p);if(i2>-1)posts.splice(i2,1);
+    const art=$(`[data-pid="${pid}"]`);if(art)art.remove();
+    toast('Post delete ho gayi')}});
+  items.push({l:'Cancel'});
+  menu(items);return}
+ if(el=t('[data-story]')){const i=+el.dataset.story,s=stories[i];
+  if(s.u==='you'&&!s.items.length)openCreate('story');else openStory(i);return}
+ if(t('#hb-act')){go('activity');return}
+ if(t('#hb-dm')){go('messages');return}
+});
+ $('#scr-feed').addEventListener('scroll',function(){const y=this.scrollTop;$('#feed-hd').classList.toggle('hid',y>72&&y>feedLast);feedLast=y},{passive:true});
+let feedLast=0;
+
+/* ================= comments sheet ================= */
+let cmTarget=null;
+function openComments(target){cmTarget=target;if(!cmTarget.obj.cm)cmTarget.obj.cm=[];renderCmList();openSheet('#sh-cm')}
+function renderCmList(){$('#cm-list').innerHTML=cmTarget.obj.cm.map(c=>`
+ <div class="cm-r">${avImg(c.u)}<div><b>${U[c.u].h}</b>${esc(c.t)}<div class="ct">${c.tm||''}</div></div></div>`).join('')||'<div class="ex-empty">Abhi koi comment nahi<br>Pehla comment tum karo</div>'}
+function addComment(){const inp=$('#cm-inp');const t=inp.value.trim();if(!t||!cmTarget)return;
+ cmTarget.obj.cm.push({u:'you',t,tm:'Abhi'});inp.value='';renderCmList();
+ if(cmTarget.type==='post'){const p=cmTarget.obj;$(`[data-pid="${p.id}"] .p-cm`).textContent=`View all ${p.cm.length} comments`}
+ else if(cmTarget.type==='reel'){const r=cmTarget.obj;r.cmN++;const sp=$(`[data-rid="${r.id}"] [data-rcm] span`);if(sp)sp.textContent=kfmt(r.cmN)}
+ else if(cmTarget.type==='exp'&&$('#pv').classList.contains('on')){$('#pv-likes').textContent=fmt(cmTarget.obj.likes)+' likes · '+cmTarget.obj.cm.length+' comments'}
+}
+ $('#cm-post').addEventListener('click',addComment);
+ $('#cm-inp').addEventListener('keydown',e=>{if(e.key==='Enter')addComment()});
+
+/* ================= share sheet ================= */
+let sharePayload=null,shareMode='share';
+function openShare(payload){sharePayload=payload;shareMode='share';renderShare();openSheet('#sh-share')}
+function renderShare(){
+ $('#shr-title').textContent=shareMode==='new'?'New message':'Share';
+ $('#shr-list').innerHTML=chats.map(c=>`
+  <div class="shr-r" ${shareMode==='new'?`data-newchat="${c.u}"`:''}>
+   <span class="shr-avw">${avImg(c.u)}${U[c.u].online?'<i class="on-dot"></i>':''}</span>
+   <span class="shr-n">${U[c.u].n}<small>@${U[c.u].h}</small></span>
+   ${shareMode==='share'?`<button class="shr-send" data-shrto="${c.u}">Send</button>`:`<span class="shr-chev">${ic('chev')}</span>`}
+  </div>`).join('');
+}
+ $('#sh-share').addEventListener('click',e=>{
+ const s=e.target.closest('[data-shrto]');
+ if(s){pushTo(s.dataset.shrto,{img:sharePayload.img,t:sharePayload.text||''});toast(`@${U[s.dataset.shrto].h} ko bhej diya`);hideSheets();return}
+ const n=e.target.closest('[data-newchat]');
+ if(n){hideSheets();openChat(n.dataset.newchat)}
+});
+ $('#shr-x').addEventListener('click',hideSheets);
+ $('#dm-new').addEventListener('click',()=>{shareMode='new';renderShare();openSheet('#sh-share')});
+
+/* ================= messages / chat ================= */
+let chatWith=null,botT1,botT2;
+const chatOf=u=>chats.find(c=>c.u===u)||(chats.unshift({u,msgs:[]}),chats[0]);
+function prevTxt(c){const m=c.msgs[c.msgs.length-1];
+ if(!m)return'Say hi';
+ const t=m.unsent?'You unsent a message'
+  :m.img?(m.f==='me'?'You sent a photo':'Sent a photo')
+  :m.heart?(m.f==='me'?'You sent a heart':'Sent a heart')
+  :(m.f==='me'?'You: ':'')+m.t;
+ return t+' · '+m.tm}
+function renderChatList(){$('#chat-list').innerHTML=chats.map(c=>`
+ <div class="ch-row" data-chat="${c.u}">
+  <span class="ch-av">${avImg(c.u)}${U[c.u].online?'<i class="on-dot"></i>':''}</span>
+  <span class="ch-mid"><b>${U[c.u].n}${U[c.u].v?ic('verified','vbadge'):''}</b>
+  <span class="ch-prev ${c.unread?'un':''}">${esc(prevTxt(c))}</span></span>
+  <button class="ib ch-cam" data-chatcam="${c.u}">${ic('camera')}</button>
+ </div>`).join('')}
+function renderNotes(){$('#notes').innerHTML=NOTES.map(n=>`
+ <button class="note" data-note="${n.u}"><span class="note-b">${esc(n.t)}</span>${avImg(n.u)}<span class="nm">${U[n.u].h}</span></button>`).join('')}
+function openChat(uid){chatWith=uid;const c=chatOf(uid);c.unread=0;
+ renderChat();go('chat');renderChatList();updateBadges();sendBtnState()}
+function mrow(m,i){
+ if(m.unsent)return `<div class="mrow me"><span class="unsent">You unsent a message</span></div>`;
+ let inner='';
+ if(m.img)inner+=`<div class="bub imgb"><img src="${m.img}" alt=""></div>`;
+ if(m.t)inner+=`<div class="bub">${esc(m.t)}</div>`;
+ if(m.heart)inner+=`<div class="bub hb">${ic('heart')}</div>`;
+ return `<div class="mrow ${m.f}" data-mi="${i}">${inner}</div>`}
+function renderChat(){const c=chatOf(chatWith),u=U[chatWith];
+ $('#ch-av').src=u.av;
+ $('#ch-dot').hidden=!u.online;
+ $('#ch-name').innerHTML=esc(u.n)+(u.v?ic('verified','vbadge'):'');
+ $('#ch-stat').textContent=u.online?'Active now':'Active '+(u.lastSeen||'recently');
+ $('#msgs').innerHTML=`<div class="intro"><span class="intro-av">${avImg(chatWith)}</span><b>${esc(u.n)}${u.v?ic('verified','vbadge'):''}</b><span class="iun">${u.h} · Instagram</span><button class="pbtn" id="intro-vp">View profile</button></div><div class="day">Aaj</div>`+c.msgs.map((m,i)=>mrow(m,i)).join('');
+ scrollBottom()}
+function scrollBottom(){const m=$('#msgs');m.scrollTop=m.scrollHeight}
+function killTyping(){const t=$('#typing');if(t)t.remove()}
+function pushTo(uid,m){const c=chatOf(uid);m.f='me';m.tm=nowT();c.msgs.push(m);
+ if(uid===chatWith&&$('#scr-chat').classList.contains('on')){killTyping();$('#msgs').insertAdjacentHTML('beforeend',mrow(m,c.msgs.length-1));scrollBottom()}
+ renderChatList()}
+function botReply(){
+ clearTimeout(botT1);clearTimeout(botT2);killTyping();
+ botT1=setTimeout(()=>{if($('#scr-chat').classList.contains('on')){$('#msgs').insertAdjacentHTML('beforeend','<div class="mrow them" id="typing"><div class="bub"><i></i><i></i><i></i></div></div>');scrollBottom()}},650);
+ botT2=setTimeout(()=>{killTyping();const c=chatOf(chatWith);
+  const t=REPL[Math.floor(Math.random()*REPL.length)];c.msgs.push({f:'them',t,tm:nowT()});
+  if($('#scr-chat').classList.contains('on')){$('#msgs').insertAdjacentHTML('beforeend',mrow(c.msgs[c.msgs.length-1],c.msgs.length-1));scrollBottom()}
+  else{c.unread=(c.unread||0)+1;updateBadges()}
+  renderChatList()},1600+Math.random()*1200);
+}
+function sendBtnState(){const has=$('#chat-inp').value.trim().length>0;
+ $('#chat-r').style.display=has?'none':'flex';
+ $('#chat-send').hidden=!has}
+function sendTxt(){const inp=$('#chat-inp');const t=inp.value.trim();if(!t)return;
+ inp.value='';sendBtnState();pushTo(chatWith,{t});botReply()}
+ $('#chat-inp').addEventListener('input',sendBtnState);
+ $('#chat-inp').addEventListener('keydown',e=>{if(e.key==='Enter')sendTxt()});
+ $('#chat-send').addEventListener('click',sendTxt);
+ $('#chat-heart').addEventListener('click',()=>{pushTo(chatWith,{heart:true});botReply()});
+ $('#chat-mic').addEventListener('click',()=>toast('Voice note demo mein off hai'));
+ $('#chat-img').addEventListener('click',()=>{camTarget=chatWith;$('#chat-file').click()});
+ $('#chat-smile').addEventListener('click',()=>{const e=['😂','🔥','❤️','👀','🙌'];$('#chat-inp').value+=e[Math.floor(Math.random()*e.length)];sendBtnState();$('#chat-inp').focus()});
+ $$('#scr-chat [data-call]').forEach(b=>b.addEventListener('click',()=>toast(U[chatWith].n+' ko call lag rahe hain… (demo)')));
+
+/* unsend: apne message par tap karo */
+ $('#msgs').addEventListener('click',e=>{
+ if(e.target.closest('#intro-vp')){toast('Profile view (demo)');return}
+ const r=e.target.closest('.mrow');if(!r||r.dataset.mi===undefined)return;
+ const c=chatOf(chatWith);const m=c.msgs[+r.dataset.mi];
+ if(!m||m.unsent)return;
+ if(m.f!=='me'){menu([{l:'Copy',f:()=>copyTxt(m.t||'')},{l:'Cancel'}]);return}
+ menu([{l:'Copy',f:()=>copyTxt(m.t||'Photo')},
+  {l:'Unsend',d:1,f:()=>{m.unsent=true;delete m.t;delete m.img;delete m.heart;
+   renderChat();renderChatList();toast('Message unsend ho gaya')}},
+  {l:'Cancel'}]);
+});
+ $('#chat-list').addEventListener('click',e=>{
+ const cam=e.target.closest('[data-chatcam]');
+ if(cam){camTarget=cam.dataset.chatcam;$('#chat-file').click();return}
+ const r=e.target.closest('[data-chat]');if(r)openChat(r.dataset.chat)});
+ $('#notes').addEventListener('click',e=>{const n=e.target.closest('[data-note]');if(n)openChat(n.dataset.note)});
+ $('#req-row').addEventListener('click',()=>toast('Koi follow request pending nahi hai'));
+ $('#dm-q').addEventListener('input',e=>{const q=e.target.value.trim().toLowerCase();
+ $$('#chat-list .ch-row').forEach(r=>{const u=U[r.dataset.chat];
+  r.style.display=(u.n+' '+u.h).toLowerCase().includes(q)?'':'none'})});
+let camTarget=null;
+ $('#chat-cam').addEventListener('click',()=>{camTarget=chatWith;$('#chat-file').click()});
+ $('#chat-file').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;
+ const rd=new FileReader();rd.onload=()=>{pushTo(camTarget,{img:rd.result});if(camTarget===chatWith)botReply()};rd.readAsDataURL(f);e.target.value=''});
+
+/* ================= badges ================= */
+let actUnread=3;
+function updateBadges(){const un=chats.reduce((a,c)=>a+(c.unread||0),0);
+ const bd=$('#bdg-dm');bd.textContent=un;bd.style.display=un?'flex':'none';
+ const ba=$('#bdg-act');ba.textContent=actUnread;ba.style.display=actUnread?'flex':'none'}
+
+/* ================= explore ================= */
+function buildExplore(){$('#ex-grid').innerHTML=explore.map((o,i)=>`
+ <button class="tile ${o.tall?'tall':''}" data-ex="${i}"><img src="${ph(o.seed,600,o.tall?1100:600)}" alt="" loading="lazy"></button>`).join('')}
+ $('#ex-grid').addEventListener('click',e=>{const t=e.target.closest('[data-ex]');if(t)openPhoto(explore[+t.dataset.ex],true)});
+ $('#ex-q').addEventListener('input',e=>{const q=e.target.value.trim().toLowerCase();
+ $('#ex-clear').hidden=!q;let n=0;
+ $$('#ex-grid .tile').forEach((tile,i)=>{const o=explore[i];
+  const hay=o.tags.join(' ')+' '+U[o.u].h+' '+U[o.u].n;
+  const show=!q||hay.toLowerCase().includes(q);
+  tile.style.display=show?'':'none';if(show)n++});
+ $('#ex-empty').hidden=n>0});
+ $('#ex-clear').addEventListener('click',()=>{$('#ex-q').value='';$('#ex-q').dispatchEvent(new Event('input'))});
+
+/* photo viewer */
+let pvObj=null;
+function openPhoto(o,isExp){pvObj={o,isExp};
+ $('#pv-img').src=isExp?ph(o.seed,900,1200):(o.full||o.img);
+ $('#pv-av').src=U[o.u].av;
+ $('#pv-user').innerHTML=U[o.u].h+(U[o.u].v?ic('verified','vbadge'):'');
+ $('#pv-like').innerHTML=ic('heart');$('#pv-cm').innerHTML=ic('comment');$('#pv-share').innerHTML=ic('plane');
+ $('#pv-like').classList.toggle('on',!!o.liked);
+ $('#pv-likes').textContent=fmt(o.likes||0)+' likes'+(o.cm&&o.cm.length?' · '+o.cm.length+' comments':'');
+ $('#pv').classList.add('on')}
+ $('#pv-x').addEventListener('click',()=>$('#pv').classList.remove('on'));
+ $('#pv-like').addEventListener('click',()=>{const o=pvObj.o;o.liked=!o.liked;o.likes+=o.liked?1:-1;
+ $('#pv-like').classList.toggle('on',o.liked);
+ $('#pv-likes').textContent=fmt(o.likes)+' likes'+(o.cm&&o.cm.length?' · '+o.cm.length+' comments':'')});
+ $('#pv-cm').addEventListener('click',()=>{if(!pvObj.o.cm)pvObj.o.cm=[];openComments({type:'exp',obj:pvObj.o})});
+ $('#pv-share').addEventListener('click',()=>openShare({img:$('#pv-img').src,text:pvObj.o.cap||''}));
+
+/* ================= reels ================= */
+let reelsReady=false,reelIO=null,reelsMuted=true;
+function initReels(){if(reelsReady)return;reelsReady=true;
+ $('#rscroll').innerHTML=reels.map(r=>`
+ <section class="reel" data-rid="${r.id}">
+  <video src="${r.vid}" poster="${r.poster}" ${reelsMuted?'muted':''} loop playsinline preload="metadata"></video>
+  <div class="r-tap"></div>
+  <div class="r-flash"></div>
+  <div class="burst">${ic('heart')}</div>
+  <div class="r-scrim"></div>
+  <div class="r-info">
+   <div class="r-user">${avImg(r.u)}<b>${U[r.u].h}</b><button class="r-flw ${U[r.u].followed?'fed':''}" data-rfollow="${r.u}">${U[r.u].followed?'Following':'Follow'}</button></div>
+   <div class="r-cap">${esc(r.cap)}</div>
+   <div class="r-music">${ic('music')}<div class="marq"><span>${esc(r.music)}&nbsp;&nbsp;·&nbsp;&nbsp;${esc(r.music)}&nbsp;&nbsp;·&nbsp;&nbsp;</span></div></div>
+  </div>
+  <div class="r-rail">
+   <button class="rr likebtn ${r.liked?'on':''}" data-rlike="${r.id}">${ic('heart')}<span>${kfmt(r.likes)}</span></button>
+   <button class="rr" data-rcm="${r.id}">${ic('comment')}<span>${kfmt(r.cmN)}</span></button>
+   <button class="rr" data-rshare="${r.id}">${ic('plane')}</button>
+   <button class="rr" data-rmenu="${r.id}">${ic('ellipsis')}</button>
+   <div class="rr-disc">${avImg(r.u)}</div>
+  </div>
+ </section>`).join('');
+ reelIO=new IntersectionObserver(es=>es.forEach(en=>{
+  const v=en.target.querySelector('video');
+  if(en.isIntersecting)v.play().catch(()=>{});else v.pause();
+ }),{root:$('#rscroll'),threshold:.65});
+ $$('#rscroll .reel').forEach(r=>reelIO.observe(r));
+ setMuteUI();
+}
+function setMuteUI(){$('#reels-mute').innerHTML=ic(reelsMuted?'volx':'vol');
+ $$('#rscroll video').forEach(v=>v.muted=reelsMuted)}
+ $('#reels-mute').addEventListener('click',()=>{reelsMuted=!reelsMuted;setMuteUI()});
+function pauseVideos(){$$('#rscroll video').forEach(v=>v.pause())}
+function playVisibleReels(){if(!reelsReady)return;const rs=$('#rscroll'),h=rs.clientHeight,st=rs.scrollTop;
+ $$('#rscroll .reel').forEach(r=>{const v=r.querySelector('video');const c=r.offsetTop+r.offsetHeight/2;
+  if(c>st&&c<st+h)v.play().catch(()=>{});else v.pause()})}
+function flash(reel,name){const f=reel.querySelector('.r-flash');f.innerHTML=ic(name);
+ f.classList.remove('go');void f.offsetWidth;f.classList.add('go')}
+function reelLike(r,burstIt){if(!r.liked){r.liked=true;r.likes++}
+ const reel=$(`[data-rid="${r.id}"]`);const b=reel.querySelector('[data-rlike]');
+ b.classList.toggle('on',r.liked);b.querySelector('span').textContent=kfmt(r.likes);
+ if(burstIt){const bu=reel.querySelector('.burst');bu.classList.remove('go');void bu.offsetWidth;bu.classList.add('go')}}
+ $('#scr-reels').addEventListener('click',e=>{
+ const t=s=>e.target.closest(s);let el;
+ if(el=t('.r-tap')){const reel=el.closest('.reel');const v=reel.querySelector('video');
+  const d=dblTap(el);
+  if(v.paused)v.play().catch(()=>{});else v.pause();
+  flash(reel,v.paused?'play':'pause');
+  if(d)reelLike(reels.find(x=>x.id===reel.dataset.rid),true);return}
+ if(el=t('[data-rlike]')){reelLike(reels.find(x=>x.id===el.dataset.rlike));return}
+ if(el=t('[data-rcm]')){const r=reels.find(x=>x.id===el.dataset.rcm);openComments({type:'reel',obj:r});return}
+ if(el=t('[data-rshare]')){const r=reels.find(x=>x.id===el.dataset.rshare);openShare({img:r.poster,text:r.cap});return}
+ if(el=t('[data-rfollow]')){const uid=el.dataset.rfollow;toggleFollow(uid);
+  $$(`[data-rfollow="${uid}"]`).forEach(b=>{b.textContent=U[uid].followed?'Following':'Follow';b.classList.toggle('fed',U[uid].followed)});return}
+ if(el=t('[data-rmenu]')){menu([{l:'Copy link',f:()=>copyTxt('instagram.com/reels/'+el.dataset.rmenu)},
+  {l:'Not interested',f:()=>toast('Theek hai, aisa content kam dikhega')},{l:'Cancel'}])}
+});
+
+/* ================= activity ================= */
+function renderAct(){$('#act-list').innerHTML=acts.map(a=>{
+ if(a.g)return `<div class="act-g">${a.g}</div>`;
+ const u=U[a.u];
+ const mini=a.t==='like'?'<span class="mini red">'+ic('heart')+'</span>'
+  :(a.t==='follow'||a.t==='req')?'<span class="mini blue">'+ic('user')+'</span>'
+  :'<span class="mini blue">'+ic('comment')+'</span>';
+ const tx=a.t==='like'?`<b>${u.h}</b> ne aapki post like ki.`
+  :a.t==='follow'?`<b>${u.h}</b> ne aapko follow karna shuru kiya.`
+  :a.t==='req'?`<b>${u.h}</b> aapko follow karna chahte hain.`
+  :a.t==='comment'?`<b>${u.h}</b> ne comment kiya: ${esc(a.txt)}`
+  :`<b>${u.h}</b> ne aapko ek ${esc(a.txt)} mein mention kiya.`;
+ const right=a.thumb?`<img class="act-thumb" src="${a.thumb}" alt="">`
+  :a.t==='follow'?`<button class="afb ${u.followed?'fed':''}" data-afollow="${a.u}">${u.followed?'Following':'Follow'}</button>`
+  :a.t==='req'?`<span class="req-btns"><button class="afb" data-confirm>Confirm</button><button class="afb ghost" data-delrow>Delete</button></span>`:'';
+ return `<div class="act-r"><span class="act-av">${avImg(a.u)}${mini}</span><span class="act-tx">${tx} <span class="tm">${a.when}</span></span>${right}</div>`;
+}).join('')}
+ $('#act-list').addEventListener('click',e=>{
+ const f=e.target.closest('[data-afollow]');
+ if(f){const uid=f.dataset.afollow;U[uid].followed=!U[uid].followed;
+  f.textContent=U[uid].followed?'Following':'Follow';f.classList.toggle('fed',U[uid].followed);return}
+ const c=e.target.closest('[data-confirm]');
+ if(c){c.closest('.req-btns').outerHTML='<button class="afb fed">Following</button>';toast('Request confirm ho gayi');return}
+ const d=e.target.closest('[data-delrow]');
+ if(d){const row=d.closest('.act-r');row.remove();toast('Request delete ho gayi')}
+});
+
+/* ================= profile ================= */
+let statsDone=false;
+function statUp(){if(statsDone)return;statsDone=true;
+ [['st-posts',12],['st-followers',8462],['st-following',431]].forEach(([id,target])=>{
+  const el=document.getElementById(id),t0=performance.now();
+  (function f(t){const p=Math.min(1,(t-t0)/900),e2=1-Math.pow(1-p,3);
+   el.textContent=Math.round(target*e2).toLocaleString('en-IN');
+   if(p<1)requestAnimationFrame(f)})(t0)})}
+function renderPfAv(){$('#pf-av').innerHTML=stories[0].items.length&&!stories[0].seen
+ ?`<span class="ring"><span class="in"><img src="${U.you.av}" alt=""></span></span>`
+ :`<span class="ring seen"><span class="in"><img src="${U.you.av}" alt=""></span></span>`;
+ $('#nav-pav img').src=U.you.av}
+function renderHls(){$('#pf-hls').innerHTML=[['Ladakh','hl-ladakh'],['Street Food','hl-food'],['2024','hl-24'],['Desk Setup','hl-desk']]
+ .map(([l,s])=>`<button class="hl" data-hl="${s}"><span class="hlc"><img src="${ph(s,160)}" alt=""></span>${l}</button>`).join('')}
+ $('#pf-hls').addEventListener('click',e=>{const b=e.target.closest('[data-hl]');if(!b)return;
+ openPhoto({u:'you',likes:312,liked:0,cm:[],img:ph(b.dataset.hl,900,1125),full:ph(b.dataset.hl,900,1125)})});
+function renderPfGrid(tab){const g=$('#pf-grid');
+ if(tab==='posts')g.innerHTML=Array.from({length:12},(_,i)=>`<div class="pf-t"><img src="${ph('pg'+(i+1),500)}" alt="" loading="lazy"></div>`).join('');
+ else if(tab==='reels'){const views=['128K','45.7K','89.2K','12.4K','67.1K','23.9K'];
+  g.innerHTML=Array.from({length:6},(_,i)=>`<div class="pf-t rvw"><img src="${ph('pr'+(i+1),500)}" alt="" loading="lazy"><span class="rv">${ic('play')}${views[i]}</span></div>`).join('')}
+ else g.innerHTML=['tg1','tg2','tg3'].map(s=>`<div class="pf-t"><img src="${ph(s,500)}" alt="" loading="lazy"></div>`).join('')}
+ $('#pf-tabs').addEventListener('click',e=>{const b=e.target.closest('[data-tab]');if(!b)return;
+ $$('#pf-tabs button').forEach(x=>x.classList.toggle('on',x===b));renderPfGrid(b.dataset.tab)});
+ $('#pf-add').addEventListener('click',()=>openCreate('post'));
+ $('#pf-menu').addEventListener('click',()=>menu([
+ {l:'Saved',f:()=>{go('saved');renderSaved()}},
+ {l:'Copy profile link',f:()=>copyTxt('instagram.com/aarav_wanders')},
+ {l:'Cancel'}]));
+ $('#pf-link').addEventListener('click',()=>copyTxt('https://bit.ly/aarav-films'));
+ $('#pf-share').addEventListener('click',()=>openShare({text:'Profile: @aarav_wanders'}));
+ $('#pf-edit').addEventListener('click',()=>{$('#ed-name').value=U.you.n;$('#ed-bio').value=$('#pf-bio').innerText.trim();openSheet('#sh-edit')});
+ $('#ed-save').addEventListener('click',()=>{const n=$('#ed-name').value.trim();if(n)U.you.n=n;$('#pf-name').textContent=n||U.you.n;
+ $('#pf-bio').innerText=$('#ed-bio').value.trim()||$('#pf-bio').innerText;hideSheets();toast('Profile update ho gaya')});
+function renderSaved(){const saved=posts.filter(p=>p.saved);
+ $('#sv-grid').innerHTML=saved.map(p=>`<button class="tile" data-sv="${p.id}"><img src="${p.img}" alt=""></button>`).join('');
+ $('#sv-empty').hidden=saved.length>0;$('#sv-grid').style.display=saved.length?'grid':'none'}
+ $('#sv-grid').addEventListener('click',e=>{const t=e.target.closest('[data-sv]');if(!t)return;
+ const p=postById(t.dataset.sv);openPhoto({u:p.u,likes:p.likes,liked:p.liked,cm:p.cm,img:p.img,full:p.img})});
+
+/* ================= create (post / story) ================= */
+let crSel=null,crMode='post',crStage=1;
+function buildCrGrid(){
+ let html=`<button class="cr-t cr-up" id="cr-up">${ic('camera')}Upload</button>`;
+ for(let i=1;i<=12;i++)html+=`<button class="cr-t" data-crsrc="${ph('cr'+i,900,1125)}"><img src="${ph('cr'+i,400,400)}" alt="" loading="lazy"></button>`;
+ $('#cr-grid').innerHTML=html;
+}
+ $('#cr-grid').addEventListener('click',e=>{
+ if(e.target.closest('#cr-up')){$('#cr-file').click();return}
+ const t=e.target.closest('[data-crsrc]');if(!t)return;
+ crSel=t.dataset.crsrc;crPicked()});
+ $('#cr-file').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;
+ const rd=new FileReader();rd.onload=()=>{crSel=rd.result;crPicked()};rd.readAsDataURL(f);e.target.value=''});
+function crPicked(){$$('#cr-grid .cr-t').forEach(t2=>t2.classList.remove('sel'));
+ $$('#cr-grid [data-crsrc]').forEach(t2=>{if(t2.dataset.crsrc===crSel)t2.classList.add('sel')});
+ $('#cr-next').disabled=false}
+function openCreate(mode){crMode=mode;crSel=null;crStage=1;
+ $('#cr-title').textContent=mode==='story'?'Add to story':'New post';
+ $('#cr-next').textContent='Next';$('#cr-next').disabled=true;
+ $('#cr-step1').hidden=false;$('#cr-step2').hidden=true;
+ $$('#cr-grid .cr-t').forEach(t2=>t2.classList.remove('sel'));
+ $('#cr-cap').value='';openSheet('#sh-create')}
+ $('#cr-next').addEventListener('click',()=>{
+ if(!crSel)return;
+ if(crStage===1){$('#cr-img').src=crSel;$('#cr-step1').hidden=true;$('#cr-step2').hidden=false;
+  $('#cr-next').textContent='Share';crStage=2}
+ else publish()});
+function publish(){
+ const cap=$('#cr-cap').value.trim();
+ posts.unshift({id:'me'+Date.now(),u:'you',img:crSel,likes:0,liked:0,saved:0,t:'Abhi',cap,cm:[]});
+ $('#feed').insertAdjacentHTML('afterbegin',buildPost(posts[0]));
+ $('#feed').firstElementChild.classList.add('new');
+ hideSheets();go('feed');$('#scr-feed').scrollTop=0;
+ if(crMode==='story'){stories[0].items.push({img:crSel,t:'Abhi'});stories[0].seen=false;
+  renderStories();renderPfAv();toast('Story add ho gayi')}
+ else toast('Post share ho gayi');
 }
 
-for k, v in defaults.items():
-    if k not in SS:
-        SS[k] = v
-
-
-# ---------- SECURITY HELPERS ----------
-BAD_WORDS = ["stupid", "idiot", "hate", "dumb", "ugly"]
-
-
-def comment_is_clean(text):
-    low = text.lower()
-    for w in BAD_WORDS:
-        if w in low:
-            return False
-    return True
-
-
-def password_strength(pw):
-    score = 0
-    if len(pw) >= 8:
-        score = score + 25
-    if any(c.isdigit() for c in pw):
-        score = score + 25
-    if any(c.isupper() for c in pw) and any(c.islower() for c in pw):
-        score = score + 25
-    symbols = "!@#$%^&*()-_=+[]{};:,.<>?/"
-    if any(c in symbols for c in pw):
-        score = score + 25
-    return score
-
-
-def add_security_event(text):
-    entry = {"event": text, "time": "Just now"}
-    SS.security_log.insert(0, entry)
-    if len(SS.security_log) > 20:
-        SS.security_log = SS.security_log[:20]
-
-
-def security_score():
-    score = 0
-    tips = []
-    if SS.two_factor:
-        score = score + 20
-    else:
-        tips.append("Enable Two-Factor Authentication (+20)")
-    if SS.login_alerts:
-        score = score + 15
-    else:
-        tips.append("Enable Login Alerts (+15)")
-    if SS.app_lock:
-        score = score + 20
-    else:
-        tips.append("Set up App Lock PIN (+20)")
-    if SS.strong_password:
-        score = score + 20
-    else:
-        tips.append("Use a stronger password (+20)")
-    if SS.auto_logout > 0:
-        score = score + 10
-    else:
-        tips.append("Enable Auto Logout (+10)")
-    if SS.private_account:
-        score = score + 10
-    else:
-        tips.append("Make your account private (+10)")
-    if SS.comment_filter:
-        score = score + 5
-    else:
-        tips.append("Turn on Comment Filter (+5)")
-    return score, tips
-
-
-def settings_back(key):
-    if st.button("← Back to Settings", key=key):
-        SS.settings_page = "menu"
-        SS.privacy_step = 0
-        safe_rerun()
-
-
-# ---------- CSS ----------
-def build_main_css(dark):
-    if dark:
-        APPBG = "#0f1110"
-        CARDBG = "#1b1e1b"
-        BORDERC = "#2a2e2a"
-        TXT1 = "#eef1ee"
-        TXT2 = "#9aa69a"
-        LOGOC = "#00e08a"
-    else:
-        APPBG = "#f0f2f5"
-        CARDBG = "#ffffff"
-        BORDERC = "#e5e7eb"
-        TXT1 = "#1f2937"
-        TXT2 = "#4b5563"
-        LOGOC = "#00B074"
-
-    css = f"""
-    <style>
-    .stApp {{ background-color:{APPBG} !important; }}
-    header[data-testid="stHeader"], #MainMenu, footer {{
-        visibility:hidden !important; }}
-    [data-testid="stToolbar"] {{ visibility:hidden !important; }}
-    [data-testid="stStatusWidget"] {{ visibility:hidden !important; }}
-
-    .block-container, [data-testid="block-container"] {{
-        max-width:460px; margin:0 auto; background:{CARDBG};
-        padding-top:0 !important; padding-bottom:30px !important;
-        min-height:100vh; box-shadow:0 0 25px rgba(0,0,0,.12);
-    }}
-
-    .insta-header {{
-        position:sticky; top:0; z-index:100; display:flex;
-        justify-content:space-between; align-items:center;
-        padding:14px 18px; background:{CARDBG};
-        border-bottom:1px solid {BORDERC};
-    }}
-    .brand-logo {{
-        font-size:28px; font-weight:900; color:{LOGOC};
-        letter-spacing:-1px;
-    }}
-    .nico {{ font-size:20px; }}
-
-    .stories-container {{
-        display:flex; gap:15px; padding:12px 15px;
-        background:{CARDBG}; border-bottom:1px solid {BORDERC};
-        overflow-x:auto;
-    }}
-    .story-card {{
-        display:flex; flex-direction:column; align-items:center;
-        text-align:center; min-width:65px;
-    }}
-    .story-ring {{
-        width:60px; height:60px; border-radius:50%; padding:2.5px;
-        background:linear-gradient(135deg,#00B074 0%,#056839 100%);
-        display:flex; align-items:center; justify-content:center;
-    }}
-    .story-img {{
-        width:100%; height:100%; border-radius:50%;
-        background:{CARDBG}; border:2px solid {CARDBG};
-        display:flex; align-items:center; justify-content:center;
-        font-weight:bold; color:{TXT2}; font-size:14px;
-    }}
-    .story-name {{
-        font-size:11px; color:{TXT2}; margin-top:4px; max-width:65px;
-        overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
-    }}
-
-    .post-card {{
-        background:{CARDBG}; margin-bottom:12px;
-        border-bottom:1px solid {BORDERC};
-    }}
-    .post-header {{
-        display:flex; align-items:center; padding:12px 15px;
-    }}
-    .post-avatar {{
-        width:36px; height:36px; border-radius:50%;
-        background:#00B074; color:#fff;
-        display:flex; align-items:center; justify-content:center;
-        font-weight:bold; margin-right:10px; font-size:13px;
-    }}
-    .post-username {{
-        font-size:14px; font-weight:700; color:{TXT1};
-    }}
-    .post-image-placeholder {{
-        width:100%; height:300px; background:#f3f4f6;
-        display:flex; align-items:center; justify-content:center;
-        font-size:16px;
-    }}
-    .likes-txt {{
-        padding:8px 15px 2px; font-weight:600; font-size:13px;
-        color:{TXT1}; margin:0;
-    }}
-    .post-details {{
-        padding:0 15px 10px 15px; font-size:14px;
-        color:{TXT1}; margin:0;
-    }}
-
-    .panel-header {{
-        padding:18px; font-size:22px; font-weight:bold;
-        color:{LOGOC}; border-bottom:1px solid {BORDERC};
-        text-align:center;
-    }}
-
-    .set-label {{
-        font-weight:700; color:{TXT1}; margin:14px 0 4px;
-    }}
-    .sec-label {{
-        font-size:12px; font-weight:800; letter-spacing:1px;
-        color:{TXT2}; margin:18px 6px 8px;
-    }}
-    .privacy-card {{
-        display:flex; gap:14px; align-items:center;
-        background:rgba(0,176,116,0.10);
-        border:1px solid #00B074; border-radius:14px;
-        padding:14px 16px; margin:10px 0 4px;
-    }}
-    .privacy-card b {{ color:{TXT1}; font-size:15px; }}
-    .privacy-card p {{ margin:2px 0 0; font-size:12px; color:{TXT2}; }}
-    .member-chip {{
-        display:inline-block; background:{CARDBG};
-        border:1px solid {BORDERC}; border-radius:20px;
-        padding:4px 12px; margin:3px; font-size:12px;
-        color:{TXT2};
-    }}
-    .session-row {{
-        display:flex; align-items:center; gap:12px;
-        padding:10px 4px; border-bottom:1px solid {BORDERC};
-        font-size:13px; color:{TXT1};
-    }}
-    .lock-screen {{
-        display:flex; flex-direction:column; align-items:center;
-        justify-content:center; height:60vh; text-align:center;
-    }}
-
-    .chat-me {{
-        background:#00B074; color:#fff; padding:8px 14px;
-        border-radius:16px 16px 4px 16px; max-width:72%;
-        margin:4px 0 4px auto; font-size:14px;
-        display:block; width:fit-content;
-    }}
-    .chat-them {{
-        background:{BORDERC}; color:{TXT1}; padding:8px 14px;
-        border-radius:16px 16px 16px 4px; max-width:72%;
-        margin:4px auto 4px 0; font-size:14px;
-        display:block; width:fit-content;
-    }}
-    .chat-time {{
-        font-size:10px; color:{TXT2};
-        display:block; text-align:right;
-    }}
-
-    div[data-testid="stButton"] > button, div.stButton > button {{
-        background:#00B074 !important; color:#fff !important;
-        font-weight:600 !important; border:none !important;
-        border-radius:12px !important;
-    }}
-    div[data-testid="stButton"] > button:hover,
-    div.stButton > button:hover {{
-        background:#056839 !important; color:#fff !important;
-    }}
-    </style>
-    """
-
-    if dark:
-        css += """
-        <style>
-        [data-testid="stTextInput"] input,
-        [data-testid="stTextArea"] textarea {{
-            background:#242824 !important;
-            color:#fff !important;
-            border-color:#3a3f3a !important;
-        }}
-        [data-testid="stCheckbox"] label p,
-        [data-testid="stRadio"] label p {{
-            color:#e5e9e5 !important;
-        }}
-        [data-baseweb="select"] > div {{
-            background:#242824 !important;
-            color:#fff !important;
-        }}
-        hr {{ border-color:#2a2e2a !important; }}
-        </style>
-        """
-
-    return css
-
-
-# ================= 1) SPLASH =================
-if SS.page == "splash":
-
-    st.markdown(
-        """
-        <style>
-        .stApp {
-            background: linear-gradient(135deg, #00B074 0%, #056839 100%) !important;
-        }
-        header[data-testid="stHeader"], #MainMenu, footer {
-            visibility:hidden !important;
-        }
-        [data-testid="stToolbar"] { visibility:hidden !important; }
-        [data-testid="stStatusWidget"] { visibility:hidden !important; }
-        .mid {
-            display:flex; flex-direction:column; align-items:center;
-            justify-content:center; height:70vh; text-align:center;
-        }
-        .logo {
-            font-size:90px; font-weight:900; color:#fff;
-            letter-spacing:4px;
-            text-shadow:0 4px 14px rgba(0,0,0,.25); margin:0;
-        }
-        .sub {
-            font-size:24px; color:rgba(255,255,255,.92);
-            margin:5px 0 0; letter-spacing:2px;
-        }
-        div[data-testid="stButton"] > button, div.stButton > button {
-            background:#fff !important; color:#00B074 !important;
-            font-size:18px !important; font-weight:bold !important;
-            padding:12px 45px !important;
-            border-radius:30px !important; border:none !important;
-            box-shadow:0 4px 15px rgba(0,0,0,.25) !important;
-        }
-        </style>
-        <div class="mid">
-            <h1 class="logo">HMF</h1>
-            <p class="sub">HMF book</p>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-    c1, c2, c3 = st.columns([1, 1.3, 1])
-    with c2:
-        if st.button("Get Started", use_container_width=True):
-            SS.page = "auth"
-            safe_rerun()
-
-
-# ================= 2) LOGIN / SIGNUP =================
-elif SS.page == "auth":
-
-    is_signup = SS.auth_mode == "signup"
-
-    if is_signup:
-        title = "Create Account"
-        subtitle = "Sign up to continue to HMF book"
-        btn_label = "Sign Up"
-        switch_txt = "Already have an account? Login"
-    else:
-        title = "Welcome Back"
-        subtitle = "Login to continue to HMF book"
-        btn_label = "Login"
-        switch_txt = "New here? Create an account"
-
-    st.markdown(
-        """
-        <style>
-        .stApp { background:#F3FAF6 !important; }
-        header[data-testid="stHeader"], #MainMenu, footer {
-            visibility:hidden !important;
-        }
-        [data-testid="stToolbar"] { visibility:hidden !important; }
-        [data-testid="stStatusWidget"] { visibility:hidden !important; }
-        .badge {
-            background:linear-gradient(135deg,#00B074,#056839);
-            display:inline-block; padding:18px 52px;
-            border-radius:22px;
-            box-shadow:0 6px 18px rgba(0,176,116,.35);
-        }
-        .badge h1 {
-            color:#fff; font-size:36px; font-weight:900;
-            letter-spacing:3px; margin:0;
-        }
-        .title {
-            text-align:center; font-size:24px; font-weight:700;
-            color:#222; margin:26px 0 4px;
-        }
-        .sub2 {
-            text-align:center; color:#889; font-size:14px;
-            margin:0 0 22px;
-        }
-        div[data-testid="stButton"] > button, div.stButton > button {
-            background:#00B074 !important; color:#fff !important;
-            font-weight:600 !important; border:none !important;
-            border-radius:12px !important;
-        }
-        .or {
-            text-align:center; color:#99a; font-size:13px;
-            margin:20px 0 8px;
-        }
-        </style>
-        <div style="text-align:center; margin-top:14px;">
-            <div class="badge"><h1>HMF</h1></div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-    head = f"<h2 class='title'>{title}</h2><p class='sub2'>{subtitle}</p>"
-    st.markdown(head, unsafe_allow_html=True)
-
-    username = st.text_input("Username", placeholder="Enter username")
-
-    if is_signup:
-        email = st.text_input("Email", placeholder="Enter email")
-    else:
-        email = SS.email
-
-    password = st.text_input(
-        "Password",
-        type="password",
-        placeholder="Enter password",
-    )
-
-    if is_signup and password:
-        sc = password_strength(password)
-        st.progress(sc)
-        if sc >= 75:
-            st.caption("Strong password - excellent!")
-            SS.strong_password = True
-        elif sc >= 50:
-            st.caption("Medium password - add symbols and capitals")
-            SS.strong_password = False
-        else:
-            st.caption("Weak password - use 8+ chars, numbers and symbols")
-            SS.strong_password = False
-
-    if st.button(btn_label, use_container_width=True):
-
-        u = username.strip().lower()
-        db = load_db()
-
-        if not u or not password:
-            st.error("Please enter both username and password!")
-
-        elif is_signup:
-            if u in db["users"]:
-                st.error("This username is already taken!")
-            else:
-                db["users"][u] = {
-                    "email": email,
-                    "password": password,
-                    "display_name": u.title(),
-                    "bio": "New to HMF book!",
-                    "coins": 100,
-                    "followers": 0,
-                    "following": 0,
-                    "blocked": [],
-                }
-                save_db(db)
-                SS.logged_in = True
-                SS.username = u
-                SS.email = email
-                SS.blocked = []
-                SS.page = "app"
-                SS.pin_unlocked = not SS.app_lock
-                SS.last_active = time.time()
-                add_security_event("Account created and login")
-                safe_rerun()
-
-        else:
-            if u in db["users"] and db["users"][u]["password"] == password:
-                SS.logged_in = True
-                SS.username = u
-                SS.email = db["users"][u].get("email", "")
-                SS.blocked = db["users"][u].get("blocked", [])
-                SS.page = "app"
-                SS.pin_unlocked = not SS.app_lock
-                SS.last_active = time.time()
-                add_security_event("Login successful")
-                safe_rerun()
-            else:
-                st.error("Invalid username or password!")
-
-    if st.button(switch_txt):
-        if is_signup:
-            SS.auth_mode = "login"
-        else:
-            SS.auth_mode = "signup"
-        safe_rerun()
-
-    st.markdown(
-        "<p class='or'>Demo accounts: demo / 1234, "
-        "hoor_jannat / 1234, farrukh_m / 1234</p>",
-        unsafe_allow_html=True,
-    )
-
-    g, s, f = st.columns(3)
-    if g.button("Google", use_container_width=True):
-        SS.social_msg = "Google sign-in will be available soon."
-        safe_rerun()
-    if s.button("Snapchat", use_container_width=True):
-        SS.social_msg = "Snapchat login will be available soon."
-        safe_rerun()
-    if f.button("Facebook", use_container_width=True):
-        SS.social_msg = "Facebook login will be available soon."
-        safe_rerun()
-    if SS.social_msg:
-        st.info(SS.social_msg)
-
-
-# ================= 3) PIN LOCK =================
-elif SS.page == "app" and SS.logged_in and SS.app_lock and not SS.pin_unlocked:
-
-    st.markdown(build_main_css(SS.dark_mode), unsafe_allow_html=True)
-
-    lock_html = """
-    <div class="lock-screen">
-        <div style="font-size:60px;">🔐</div>
-        <h2>App Locked</h2>
-        <p style="color:#6b7280;">Enter your PIN to unlock HMF book</p>
-    </div>
-    """
-    st.markdown(lock_html, unsafe_allow_html=True)
-
-    now = time.time()
-
-    if SS.pin_lock_until > now:
-        remaining = int(SS.pin_lock_until - now) + 1
-        st.error(
-            "Too many wrong attempts! Locked for " +
-            str(remaining) + " seconds."
-        )
-    else:
-        pin_in = st.text_input(
-            "Enter 4-digit PIN",
-            type="password",
-            key="pin_in",
-        )
-        if st.button("🔓 Unlock", use_container_width=True):
-            if pin_in == SS.app_pin:
-                SS.pin_unlocked = True
-                SS.pin_attempts = 0
-                SS.pin_msg = ""
-                add_security_event("App unlocked with PIN")
-                safe_rerun()
-            else:
-                SS.pin_attempts = SS.pin_attempts + 1
-                left = 3 - SS.pin_attempts
-                if left <= 0:
-                    SS.pin_lock_until = time.time() + 30
-                    SS.pin_attempts = 0
-                    add_security_event("3 wrong PIN attempts")
-                else:
-                    SS.pin_msg = (
-                        "Wrong PIN! " + str(left) +
-                        " attempt(s) remaining."
-                    )
-                safe_rerun()
-
-        if SS.pin_msg:
-            st.error(SS.pin_msg)
-            SS.pin_msg = ""
-
-        if st.button("🚪 Logout instead", key="pin_logout"):
-            SS.logged_in = False
-            SS.page = "auth"
-            SS.pin_attempts = 0
-            safe_rerun()
-
-
-# ================= 4) MAIN APP =================
-elif SS.page == "app" and SS.logged_in:
-
-    st.markdown(build_main_css(SS.dark_mode), unsafe_allow_html=True)
-
-    DB = load_db()
-
-    now = time.time()
-    if SS.auto_logout > 0 and SS.last_active > 0:
-        if now - SS.last_active > SS.auto_logout * 60:
-            SS.logged_in = False
-            SS.page = "auth"
-            SS.pin_unlocked = not SS.app_lock
-            SS.last_active = 0
-            safe_rerun()
-    SS.last_active = now
-
-    # ---------- TOP BAR ----------
-    st.markdown(
-        """
-        <div class="insta-header">
-            <div class="brand-logo">HMF book</div>
-            <div class="nico">❤️ &nbsp; ✉️ &nbsp; 🔔</div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-    q1, q2, q3, q4, q5 = st.columns([0.6, 0.6, 0.6, 0.6, 1.6])
-
-    if q1.button("⚙️", key="top_set", use_container_width=True,
-                 help="Open Settings"):
-        SS.current_tab = "Settings"
-        SS.settings_page = "menu"
-        safe_rerun()
-
-    if q2.button("🔔", key="top_bell", use_container_width=True):
-        safe_toast("You have new notifications!")
-
-    if q3.button("✉️", key="top_mail", use_container_width=True,
-                 help="Messages"):
-        SS.current_tab = "Messages"
-        safe_rerun()
-
-    if q4.button("🌙", key="top_dark", use_container_width=True,
-                 help="Toggle Dark Mode"):
-        SS.dark_mode = not SS.dark_mode
-        safe_rerun()
-
-    if SS.current_tab == "Messages":
-        q5.markdown(
-            "<b style='color:#00B074;'>✉️ Live Messages</b>",
-            unsafe_allow_html=True,
-        )
-
-    st.markdown("<div style='height:6px;'></div>", unsafe_allow_html=True)
-
-    # ================= TAB: HOME =================
-    if SS.current_tab == "Home":
-
-        h1c, h2c = st.columns(2)
-        if h1c.button("🎮 Play Ludo", key="home_ludo",
-                      use_container_width=True):
-            SS.current_tab = "Ludo"
-            safe_rerun()
-        if h2c.button("🎬 Watch Reels", key="home_reels",
-                      use_container_width=True):
-            SS.current_tab = "Reels"
-            safe_rerun()
-
-        if SS.show_stories:
-            stories_html = """
-            <div class="stories-container">
-                <div class="story-card">
-                    <div class="story-ring" style="background:#6b7280;">
-                        <div class="story-img"
-                             style="background-color:#056839;color:#fff;">+
-                        </div>
-                    </div>
-                    <div class="story-name">Your Story</div>
-                </div>
-                <div class="story-card">
-                    <div class="story-ring">
-                        <div class="story-img">HJ</div>
-                    </div>
-                    <div class="story-name">hoor_jannat</div>
-                </div>
-                <div class="story-card">
-                    <div class="story-ring">
-                        <div class="story-img">FM</div>
-                    </div>
-                    <div class="story-name">farrukh_m</div>
-                </div>
-                <div class="story-card">
-                    <div class="story-ring">
-                        <div class="story-img">ZX</div>
-                    </div>
-                    <div class="story-name">zara_x</div>
-                </div>
-                <div class="story-card">
-                    <div class="story-ring">
-                        <div class="story-img">D</div>
-                    </div>
-                    <div class="story-name">demo</div>
-                </div>
-            </div>
-            """
-            st.markdown(stories_html, unsafe_allow_html=True)
-
-        if SS.block_msg:
-            st.success(SS.block_msg)
-            SS.block_msg = ""
-
-        visible_posts = []
-        for p in DB["posts"]:
-            if p.get("type") == "reel":
-                continue
-            if p["user"] in SS.blocked:
-                continue
-            visible_posts.append(p)
-
-        if SS.feed_sort == "Top Posts":
-            visible_posts = sorted(
-                visible_posts,
-                key=lambda x: len(x.get("likes", {})),
-                reverse=True,
-            )
-
-        if not visible_posts:
-            st.info("Your feed is empty. Upload the first post!")
-
-        if SS.clear_cmt:
-            SS[SS.clear_cmt] = ""
-            SS.clear_cmt = ""
-
-        for p in visible_posts:
-
-            ptype = p.get("type", "text")
-
-            if ptype == "text":
-                post_html = f"""
-                <div class="post-card">
-                    <div class="post-header">
-                        <div class="post-avatar">
-                            {p['user'][:2].upper()}
-                        </div>
-                        <div class="post-username">{p['user']}</div>
-                    </div>
-                    <div class="post-image-placeholder"
-                         style="background:{p.get('grad', '#f3f4f6')};
-                                color:#056839; font-weight:bold;">
-                        {p.get('txt', '')}
-                    </div>
-                </div>
-                """
-                st.markdown(post_html, unsafe_allow_html=True)
-
-            else:
-                head_html = f"""
-                <div class="post-card">
-                    <div class="post-header">
-                        <div class="post-avatar">
-                            {p['user'][:2].upper()}
-                        </div>
-                        <div class="post-username">{p['user']}</div>
-                    </div>
-                </div>
-                """
-                st.markdown(head_html, unsafe_allow_html=True)
-
-                if ptype == "youtube":
-                    yt = (
-                        '<iframe width="100%" height="230" '
-                        'src="https://www.youtube.com/embed/'
-                        + p["ref"] + '" title="HMF video" '
-                        'frameborder="0" allow="accelerometer; '
-                        'autoplay; clipboard-write; encrypted-media; '
-                        'gyroscope; picture-in-picture" '
-                        'allowfullscreen></iframe>'
-                    )
-                    components.html(yt, height=245)
-
-                elif ptype == "image":
-                    if os.path.exists(p["ref"]):
-                        st.image(p["ref"], use_container_width=True)
-
-                elif ptype == "video":
-                    st.video(p["ref"])
-
-            liked = SS.username in p.get("likes", {})
-
-            a1, a2, a3, a4 = st.columns(4)
-
-            like_icon = "❤️" if liked else "🤍"
-            if a1.button(
-                like_icon,
-                key="lk_" + p["id"],
-                use_container_width=True,
-            ):
-                db = load_db()
-                for post in db["posts"]:
-                    if post["id"] == p["id"]:
-                        lk = post.setdefault("likes", {})
-                        if SS.username in lk:
-                            del lk[SS.username]
-                        else:
-                            lk[SS.username] = True
-                        break
-                save_db(db)
-                safe_rerun()
-
-            if a2.button("💬", key="cm_" + p["id"],
-                         use_container_width=True):
-                st.info("Type your comment in the box below.")
-
-            if a3.button("✈️", key="sh_" + p["id"],
-                         use_container_width=True):
-                st.info("Post link copied!")
-
-            if a4.button("🚫", key="bl_" + p["id"],
-                         use_container_width=True):
-                db = load_db()
-                u = db["users"].get(SS.username, {})
-                bl = u.setdefault("blocked", [])
-                if p["user"] not in bl:
-                    bl.append(p["user"])
-                save_db(db)
-                SS.blocked = list(bl)
-                SS.block_msg = (
-                    "@" + p["user"] + " has been blocked."
-                )
-                safe_rerun()
-
-            n = len(p.get("likes", {}))
-
-            likes_html = (
-                "<p class='likes-txt'>" + str(n) + " likes</p>"
-                "<p class='post-details'><b>" + p["user"] +
-                "</b> " + esc(p.get("cap", "")) + "</p>"
-            )
-            st.markdown(likes_html, unsafe_allow_html=True)
-
-            cmt = st.text_input(
-                "comment",
-                key="cmt_" + p["id"],
-                placeholder="Add a comment...",
-                label_visibility="collapsed",
-            )
-
-            if st.button("Post Comment", key="pc_" + p["id"]):
-                if cmt.strip():
-                    if SS.comment_filter and not comment_is_clean(cmt):
-                        st.warning("Comment blocked by security filter!")
-                    else:
-                        db = load_db()
-                        for post in db["posts"]:
-                            if post["id"] == p["id"]:
-                                post.setdefault("comments", []).append(
-                                    {"user": SS.username, "text": cmt}
-                                )
-                                break
-                        save_db(db)
-                        SS.clear_cmt = "cmt_" + p["id"]
-                        safe_rerun()
-                else:
-                    st.warning("Comment cannot be empty!")
-
-            for c in p.get("comments", []):
-                cmt_html = (
-                    "<p class='post-details' style='color:#6b7280;'>"
-                    "<b>" + esc(c["user"]) + "</b> " +
-                    esc(c["text"]) + "</p>"
-                )
-                st.markdown(cmt_html, unsafe_allow_html=True)
-
-    # ================= TAB: REELS =================
-    elif SS.current_tab == "Reels":
-
-        st.markdown(
-            '<div class="panel-header">🎬 Reels</div>',
-            unsafe_allow_html=True,
-        )
-
-        reels = []
-        for p in DB["posts"]:
-            if p.get("type") in ("reel", "video"):
-                if p["user"] in SS.blocked:
-                    continue
-                reels.append(p)
-
-        reels = list(reversed(reels))
-
-        if not reels:
-            st.info("No reels yet. Upload a video from Create tab!")
-
-        for r in reels:
-
-            head_html = f"""
-            <div class="post-card">
-                <div class="post-header">
-                    <div class="post-avatar">
-                        {r['user'][:2].upper()}
-                    </div>
-                    <div class="post-username">{r['user']}</div>
-                </div>
-            </div>
-            """
-            st.markdown(head_html, unsafe_allow_html=True)
-
-            st.video(r["ref"])
-
-            liked = SS.username in r.get("likes", {})
-
-            ra1, ra2 = st.columns(2)
-
-            if ra1.button(
-                "❤️" if liked else "🤍",
-                key="rl_" + r["id"],
-                use_container_width=True,
-            ):
-                db = load_db()
-                for post in db["posts"]:
-                    if post["id"] == r["id"]:
-                        lk = post.setdefault("likes", {})
-                        if SS.username in lk:
-                            del lk[SS.username]
-                        else:
-                            lk[SS.username] = True
-                        break
-                save_db(db)
-                safe_rerun()
-
-            if ra2.button("✈️ Share", key="rsh_" + r["id"],
-                          use_container_width=True):
-                st.info("Reel link copied!")
-
-            n = len(r.get("likes", {}))
-            cap_html = (
-                "<p class='likes-txt'>" + str(n) + " likes</p>"
-                "<p class='post-details'><b>" + r["user"] +
-                "</b> " + esc(r.get("cap", "")) + "</p>"
-            )
-            st.markdown(cap_html, unsafe_allow_html=True)
-
-    # ================= TAB: CREATE (UPLOAD) =================
-    elif SS.current_tab == "Create":
-
-        st.markdown(
-            '<div class="panel-header">➕ Create Post</div>',
-            unsafe_allow_html=True,
-        )
-
-        kind = st.radio(
-            "What do you want to post?",
-            ["Photo", "Video"],
-            horizontal=True,
-            key="create_kind",
-        )
-
-        if kind == "Photo":
-            f = st.file_uploader(
-                "Choose a photo",
-                type=["png", "jpg", "jpeg", "webp"],
-                key="up_photo",
-            )
-        else:
-            f = st.file_uploader(
-                "Choose a video (will also appear in Reels)",
-                type=["mp4", "mov", "webm"],
-                key="up_video",
-            )
-
-        cap = st.text_input(
-            "Caption",
-            key="up_cap",
-            placeholder="Write a caption...",
-        )
-
-        if st.button("🚀 Publish Post", key="up_publish",
-                     use_container_width=True):
-            if f is None:
-                st.warning("Please choose a file first!")
-            else:
-                try:
-                    os.makedirs(UPLOAD_DIR, exist_ok=True)
-                    ext = f.name.split(".")[-1].lower()
-                    if ext not in (
-                        "png", "jpg", "jpeg", "webp",
-                        "mp4", "mov", "webm",
-                    ):
-                        ext = "bin"
-                    fname = uuid.uuid4().hex + "." + ext
-                    path = os.path.join(UPLOAD_DIR, fname)
-                    with open(path, "wb") as out:
-                        out.write(f.getbuffer())
-
-                    db = load_db()
-                    ptype = "image" if kind == "Photo" else "video"
-                    db["posts"].insert(0, {
-                        "id": uuid.uuid4().hex[:8],
-                        "user": SS.username,
-                        "type": ptype,
-                        "ref": path,
-                        "cap": cap,
-                        "likes": {},
-                        "comments": [],
-                    })
-                    save_db(db)
-                    st.success("Posted successfully!")
-                    SS.current_tab = "Home"
-                    safe_rerun()
-                except Exception as e:
-                    st.error("Upload failed: " + str(e))
-
-        st.caption(
-            "Note: On free Streamlit Cloud, uploaded files may reset "
-            "when the app restarts."
-        )
-
-    # ================= TAB: MESSAGES =================
-    elif SS.current_tab == "Messages":
-
-        if HAS_REFRESH:
-            st_autorefresh(interval=4000, key="msg_ref")
-
-        st.markdown(
-            '<div class="panel-header">✉️ Messages</div>',
-            unsafe_allow_html=True,
-        )
-
-        db = load_db()
-
-        others = []
-        for u in db["users"]:
-            if u != SS.username and u not in SS.blocked:
-                others.append(u)
-
-        if not others:
-            st.info("No other members to chat with yet.")
-        else:
-
-            partner = st.selectbox(
-                "Chat with:",
-                others,
-                key="chat_sel",
-            )
-
-            me = SS.username
-
-            convo = []
-            for m in db["messages"]:
-                cond1 = m["from"] == me and m["to"] == partner
-                cond2 = m["from"] == partner and m["to"] == me
-                if cond1 or cond2:
-                    convo.append(m)
-
-            convo.sort(key=lambda x: x["time"])
-
-            if SS.clear_msg:
-                SS[SS.clear_msg] = ""
-                SS.clear_msg = ""
-
-            chat_html = ""
-            for m in convo:
-                tstr = time.strftime("%H:%M", time.localtime(m["time"]))
-                if m["from"] == me:
-                    chat_html += (
-                        "<span class='chat-me'>" + esc(m["text"]) +
-                        "<span class='chat-time'>" + tstr +
-                        "</span></span>"
-                    )
-                else:
-                    chat_html += (
-                        "<span class='chat-them'>" + esc(m["text"]) +
-                        "<span class='chat-time'>" + tstr +
-                        "</span></span>"
-                    )
-
-            if chat_html:
-                st.markdown(chat_html, unsafe_allow_html=True)
-            else:
-                st.caption("No messages yet - say hello!")
-
-            txt = st.text_input(
-                "Message",
-                key="msg_input",
-                placeholder="Type a message...",
-            )
-
-            if st.button("➡️ Send", key="msg_send",
-                         use_container_width=True):
-                if txt.strip():
-                    db = load_db()
-                    db["messages"].append({
-                        "from": me,
-                        "to": partner,
-                        "text": txt.strip(),
-                        "time": time.time(),
-                    })
-                    save_db(db)
-                    SS.clear_msg = "msg_input"
-                    safe_rerun()
-                else:
-                    st.warning("Message cannot be empty!")
-
-            st.caption("🔄 Chats auto-refresh every few seconds.")
-
-    # ================= TAB: LUDO =================
-    elif SS.current_tab == "Ludo":
-
-        st.markdown(
-            '<div class="panel-header">🎲 HMF Ludo Club</div>',
-            unsafe_allow_html=True,
-        )
-        st.markdown(
-            '<div class="post-image-placeholder" '
-            'style="height:200px; font-size:34px;">🎲 LUDO</div>',
-            unsafe_allow_html=True,
-        )
-
-        if st.button("🏆 Create Private Room Code",
-                     use_container_width=True):
-            letters = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
-            SS.room_code = "".join(random.choices(letters, k=6))
-            safe_rerun()
-
-        if SS.room_code:
-            st.success(
-                "Room Code: **" + SS.room_code +
-                "** - share this with your friends!"
-            )
-
-        if st.button("🎲 Roll Dice", use_container_width=True):
-            SS.dice = random.randint(1, 6)
-            if SS.dice == 6:
-                db = load_db()
-                u = db["users"].get(SS.username)
-                if u is not None:
-                    u["coins"] = u.get("coins", 0) + 5
-                    save_db(db)
-                SS.tx_history.insert(0, {
-                    "type": "Ludo Dice Bonus",
-                    "amount": "+5 coins",
-                    "time": "Just now",
-                })
-            safe_rerun()
-
-        if SS.dice:
-            extra = ""
-            if SS.dice == 6:
-                extra = " - Six! +5 coins earned"
-            dice_txt = (
-                "<h3 style='text-align:center; color:#00B074;'>"
-                "🎯 You rolled " + str(SS.dice) + extra + "</h3>"
-            )
-            st.markdown(dice_txt, unsafe_allow_html=True)
-
-        if st.button("🏠 Back to Home", key="ludo_back",
-                     use_container_width=True):
-            SS.current_tab = "Home"
-            safe_rerun()
-
-    # ================= TAB: PROFILE =================
-    elif SS.current_tab == "Profile":
-
-        st.markdown(
-            '<div class="panel-header">👤 Profile</div>',
-            unsafe_allow_html=True,
-        )
-
-        db = load_db()
-        me_db = db["users"].get(SS.username, {})
-        dname = me_db.get("display_name", SS.username)
-        mybio = me_db.get("bio", "")
-        mycoins = me_db.get("coins", 0)
-        myfollowers = me_db.get("followers", 0)
-
-        my_posts = []
-        for p in db["posts"]:
-            if p["user"] == SS.username:
-                my_posts.append(p)
-
-        initial = SS.username[:1].upper()
-
-        profile_html = f"""
-        <div style="text-align:center; margin:10px 0;">
-            <div style="width:86px;height:86px;border-radius:50%;
-                 background:linear-gradient(135deg,#00B074,#056839);
-                 color:#fff;font-size:34px;font-weight:800;
-                 display:flex;align-items:center;
-                 justify-content:center;margin:0 auto;">
-                 {initial}
-            </div>
-            <h3 style="margin:10px 0 2px;">{esc(dname)}</h3>
-            <p style="color:#6b7280; font-size:13px; margin:0;">
-                {esc(mybio)}</p>
-            <p style="color:#6b7280; font-size:12px; margin:8px 0 0;">
-                {len(my_posts)} Posts • {myfollowers} Followers
-            </p>
-        </div>
-        """
-        st.markdown(profile_html, unsafe_allow_html=True)
-
-        st.success("💰 Wallet Balance: **" + str(mycoins) + " Coins**")
-
-        if st.button("💳 Request Withdrawal", key="prof_wd",
-                     use_container_width=True):
-            db = load_db()
-            u = db["users"].get(SS.username)
-            if u is not None and u.get("coins", 0) >= 100:
-                u["coins"] = u["coins"] - 100
-                save_db(db)
-                SS.tx_history.insert(0, {
-                    "type": "Withdrawal Payout",
-                    "amount": "-100 coins",
-                    "time": "Just now",
-                })
-                SS.withdraw_msg = (
-                    "Withdrawal request submitted! "
-                    "Processing in 3-5 business days."
-                )
-            else:
-                SS.withdraw_msg = (
-                    "Minimum 100 coins required for withdrawal!"
-                )
-            safe_rerun()
-
-        if SS.withdraw_msg:
-            st.info(SS.withdraw_msg)
-            SS.withdraw_msg = ""
-
-        pr1, pr2 = st.columns(2)
-        if pr1.button("⚙️ Open Settings", use_container_width=True):
-            SS.current_tab = "Settings"
-            SS.settings_page = "menu"
-            safe_rerun()
-        if pr2.button("🚪 Logout", use_container_width=True):
-            SS.logged_in = False
-            SS.page = "auth"
-            SS.current_tab = "Home"
-            safe_rerun()
-
-    # ================= TAB: SETTINGS =================
-    elif SS.current_tab == "Settings":
-
-        if SS.settings_page == "menu":
-
-            st.markdown(
-                '<div class="panel-header">⚙️ Settings & Privacy</div>',
-                unsafe_allow_html=True,
-            )
-            st.caption("@" + SS.username + " - HMF book")
-
-            if st.button("🔐 Security Center   ›", key="m_security",
-                         use_container_width=True):
-                SS.settings_page = "security"
-                safe_rerun()
-            if st.button("📋 Personal Info   ›", key="m_personal",
-                         use_container_width=True):
-                SS.settings_page = "personal"
-                safe_rerun()
-            if st.button("💰 Payments & Wallet   ›", key="m_payments",
-                         use_container_width=True):
-                SS.settings_page = "payments"
-                safe_rerun()
-            if st.button("📰 News Feed   ›", key="m_feed",
-                         use_container_width=True):
-                SS.settings_page = "feed"
-                safe_rerun()
-            if st.button("🔔 Notifications   ›", key="m_notif",
-                         use_container_width=True):
-                SS.settings_page = "notifications"
-                safe_rerun()
-            if st.button("🌐 Language & Region   ›", key="m_lang",
-                         use_container_width=True):
-                SS.settings_page = "language"
-                safe_rerun()
-            if st.button("🛡️ Privacy Checkup   ›", key="m_privacy",
-                         use_container_width=True):
-                SS.settings_page = "privacy"
-                safe_rerun()
-            if st.button("👥 Privacy Settings   ›", key="m_friends",
-                         use_container_width=True):
-                SS.settings_page = "friends"
-                safe_rerun()
-            if st.button("🚫 Blocked Members   ›", key="m_blocked",
-                         use_container_width=True):
-                SS.settings_page = "blocked"
-                safe_rerun()
-            if st.button("⚠️ Report a Member   ›", key="m_reports",
-                         use_container_width=True):
-                SS.settings_page = "reports"
-                safe_rerun()
-            if st.button("❓ Help Center   ›", key="m_help",
-                         use_container_width=True):
-                SS.settings_page = "help"
-                safe_rerun()
-            if st.button("ℹ️ About   ›", key="m_about",
-                         use_container_width=True):
-                SS.settings_page = "about"
-                safe_rerun()
-
-            st.markdown(
-                "<div style='height:12px;'></div>",
-                unsafe_allow_html=True,
-            )
-            if st.button("🚪 Logout", key="m_logout",
-                         use_container_width=True):
-                SS.logged_in = False
-                SS.page = "auth"
-                SS.current_tab = "Home"
-                safe_rerun()
-
-        elif SS.settings_page == "security":
-
-            settings_back("bk_security")
-            st.markdown(
-                '<div class="panel-header">🔐 Security Center</div>',
-                unsafe_allow_html=True,
-            )
-
-            score, tips = security_score()
-            st.progress(score / 100.0)
-            if score >= 80:
-                st.success("Security Score: " + str(score) + "/100 - Excellent!")
-            elif score >= 50:
-                st.warning("Security Score: " + str(score) + "/100 - Good.")
-            else:
-                st.error("Security Score: " + str(score) + "/100 - Weak!")
-
-            if tips:
-                st.markdown("💡 **Improve your security:**")
-                for t in tips:
-                    st.markdown("• " + t)
-
-            st.markdown(
-                "<p class='set-label'>🔢 App Lock (PIN)</p>",
-                unsafe_allow_html=True,
-            )
-            if not SS.app_lock:
-                pin_set = st.text_input(
-                    "Choose a 4-digit PIN",
-                    type="password",
-                    key="pin_set",
-                    max_chars=4,
-                )
-                if st.button("🔒 Enable App Lock", key="pin_enable",
-                             use_container_width=True):
-                    if len(pin_set) == 4 and pin_set.isdigit():
-                        SS.app_pin = pin_set
-                        SS.app_lock = True
-                        add_security_event("App Lock enabled")
-                        st.success("App Lock enabled!")
-                    else:
-                        st.warning("PIN must be exactly 4 digits!")
-            else:
-                st.success("App Lock is ON")
-                lc1, lc2 = st.columns(2)
-                if lc1.button("🔒 Lock Now", key="lock_now",
-                              use_container_width=True):
-                    SS.pin_unlocked = False
-                    SS.pin_attempts = 0
-                    safe_rerun()
-                if lc2.button("❌ Disable", key="pin_disable",
-                              use_container_width=True):
-                    SS.app_lock = False
-                    SS.app_pin = ""
-                    SS.pin_unlocked = True
-                    safe_rerun()
-
-            st.markdown(
-                "<p class='set-label'>🔑 Two-Factor Auth</p>",
-                unsafe_allow_html=True,
-            )
-            tf = st.checkbox("Enable 2FA", value=SS.two_factor,
-                             key="tf_chk2")
-            if tf != SS.two_factor:
-                SS.two_factor = tf
-                if tf:
-                    SS.two_fa_code = str(random.randint(100000, 999999))
-                    st.success("2FA enabled! Backup code: " +
-                               SS.two_fa_code)
-                safe_rerun()
-
-            SS.login_alerts = st.checkbox(
-                "📩 Login Alerts",
-                value=SS.login_alerts,
-                key="la_chk2",
-            )
-
-            st.markdown(
-                "<p class='set-label'>⏱️ Auto Logout</p>",
-                unsafe_allow_html=True,
-            )
-            timeout_opts = [0, 5, 10, 30]
-            timeout_labels = ["Off", "5 minutes", "10 minutes",
-                              "30 minutes"]
-            cur = 0
-            if SS.auto_logout in timeout_opts:
-                cur = timeout_opts.index(SS.auto_logout)
-            sel = st.selectbox("Log out after:", timeout_labels,
-                               index=cur, key="timeout_sel")
-            SS.auto_logout = timeout_opts[timeout_labels.index(sel)]
-
-            st.markdown(
-                "<p class='set-label'>⚠️ Security Log</p>",
-                unsafe_allow_html=True,
-            )
-            if SS.security_log:
-                for ev in SS.security_log:
-                    st.markdown("• " + ev["event"])
-            else:
-                st.caption("No security events yet.")
-
-        elif SS.settings_page == "personal":
-
-            settings_back("bk_personal")
-            st.markdown(
-                '<div class="panel-header">📋 Personal Info</div>',
-                unsafe_allow_html=True,
-            )
-
-            db = load_db()
-            me_db = db["users"].get(SS.username, {})
-
-            st.text_input("Username", value=SS.username,
-                          disabled=True, key="pi_user")
-            st.text_input("Email",
-                          value=me_db.get("email", ""),
-                          key="pi_email")
-            dn = st.text_input("Display Name",
-                               value=me_db.get("display_name", ""),
-                               key="st_dn")
-            bio = st.text_input("Bio",
-                                value=me_db.get("bio", ""),
-                                key="st_bio")
-
-            if st.button("💾 Save Changes", key="st_save",
-                         use_container_width=True):
-                db = load_db()
-                u = db["users"].get(SS.username)
-                if u is not None:
-                    u["display_name"] = dn
-                    u["bio"] = bio
-                    u["email"] = me_db.get("email", "")
-                    save_db(db)
-                st.success("Profile saved successfully!")
-
-        elif SS.settings_page == "payments":
-
-            settings_back("bk_payments")
-            st.markdown(
-                '<div class="panel-header">💰 Payments & Wallet</div>',
-                unsafe_allow_html=True,
-            )
-
-            db = load_db()
-            me_db = db["users"].get(SS.username, {})
-            st.success("Balance: **" + str(me_db.get("coins", 0)) +
-                       " Coins**")
-
-            if st.button("💳 Request Payout", key="pay_wd",
-                         use_container_width=True):
-                db = load_db()
-                u = db["users"].get(SS.username)
-                if u is not None and u.get("coins", 0) >= 100:
-                    u["coins"] = u["coins"] - 100
-                    save_db(db)
-                    SS.tx_history.insert(0, {
-                        "type": "Withdrawal Payout",
-                        "amount": "-100 coins",
-                        "time": "Just now",
-                    })
-                    SS.withdraw_msg = "Payout request submitted!"
-                else:
-                    SS.withdraw_msg = "Minimum 100 coins required!"
-                safe_rerun()
-
-            if SS.withdraw_msg:
-                st.info(SS.withdraw_msg)
-                SS.withdraw_msg = ""
-
-            st.markdown("📜 **Transaction History**")
-            if SS.tx_history:
-                for t in SS.tx_history:
-                    st.markdown("• " + t["type"] + " (" + t["amount"] + ")")
-            else:
-                st.caption("No transactions yet.")
-
-        elif SS.settings_page == "feed":
-
-            settings_back("bk_feed")
-            st.markdown(
-                '<div class="panel-header">📰 News Feed</div>',
-                unsafe_allow_html=True,
-            )
-            SS.feed_sort = st.radio(
-                "Sort feed by:",
-                ["Most Recent", "Top Posts"],
-                index=0 if SS.feed_sort == "Most Recent" else 1,
-                key="feed_sort_radio",
-            )
-            SS.show_stories = st.checkbox(
-                "Show Stories row",
-                value=SS.show_stories,
-                key="stories_chk",
-            )
-            SS.comment_filter = st.checkbox(
-                "🛡️ Comment Filter",
-                value=SS.comment_filter,
-                key="cfilter_chk",
-            )
-
-        elif SS.settings_page == "notifications":
-
-            settings_back("bk_notif")
-            st.markdown(
-                '<div class="panel-header">🔔 Notifications</div>',
-                unsafe_allow_html=True,
-            )
-            SS.notif["likes"] = st.checkbox("❤️ Likes",
-                                            value=SS.notif["likes"],
-                                            key="ntf_l")
-            SS.notif["comments"] = st.checkbox("💬 Comments",
-                                               value=SS.notif["comments"],
-                                               key="ntf_c")
-            SS.notif["follows"] = st.checkbox("👥 New Followers",
-                                              value=SS.notif["follows"],
-                                              key="ntf_f")
-            SS.notif["messages"] = st.checkbox("✉️ Messages",
-                                               value=SS.notif["messages"],
-                                               key="ntf_m")
-
-        elif SS.settings_page == "language":
-
-            settings_back("bk_lang")
-            st.markdown(
-                '<div class="panel-header">🌐 Language & Region</div>',
-                unsafe_allow_html=True,
-            )
-            lang = st.radio("App Language:", ["English", "Urdu"],
-                            index=0 if SS.language == "English" else 1,
-                            key="lang_radio")
-            SS.language = lang
-            regions = ["Worldwide", "Pakistan", "United Arab Emirates",
-                       "United Kingdom", "United States", "Saudi Arabia"]
-            if SS.region in regions:
-                r_index = regions.index(SS.region)
-            else:
-                r_index = 0
-            SS.region = st.selectbox("Region:", regions,
-                                     index=r_index, key="region_sel")
-
-        elif SS.settings_page == "privacy":
-
-            settings_back("bk_privacy")
-            st.markdown(
-                '<div class="panel-header">🛡️ Privacy Checkup</div>',
-                unsafe_allow_html=True,
-            )
-            st.progress(min(SS.privacy_step / 4, 1.0))
-
-            if SS.privacy_step == 0:
-                st.markdown("Review your key privacy settings.")
-                if st.button("🚀 Get Started", key="pc_start",
-                             use_container_width=True):
-                    SS.privacy_step = 1
-                    safe_rerun()
-            elif SS.privacy_step == 1:
-                options = ["Public", "Friends", "Only Me"]
-                SS.post_visibility = st.radio(
-                    "Who can see your posts:",
-                    options,
-                    index=options.index(SS.post_visibility),
-                    key="vis_radio",
-                )
-                if st.button("Next →", key="pc_next1",
-                             use_container_width=True):
-                    SS.privacy_step = 2
-                    safe_rerun()
-            elif SS.privacy_step == 2:
-                if SS.blocked:
-                    for u in SS.blocked:
-                        st.markdown("🚫 **@" + u + "**")
-                else:
-                    st.caption("No one is blocked. Great job!")
-                if st.button("Next →", key="pc_next2",
-                             use_container_width=True):
-                    SS.privacy_step = 3
-                    safe_rerun()
-            elif SS.privacy_step == 3:
-                SS.searchable = st.checkbox("Allow profile search",
-                                            value=SS.searchable,
-                                            key="search_chk")
-                SS.hide_last_seen = st.checkbox("Hide last seen",
-                                                value=SS.hide_last_seen,
-                                                key="hide_seen_chk")
-                if st.button("Finish ✓", key="pc_finish",
-                             use_container_width=True):
-                    SS.privacy_step = 4
-                    safe_rerun()
-            else:
-                st.success("Privacy Checkup complete!")
-                if st.button("Done", key="pc_done",
-                             use_container_width=True):
-                    SS.settings_page = "menu"
-                    SS.privacy_step = 0
-                    safe_rerun()
-
-        elif SS.settings_page == "friends":
-
-            settings_back("bk_friends")
-            st.markdown(
-                '<div class="panel-header">👥 Privacy Settings</div>',
-                unsafe_allow_html=True,
-            )
-            SS.private_account = st.checkbox(
-                "🔒 Private Account",
-                value=SS.private_account,
-                key="priv_chk2",
-            )
-            SS.profile_lock = st.checkbox(
-                "🔒 Profile Lock",
-                value=SS.profile_lock,
-                key="plock_chk",
-            )
-            SS.activity_status = st.checkbox(
-                "🟢 Show online status",
-                value=SS.activity_status,
-                key="act_chk3",
-            )
-            fr_opts = ["Everyone", "Friends of friends", "No one"]
-            if SS.friend_requests in fr_opts:
-                fi = fr_opts.index(SS.friend_requests)
-            else:
-                fi = 0
-            SS.friend_requests = st.radio(
-                "Who can send friend requests:",
-                fr_opts,
-                index=fi,
-                key="fr_radio",
-            )
-
-        elif SS.settings_page == "blocked":
-
-            settings_back("bk_blocked")
-            st.markdown(
-                '<div class="panel-header">🚫 Blocked Members</div>',
-                unsafe_allow_html=True,
-            )
-
-            if SS.block_msg:
-                st.success(SS.block_msg)
-                SS.block_msg = ""
-
-            db = load_db()
-            chips = ""
-            for m in db["users"]:
-                if m != SS.username:
-                    chips += "<span class='member-chip'>👤 @" + m + "</span>"
-            st.markdown(chips, unsafe_allow_html=True)
-
-            block_input = st.text_input(
-                "Username to block",
-                key="block_input",
-                placeholder="e.g. farrukh_m",
-            )
-
-            if st.button("🚫 Block This Member", key="block_btn",
-                         use_container_width=True):
-                u = block_input.strip().lower()
-                if not u:
-                    st.warning("Please enter an ID first!")
-                elif u == SS.username:
-                    st.warning("You cannot block yourself!")
-                elif u in SS.blocked:
-                    st.warning("Already blocked!")
-                else:
-                    db = load_db()
-                    rec = db["users"].get(SS.username)
-                    if rec is not None:
-                        rec.setdefault("blocked", []).append(u)
-                        save_db(db)
-                    SS.blocked.append(u)
-                    SS.block_msg = "@" + u + " has been blocked."
-                    safe_rerun()
-
-            if SS.blocked:
-                for i, u in enumerate(SS.blocked):
-                    bc1, bc2 = st.columns([0.65, 0.35])
-                    bc1.markdown("**🚫 @" + u + "**")
-                    if bc2.button("✅ Unblock", key="ub_" + str(i),
-                                  use_container_width=True):
-                        db = load_db()
-                        rec = db["users"].get(SS.username)
-                        if rec is not None and u in rec.get("blocked", []):
-                            rec["blocked"].remove(u)
-                            save_db(db)
-                        SS.blocked.remove(u)
-                        SS.block_msg = "@" + u + " unblocked."
-                        safe_rerun()
-            else:
-                st.caption("No members blocked yet.")
-
-        elif SS.settings_page == "reports":
-
-            settings_back("bk_reports")
-            st.markdown(
-                '<div class="panel-header">⚠️ Report a Member</div>',
-                unsafe_allow_html=True,
-            )
-            if SS.report_msg:
-                st.success(SS.report_msg)
-                SS.report_msg = ""
-
-            rep_id = st.text_input("Member ID", key="rep_id",
-                                   placeholder="e.g. bilal_plays")
-            reasons = [
-                "Harassment / Bullying",
-                "Abusive Language",
-                "Spam or Fake Posts",
-                "Fake Account",
-                "Scam / Fraud",
-                "Other",
-            ]
-            reason = st.selectbox("Reason", reasons, key="rep_reason")
-            rep_detail = st.text_area("Details (optional)",
-                                      key="rep_detail", height=80)
-
-            if st.button("🚩 Submit Report", key="rep_btn",
-                         use_container_width=True):
-                r = rep_id.strip().lower()
-                if r:
-                    SS.reports.append({
-                        "user": r,
-                        "reason": reason,
-                        "detail": rep_detail,
-                    })
-                    SS.report_msg = "Report submitted - reviewed in 24h."
-                    safe_rerun()
-                else:
-                    st.warning("Please enter a member ID!")
-
-        elif SS.settings_page == "help":
-
-            settings_back("bk_help")
-            st.markdown(
-                '<div class="panel-header">❓ Help Center</div>',
-                unsafe_allow_html=True,
-            )
-            st.markdown(
-                "• **Earn coins** - play Ludo and roll a six\n"
-                "• **Messages** - open Messages tab and chat live\n"
-                "• **Upload posts** - Create tab, photo or video\n"
-                "• **Someone bothering you?** - Settings, Blocked Members"
-            )
-
-            bug = st.text_area("Describe your issue:",
-                               key="bug_txt", height=80)
-            if st.button("✉️ Send to Support", key="sup_btn",
-                         use_container_width=True):
-                if bug.strip():
-                    SS.help_msg = "Message sent to support team!"
-                else:
-                    SS.help_msg = "Please describe your issue first."
-                safe_rerun()
-            if SS.help_msg:
-                st.info(SS.help_msg)
-                SS.help_msg = ""
-
-        elif SS.settings_page == "about":
-
-            settings_back("bk_about")
-            st.markdown(
-                '<div class="panel-header">ℹ️ About</div>',
-                unsafe_allow_html=True,
-            )
-            st.markdown(
-                "**HMF book** v3.0.0\n\n"
-                "Social feed • Reels • Live Messages • "
-                "Uploads • Games • Coins\n\n"
-                "© 2025 HMF - All rights reserved."
-            )
-
-    # ---------- BOTTOM NAV ----------
-    st.markdown(
-        "<hr style='border:none; border-top:1px solid #e5e7eb; "
-        "margin:25px 0 10px;'>",
-        unsafe_allow_html=True,
-    )
-
-    n1, n2, n3, n4, n5, n6 = st.columns(6)
-
-    if n1.button("🏠", key="nav_home", use_container_width=True):
-        SS.current_tab = "Home"
-        safe_rerun()
-    if n2.button("🎬", key="nav_reels", use_container_width=True):
-        SS.current_tab = "Reels"
-        safe_rerun()
-    if n3.button("➕", key="nav_create", use_container_width=True):
-        SS.current_tab = "Create"
-        safe_rerun()
-    if n4.button("✉️", key="nav_msg", use_container_width=True):
-        SS.current_tab = "Messages"
-        safe_rerun()
-    if n5.button("👤", key="nav_profile", use_container_width=True):
-        SS.current_tab = "Profile"
-        safe_rerun()
-    if n6.button("⚙️", key="nav_settings", use_container_width=True):
-        SS.current_tab = "Settings"
-        SS.settings_page = "menu"
-        safe_rerun()
-
-
-# ---------- SAFETY ----------
-else:
-    SS.page = "splash"
-    safe_rerun()
-    
+/* ================= story viewer ================= */
+const sv={open:false,ui:0,ii:0,prog:0,hold:false,last:0};
+function openStory(i){sv.open=true;sv.ui=i;sv.ii=0;
+ $('#sv').classList.add('on');svBuildSegs();svShow();
+ sv.last=performance.now();requestAnimationFrame(svTick)}
+function svBuildSegs(){const s=stories[sv.ui];
+ $('#sv-segs').innerHTML=s.items.map(()=>'<i><b></b></i>').join('');
+ $('#sv-av').innerHTML=avImg(s.u);
+ $('#sv-name').textContent=s.u==='you'?'Your story':U[s.u].h}
+function svShow(){const s=stories[sv.ui],it=s.items[sv.ii];sv.prog=0;
+ const img=$('#sv-img');img.classList.remove('kb');img.src=it.img;void img.offsetWidth;img.classList.add('kb');
+ $('#sv-time').textContent=it.t;svPaint();
+ const nx=s.items[sv.ii+1]||stories[sv.ui+1]&&stories[sv.ui+1].items[0];
+ if(nx){const p=new Image();p.src=nx.img}}
+function svPaint(){$$('#sv-segs b').forEach((b,i)=>{b.style.width=i<sv.ii?'100%':i===sv.ii?(sv.prog*100)+'%':'0%'})}
+function svTick(ts){if(!sv.open)return;const dt=ts-sv.last;sv.last=ts;
+ if(!sv.hold){sv.prog+=dt/5200;if(sv.prog>=1)svNext()}
+ svPaint();requestAnimationFrame(svTick)}
+function svNext(){const s=stories[sv.ui];
+ if(sv.ii<s.items.length-1){sv.ii++;svShow()}
+ else{stories[sv.ui].seen=true;
+  if(sv.ui<stories.length-1){sv.ui++;sv.ii=0;svBuildSegs();svShow()}
+  else closeStory()}}
+function svPrev(){if(sv.ii>0){sv.ii--;svShow()}
+ else if(sv.ui>0){stories[sv.ui].seen=true;sv.ui--;sv.ii=0;svBuildSegs();svShow()}
+ else sv.prog=0}
+function closeStory(){sv.open=false;$('#sv').classList.remove('on');renderStories();renderPfAv()}
+let svPT=0;
+function svZone(e){sv.hold=true;svPT=Date.now()}
+function svZoneUp(e,zone){sv.hold=false;
+ if(Date.now()-svPT<260){
+  const rect=$('.phone').getBoundingClientRect();
+  const frac=(e.clientX-rect.left)/rect.width;
+  frac<.38?svPrev():svNext();
+ }
+}
+['sv-prev','sv-next'].forEach(id=>{const z=document.getElementById(id);
+ z.addEventListener('pointerdown',svZone);
+ z.addEventListener('pointerup',e=>svZoneUp(e));
+ z.addEventListener('pointerleave',()=>{sv.hold=false})});
+ $('#sv-x').addEventListener('click',closeStory);
+ $('#sv-like').addEventListener('click',()=>{$('#sv-like').classList.toggle('on')});
+ $('#sv-share').addEventListener('click',()=>{const s=stories[sv.ui];
+ openShare({img:s.items[sv.ii].img,text:'Story share ki'})});
+ $('#sv-inp').addEventListener('keydown',e=>{if(e.key!=='Enter')return;
+ const v=e.target.value.trim();if(!v)return;
+ const uid=stories[sv.ui].u;
+ if(uid==='you'){toast('Ye aapki apni story hai');e.target.value='';return}
+ pushTo(uid,{t:v});toast('Reply bhej diya');e.target.value=''});
+
+/* ================= init ================= */
+ $('#cm-av').src=U.you.av;
+renderStories();renderFeed();buildExplore();renderNotes();renderChatList();renderAct();
+renderPfAv();renderHls();renderPfGrid('posts');buildCrGrid();updateBadges();
+</script>
+</body>
+</html>
