@@ -50,6 +50,15 @@ def do_rerun():
             pass
 
 
+# ================== LOGIN (session state) ==================
+if "user_name" not in st.session_state:
+    st.session_state["user_name"] = ""
+
+
+def is_logged_in():
+    return st.session_state.get("user_name", "") != ""
+
+
 # ================== CHAT STORAGE ==================
 CHAT_FILE = "chats.json"
 
@@ -75,7 +84,6 @@ def save_chats(chats):
 
 
 page = get_param("page", "home")
-user_name = get_param("name", "")
 
 
 # ================== AUTO REFRESH (har 5 second) ==================
@@ -86,19 +94,47 @@ except Exception:
     pass
 
 
-# ================== CSS ==================
+# ================== CSS (GREEN THEME + MENU BAR) ==================
 st.markdown(
     """
     <style>
-        .stApp { padding-bottom: 90px; }
+        .stApp { padding-bottom: 90px; background: #ffffff; }
 
-        /* Main content ko mobile jaisa patla rakhta hai */
         .block-container {
             max-width: 500px;
             padding-left: 1rem;
             padding-right: 1rem;
         }
 
+        /* Green title */
+        .green-title {
+            color: #10b981;
+            text-align: center;
+            font-weight: 800;
+            font-size: 40px;
+            margin-top: 30px;
+        }
+
+        /* Login box */
+        .login-box {
+            max-width: 380px;
+            margin: 20px auto;
+        }
+
+        /* Green button */
+        .stButton > button {
+            background: #10b981;
+            color: #ffffff;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+        }
+        .stButton > button:hover {
+            background: #0ea371;
+            color: #ffffff;
+        }
+
+        /* Chat bubbles */
         .chat-box {
             background: #f1f1f1;
             border-radius: 14px;
@@ -108,7 +144,7 @@ st.markdown(
         .chat-name { font-size: 12px; color: #888888; }
         .chat-text { font-size: 15px; color: #262626; word-wrap: break-word; }
 
-        /* ===== BOTTOM MENU BAR (app ke andar, mobile width mein) ===== */
+        /* ===== BOTTOM MENU BAR (Instagram style, app ke andar) ===== */
         .bottom-nav {
             position: fixed;
             bottom: 0;
@@ -123,7 +159,6 @@ st.markdown(
             justify-content: space-around;
             align-items: center;
             border-top: 1px solid #dbdbdb;
-            border-radius: 0;
             box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.05);
             z-index: 999999;
         }
@@ -133,7 +168,7 @@ st.markdown(
             padding: 6px 12px;
             border-radius: 10px;
         }
-        .bottom-nav a.active { background: #e7f3ff; }
+        .bottom-nav a.active { background: #d9f5ea; }
     </style>
     """,
     unsafe_allow_html=True,
@@ -150,40 +185,60 @@ def bottom_nav(current):
         ("profile", "👤"),
         ("settings", "⚙️"),
     ]
-    suffix = ""
-    if user_name:
-        suffix = "&name=" + quote(user_name)
     links = ""
     for key, icon in icons:
         active_class = "active" if key == current else ""
-        links += f'<a class="{active_class}" href="?page={key}{suffix}">{icon}</a>'
+        links += f'<a class="{active_class}" href="?page={key}">{icon}</a>'
     st.markdown(f'<div class="bottom-nav">{links}</div>', unsafe_allow_html=True)
 
 
-# ================== PAGES ==================
-if page == "home":
-    st.markdown("<h1 style='text-align:center;'>💬 HMF Book</h1>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align:center;'>Neeche menu se page chunein.</p>", unsafe_allow_html=True)
+# ================== GREEN LOGIN PAGE ==================
+def login_page():
+    st.markdown('<div class="green-title">💬 HMF Book</div>', unsafe_allow_html=True)
+    st.markdown("<p style='text-align:center; color:#888888;'>Login karke apna account use karein.</p>", unsafe_allow_html=True)
 
-elif page == "videos":
-    st.title("🎬 Videos")
-    st.info("Videos page — yahan aapka videos content aayega.")
-
-elif page == "add":
-    st.title("➕ Add")
-    st.info("Add page — yahan aapka add content aayega.")
-
-elif page == "chats":
-    st.title("💬 Messages")
-
-    if user_name == "":
-        new_name = st.text_input("Aapka naam likhein")
-        if st.button("Start Chat"):
+    col = st.columns([1, 2, 1])[1]
+    with col:
+        new_name = st.text_input("Username", placeholder="Apna naam likhein...", label_visibility="collapsed")
+        if st.button("Login", use_container_width=True):
             if new_name.strip():
-                set_param("name", new_name.strip())
+                st.session_state["user_name"] = new_name.strip()
+                set_param("page", "home")
                 do_rerun()
-    else:
-        st.success("Aap: " + user_name)
+            else:
+                st.warning("Pehle apna naam likhein.")
+
+
+# ================== LOGOUT ==================
+def logout():
+    st.session_state["user_name"] = ""
+    set_param("page", "home")
+    do_rerun()
+
+
+# ================== MAIN ==================
+if not is_logged_in():
+    # Pehle login hoga, tab menu bar dikhegi
+    login_page()
+
+else:
+    user_name = st.session_state["user_name"]
+
+    if page == "home":
+        st.markdown("<h1 style='text-align:center; color:#10b981;'>💬 HMF Book</h1>", unsafe_allow_html=True)
+        st.markdown("<p style='text-align:center;'>Neeche menu se page chunein.</p>", unsafe_allow_html=True)
+
+    elif page == "videos":
+        st.title("🎬 Videos")
+        st.info("Videos page — yahan aapka videos content aayega.")
+
+    elif page == "add":
+        st.title("➕ Add")
+        st.info("Add page — yahan aapka add content aayega.")
+
+    elif page == "chats":
+        st.title("💬 Messages")
+
         chats = load_chats()
 
         for c in chats:
@@ -199,7 +254,7 @@ elif page == "chats":
 
         with st.form("message_form", clear_on_submit=True):
             msg = st.text_input("Message", placeholder="Type a message...", label_visibility="collapsed")
-            send = st.form_submit_button("Send")
+            send = st.form_submit_button("Send", type="primary", use_container_width=True)
 
         if send and msg.strip():
             chats.append({"name": user_name, "message": msg.strip()})
@@ -208,17 +263,15 @@ elif page == "chats":
 
         st.caption("🔄 Chats auto-refresh every few seconds.")
 
-elif page == "profile":
-    st.title("👤 Profile")
-    if user_name:
+    elif page == "profile":
+        st.title("👤 Profile")
         st.success("Logged in as: " + user_name)
-    else:
-        st.info("Pehle Chats page par apna naam dein.")
+        if st.button("Logout"):
+            logout()
 
-else:
-    st.title("⚙️ Settings")
-    st.info("Settings page — yahan aapki settings aayengi.")
+    else:  # settings
+        st.title("⚙️ Settings")
+        st.info("Settings page — yahan aapki settings aayengi.")
 
-
-# ================== MENU BAR HAMESHA NEECHE ==================
-bottom_nav(page)
+    # Menu bar sirf login ke baad
+    bottom_nav(page)
