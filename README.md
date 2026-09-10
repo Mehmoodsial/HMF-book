@@ -1,3 +1,19 @@
+# ============================================================
+#  HMF BOOK — Instagram Demo App
+#  File: app.py
+# ============================================================
+import streamlit as st
+import streamlit.components.v1 as components
+
+st.set_page_config(page_title="Instagram", page_icon="📸", layout="wide")
+
+st.markdown(
+    "<style>#MainMenu{visibility:hidden}footer{visibility:hidden}"
+    "header{visibility:hidden}</style>",
+    unsafe_allow_html=True,
+)
+
+APP_HTML = r"""
 <!DOCTYPE html>
 <html lang="hi">
 <head>
@@ -7,7 +23,6 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Grand+Hotel&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-/* ===== base ===== */
 :root{--blue:#0095f6;--red:#ed4956;--line:#efefef;--line2:#dbdbdb;--t2:#737373}
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{height:100%}
@@ -21,15 +36,11 @@ input,textarea{font:inherit}
 .ic .cutk{stroke:#fff;stroke-width:2.3}
 .vbadge{width:13px;height:13px}
 .vbadge .fg{fill:#0095f6}
-
-/* ===== phone frame ===== */
 .phone{position:relative;width:min(400px,100%);height:min(860px,calc(100vh - 52px));background:#fff;border-radius:46px;overflow:hidden;border:1px solid #2a2a30;box-shadow:0 0 0 10px #17171b,0 40px 90px rgba(0,0,0,.6);display:flex;flex-direction:column}
 .statusbar{height:36px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:8px 26px 0;background:#fff}
 .sb-time{font-size:13.5px;font-weight:700}
 .sb-ic{display:flex;gap:6px;align-items:center}
 .app{position:relative;flex:1;overflow:hidden;background:#fff}
-
-/* ===== screens ===== */
 .screen{position:absolute;inset:0;overflow-y:auto;overscroll-behavior:contain;display:none;background:#fff;padding-bottom:calc(60px + env(safe-area-inset-bottom));scrollbar-width:none}
 .screen::-webkit-scrollbar{display:none}
 .screen.on{display:block;animation:scrIn .22s ease}
@@ -43,8 +54,6 @@ input,textarea{font:inherit}
 .ib:active{transform:scale(.85)}
 .rel{position:relative}
 .bdg{position:absolute;top:3px;right:1px;min-width:17px;height:17px;background:#ff3040;color:#fff;font-size:10.5px;font-weight:700;border-radius:9px;display:flex;align-items:center;justify-content:center;padding:0 4px;border:2px solid #fff}
-
-/* ===== stories ===== */
 .ring{display:block;padding:2.5px;border-radius:50%;background:conic-gradient(from 210deg,#feda75,#fa7e1e,#d62976,#962fbf,#4f5bd5,#feda75)}
 .ring.seen{background:var(--line2)}
 .ring .in{display:block;padding:2.5px;background:#fff;border-radius:50%;width:100%;height:100%}
@@ -56,8 +65,6 @@ input,textarea{font:inherit}
 .st-nm{font-size:11.5px;color:#333;max-width:72px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .st-plus{position:absolute;top:40px;right:6px;width:20px;height:20px;border-radius:50%;background:var(--blue);color:#fff;border:2.5px solid #fff;display:flex;align-items:center;justify-content:center}
 .st-plus .ic{width:11px;height:11px;stroke-width:3}
-
-/* ===== posts ===== */
 .post{padding-bottom:8px}
 .post.new{animation:pIn .5s ease}
 @keyframes pIn{from{opacity:0;transform:translateY(16px)}}
@@ -86,8 +93,6 @@ input,textarea{font:inherit}
 .p-cap b{margin-right:4px}
 .p-cap.clamped{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .p-cm{display:block;padding:4px 12px 0;color:var(--t2);font-size:13.5px}
-
-/* ===== explore ===== */
 .srch{flex:1;display:flex;align-items:center;gap:8px;background:#efefef;border-radius:10px;padding:9px 12px}
 .srch .ic{width:16px;height:16px;stroke-width:2;color:var(--t2)}
 .srch input{flex:1;background:transparent;border:0;outline:0;font-size:14px;min-width:0}
@@ -100,8 +105,6 @@ input,textarea{font:inherit}
 .tile:active img{transform:scale(.94)}
 .ex-empty{padding:70px 30px;text-align:center;color:var(--t2)}
 .ex-empty b{display:block;font-size:17px;color:#000;margin-bottom:6px}
-
-/* ===== reels ===== */
 #scr-reels{padding-bottom:0;bottom:calc(52px + env(safe-area-inset-bottom));background:#000}
 .rscroll{position:absolute;inset:0;overflow-y:auto;scroll-snap-type:y mandatory;scrollbar-width:none}
 .rscroll::-webkit-scrollbar{display:none}
@@ -135,8 +138,6 @@ input,textarea{font:inherit}
 .reels-top b{font-size:17px;text-shadow:0 1px 10px rgba(0,0,0,.5)}
 .mute{pointer-events:auto;width:36px;height:36px;border-radius:50%;background:rgba(15,15,15,.45);display:flex;align-items:center;justify-content:center;color:#fff}
 .mute .ic{width:19px;height:19px}
-
-/* ===== activity ===== */
 .act-g{padding:12px 14px 4px;font-weight:700;font-size:14px}
 .act-r{display:flex;align-items:center;gap:12px;padding:9px 14px}
 .act-av{position:relative;width:44px;height:44px;flex:none}
@@ -151,8 +152,6 @@ input,textarea{font:inherit}
 .afb{background:var(--blue);color:#fff;font-weight:700;font-size:13px;border-radius:8px;padding:7px 14px;flex:none}
 .afb.fed,.afb.ghost{background:#efefef;color:#000}
 .req-btns{display:flex;gap:6px}
-
-/* ===== messages (IG inbox) ===== */
 .dm-srch{padding:6px 14px 10px}
 .dm-srch .srch{border-radius:12px}
 .notes{display:flex;gap:20px;padding:14px;overflow-x:auto;border-bottom:1px solid var(--line);scrollbar-width:none}
@@ -167,7 +166,7 @@ input,textarea{font:inherit}
 .req-ic .ic{width:20px;height:20px;stroke-width:1.8}
 .req-row b{font-size:14px}
 .req-n{margin-left:auto;color:var(--t2);font-weight:700;font-size:13px}
-.req-row .ic.rrc{width:16px;height:16px;color:#c7c7c7;transform:rotate(-90deg);stroke-width:2.2}
+.req-row .rrc{width:16px;height:16px;color:#c7c7c7;transform:rotate(-90deg);stroke-width:2.2}
 .ch-row{display:flex;align-items:center;gap:12px;padding:9px 14px;cursor:pointer}
 .ch-row:active{background:#fafafa}
 .ch-av{position:relative;width:56px;height:56px;flex:none}
@@ -178,8 +177,6 @@ input,textarea{font:inherit}
 .ch-prev{font-size:13px;color:var(--t2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
 .ch-prev.un{color:#000;font-weight:700}
 .ch-cam{color:#000}
-
-/* ===== chat (IG style) ===== */
 #scr-chat{display:none;flex-direction:column;padding-bottom:0;overflow:hidden}
 #scr-chat.on{display:flex}
 #scr-chat .hd{border-bottom:1px solid var(--line)}
@@ -220,8 +217,6 @@ input,textarea{font:inherit}
 .chat-r{display:flex;align-items:center;gap:2px}
 .chat-r .ib .ic{width:22px;height:22px;stroke-width:1.8}
 .snd{color:var(--blue);font-weight:700;font-size:14.5px;padding:6px}
-
-/* ===== profile ===== */
 .pf-top{display:flex;align-items:center;gap:26px;padding:8px 20px 4px}
 .pf-av{width:88px;height:88px;flex:none}
 .pf-av .ring{width:88px;height:88px}
@@ -248,8 +243,6 @@ input,textarea{font:inherit}
 .pf-t img{width:100%;height:100%;object-fit:cover}
 .rvw .rv{position:absolute;left:6px;bottom:5px;color:#fff;font-size:11.5px;font-weight:700;display:flex;align-items:center;gap:4px;text-shadow:0 1px 4px rgba(0,0,0,.5)}
 .rvw .rv .ic{width:13px;height:13px;fill:#fff;stroke:none}
-
-/* ===== bottom nav (Instagram style) ===== */
 .bnav{position:absolute;left:0;right:0;bottom:0;height:calc(52px + env(safe-area-inset-bottom));padding-bottom:env(safe-area-inset-bottom);display:flex;background:#fff;border-top:1px solid var(--line);z-index:40}
 .bnav button{flex:1;display:flex;align-items:center;justify-content:center;transition:transform .12s}
 .bnav button:active{transform:scale(.88)}
@@ -260,8 +253,6 @@ input,textarea{font:inherit}
 .pavw{width:25px;height:25px;border-radius:50%;overflow:hidden;border:1.6px solid transparent;display:block}
 .pavw.on{border-color:#000}
 .pavw img{width:100%;height:100%;object-fit:cover}
-
-/* ===== sheets / overlays ===== */
 .veil{position:absolute;inset:0;background:rgba(0,0,0,.5);opacity:0;pointer-events:none;transition:opacity .3s;z-index:84}
 .veil.on{opacity:1;pointer-events:auto}
 .sheet{position:absolute;left:0;right:0;bottom:0;z-index:85;background:#fff;border-radius:18px 18px 0 0;transform:translateY(105%);transition:transform .34s cubic-bezier(.32,.72,.24,1);max-height:78%;display:flex;flex-direction:column;padding-bottom:env(safe-area-inset-bottom)}
@@ -308,8 +299,6 @@ input,textarea{font:inherit}
 .ed-body{padding:16px;display:flex;flex-direction:column;gap:14px}
 .ed-body label{font-size:12.5px;font-weight:700;color:var(--t2);display:flex;flex-direction:column;gap:6px}
 .ed-body input,.ed-body textarea{border:1px solid var(--line2);border-radius:10px;padding:10px 12px;font-size:14px;outline:0;resize:none}
-
-/* photo viewer */
 .pv{position:absolute;inset:0;background:#050505;z-index:70;display:none;flex-direction:column}
 .pv.on{display:flex}
 .pv-hd{display:flex;justify-content:flex-end;padding:6px;color:#fff}
@@ -320,8 +309,6 @@ input,textarea{font:inherit}
 .pv-user{flex:1;font-size:13.5px;font-weight:700;display:flex;gap:5px;align-items:center}
 .pv-acts{display:flex;gap:2px}
 .pv-likes{padding:0 16px 22px;font-weight:700;font-size:13.5px}
-
-/* story viewer */
 .sv{position:absolute;inset:0;background:#000;z-index:80;display:none}
 .sv.on{display:block}
 .sv-imgw{position:absolute;inset:0;overflow:hidden}
@@ -342,16 +329,8 @@ input,textarea{font:inherit}
 #sv-inp{flex:1;border:1.2px solid rgba(255,255,255,.75);background:transparent;border-radius:22px;padding:9px 15px;color:#fff;font-size:13.5px;outline:0;min-width:0}
 #sv-inp::placeholder{color:rgba(255,255,255,.8)}
 .sv-ft .ib{color:#fff}
-
-/* toast */
 .toast{position:absolute;left:50%;bottom:80px;transform:translate(-50%,16px);background:#262626;color:#fff;padding:10px 18px;border-radius:24px;font-size:13.5px;font-weight:600;opacity:0;transition:.28s;z-index:99;pointer-events:none;white-space:nowrap;max-width:92%;overflow:hidden;text-overflow:ellipsis}
 .toast.on{opacity:1;transform:translate(-50%,0)}
-
-@media(max-width:520px){
- body{padding:0;background:#fff}
- .phone{width:100%;height:100dvh;border-radius:0;border:0;box-shadow:none}
- .statusbar{display:none}
-}
 </style>
 </head>
 <body>
@@ -364,10 +343,7 @@ input,textarea{font:inherit}
    <svg width="25" height="12" viewBox="0 0 25 12"><rect x=".5" y=".5" width="21" height="11" rx="3" fill="none" stroke="#000" opacity=".4"/><rect x="2" y="2" width="15" height="8" rx="1.8" fill="#000"/><path d="M23 4v4c1-.2 1.7-1 1.7-2S24 4.2 23 4z" fill="#000" opacity=".4"/></svg>
   </span>
  </div>
-
  <div class="app" id="app">
-
-  <!-- ===== FEED ===== -->
   <section class="screen on" id="scr-feed">
    <header class="hd" id="feed-hd">
     <span class="logo">Instagram</span>
@@ -378,8 +354,6 @@ input,textarea{font:inherit}
    <div class="stories" id="stories"></div>
    <div id="feed"></div>
   </section>
-
-  <!-- ===== EXPLORE ===== -->
   <section class="screen" id="scr-explore">
    <header class="hd">
     <div class="srch">
@@ -391,20 +365,14 @@ input,textarea{font:inherit}
    <div class="ex-grid" id="ex-grid"></div>
    <div class="ex-empty" id="ex-empty" hidden><b>Kuch nahi mila</b>Dusre keywords se try karo</div>
   </section>
-
-  <!-- ===== REELS ===== -->
   <section class="screen" id="scr-reels">
    <div class="rscroll" id="rscroll"></div>
    <div class="reels-top"><b>Reels</b><button class="mute" id="reels-mute"></button></div>
   </section>
-
-  <!-- ===== ACTIVITY ===== -->
   <section class="screen" id="scr-activity">
    <header class="hd"><button class="ib" data-back="feed"><span class="iconw" data-icon="back"></span></button><b class="title">Notifications</b></header>
    <div id="act-list"></div>
   </section>
-
-  <!-- ===== MESSAGES (IG inbox) ===== -->
   <section class="screen" id="scr-messages">
    <header class="hd">
     <button class="ib" data-back="feed"><span class="iconw" data-icon="back"></span></button>
@@ -424,12 +392,10 @@ input,textarea{font:inherit}
     <span class="req-ic"><span class="iconw" data-icon="heart"></span></span>
     <b>Requests</b>
     <span class="req-n" id="req-n">2</span>
-    <span class="iconw" data-icon="chev"></span>
+    <span class="iconw rrc" data-icon="chev"></span>
    </button>
    <div id="chat-list"></div>
   </section>
-
-  <!-- ===== CHAT ===== -->
   <section class="screen" id="scr-chat">
    <header class="hd">
     <button class="ib" data-back="messages"><span class="iconw" data-icon="back"></span></button>
@@ -454,8 +420,6 @@ input,textarea{font:inherit}
    </footer>
    <input type="file" id="chat-file" accept="image/*" hidden>
   </section>
-
-  <!-- ===== PROFILE ===== -->
   <section class="screen" id="scr-profile">
    <header class="hd">
     <b class="title">aarav_wanders</b>
@@ -483,15 +447,11 @@ Travel · Street · Films</span></div>
    </div>
    <div class="pf-grid" id="pf-grid"></div>
   </section>
-
-  <!-- ===== SAVED ===== -->
   <section class="screen" id="scr-saved">
    <header class="hd"><button class="ib" data-back="profile"><span class="iconw" data-icon="back"></span></button><b class="title">Saved</b></header>
    <div class="ex-grid" id="sv-grid"></div>
    <div class="ex-empty" id="sv-empty" hidden><b>Kuch saved nahi hai</b>Post mein bookmark icon dabao, yahan dikhega</div>
   </section>
-
-  <!-- ===== bottom nav ===== -->
   <nav class="bnav" id="bnav">
    <button data-go="feed" class="on"><span class="iconw" data-icon="home"></span></button>
    <button data-go="explore"><span class="iconw" data-icon="search"></span></button>
@@ -499,8 +459,6 @@ Travel · Street · Films</span></div>
    <button data-go="reels"><span class="iconw" data-icon="reels"></span></button>
    <button data-go="profile"><span class="pavw" id="nav-pav"><img alt=""></span></button>
   </nav>
-
-  <!-- ===== overlays ===== -->
   <div class="pv" id="pv">
    <div class="pv-hd"><button class="ib" id="pv-x"><span class="iconw" data-icon="x"></span></button></div>
    <div class="pv-imgw"><img id="pv-img" alt=""></div>
@@ -514,7 +472,6 @@ Travel · Street · Films</span></div>
    </div>
    <div class="pv-likes" id="pv-likes"></div>
   </div>
-
   <div class="sv" id="sv">
    <div class="sv-imgw"><img id="sv-img" alt=""></div>
    <div class="sv-segs" id="sv-segs"></div>
@@ -527,30 +484,24 @@ Travel · Street · Films</span></div>
     <button class="ib" id="sv-share"><span class="iconw" data-icon="plane"></span></button>
    </footer>
   </div>
-
   <div class="veil" id="veil"></div>
-
   <div class="sheet" id="sh-share">
    <div class="grab"></div>
    <header class="sh-hd ctr"><span></span><b id="shr-title">Share</b><button class="ib" id="shr-x"><span class="iconw" data-icon="x"></span></button></header>
    <div class="shr-list" id="shr-list"></div>
   </div>
-
   <div class="sheet" id="sh-cm">
    <div class="grab"></div>
    <header class="sh-hd ctr"><span></span><b>Comments</b><button class="ib" id="cm-x"><span class="iconw" data-icon="x"></span></button></header>
    <div class="cm-list" id="cm-list"></div>
    <footer class="cm-foot"><img id="cm-av" alt=""><input id="cm-inp" placeholder="Comment add karo…" autocomplete="off"><button id="cm-post">Post</button></footer>
   </div>
-
   <div class="sheet" id="sh-create">
    <header class="sh-hd"><button class="ib" id="cr-x"><span class="iconw" data-icon="x"></span></button><b id="cr-title">New post</b><button class="sh-blue" id="cr-next" disabled>Next</button></header>
    <div class="sh-body" id="cr-step1"><div class="cr-grid" id="cr-grid"></div></div>
    <div class="sh-body" id="cr-step2" hidden><div class="cr-prev"><img id="cr-img" alt=""></div><textarea id="cr-cap" rows="3" placeholder="Caption likho…"></textarea></div>
   </div>
-
   <div class="sheet" id="sh-menu"><div class="grab"></div><div class="menu-list" id="menu-list"></div></div>
-
   <div class="sheet" id="sh-edit">
    <header class="sh-hd"><button class="ib" id="ed-x"><span class="iconw" data-icon="x"></span></button><b>Edit profile</b><button class="sh-blue" id="ed-save">Save</button></header>
    <div class="ed-body">
@@ -558,21 +509,16 @@ Travel · Street · Films</span></div>
     <label>Bio<textarea id="ed-bio" rows="3"></textarea></label>
    </div>
   </div>
-
   <div class="toast" id="toast"></div>
  </div>
 </div>
-
 <script>
-/* ================= helpers ================= */
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 const ph=(seed,w=900,h=1125)=>`https://picsum.photos/seed/${seed}/${w}/${h}`;
 const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 const fmt=n=>n.toLocaleString('en-IN');
 const kfmt=n=>n>=1e6?(n/1e6).toFixed(1).replace('.0','')+'M':n>=1e3?(n/1e3).toFixed(1).replace('.0','')+'K':n;
 const nowT=()=>new Date().toTimeString().slice(0,5);
-
-/* ================= icons ================= */
 const ICONS={
 home:'<path d="M9.3 20.5v-5.3a1.2 1.2 0 0 1 1.2-1.2h3a1.2 1.2 0 0 1 1.2 1.2v5.3h3.9a1.4 1.4 0 0 0 1.4-1.4v-8.5c0-.43-.2-.83-.53-1.1l-7.35-6.02a1.4 1.4 0 0 0-1.77 0L3.13 9.5c-.33.27-.53.67-.53 1.1v8.5a1.4 1.4 0 0 0 1.4 1.4z"/>',
 search:'<circle cx="10.7" cy="10.7" r="7.2"/><path d="m16 16 5.2 5.2"/>',
@@ -591,7 +537,6 @@ x:'<path d="M5.8 5.8 18.2 18.2M18.2 5.8 5.8 18.2"/>',
 volx:'<path class="fg" d="M11.4 4.9 6.9 8.6H4.1a1 1 0 0 0-1 1v4.8a1 1 0 0 0 1 1h2.8l4.5 3.7c.66.54 1.6.07 1.6-.78V5.68c0-.85-.94-1.32-1.6-.78z"/><path d="m15.8 9.7 4.6 4.6M20.4 9.7l-4.6 4.6"/>',
 vol:'<path class="fg" d="M11.4 4.9 6.9 8.6H4.1a1 1 0 0 0-1 1v4.8a1 1 0 0 0 1 1h2.8l4.5 3.7c.66.54 1.6.07 1.6-.78V5.68c0-.85-.94-1.32-1.6-.78z"/><path d="M16 9a4.3 4.3 0 0 1 0 6M18.6 6.6a8 8 0 0 1 0 10.8"/>',
 play:'<path class="fg" d="M8.2 5.9c0-.83.9-1.34 1.6-.92l8.5 5.1c.68.4.68 1.4 0 1.8l-8.5 5.1c-.7.42-1.6-.09-1.6-.92z"/>',
-pause:'<path class="fg" d="M7.2 5h3v14h-3zM13.8 5h3v14h-3z"/>',
 grid:'<path class="fg" d="M3.8 3.8h4.9v4.9H3.8zM9.55 3.8h4.9v4.9h-4.9zM15.3 3.8h4.9v4.9h-4.9zM3.8 9.55h4.9v4.9H3.8zM9.55 9.55h4.9v4.9h-4.9zM15.3 9.55h4.9v4.9h-4.9zM3.8 15.3h4.9v4.9H3.8zM9.55 15.3h4.9v4.9h-4.9zM15.3 15.3h4.9v4.9h-4.9z"/>',
 tag:'<circle cx="10.6" cy="8.4" r="3.4"/><path d="M4.1 19.7c.8-3.3 3.4-5.1 6.5-5.1 1 0 2 .2 2.8.6"/><path d="m17.6 12.9 3 3-4.6 4.6-2.9.6.6-2.9z"/>',
 menu:'<path d="M4 7h16M4 12h16M4 17h16"/>',
@@ -607,8 +552,6 @@ smile:'<circle cx="12" cy="12" r="8.6"/><path d="M8.7 14a4.2 4.2 0 0 0 6.6 0"/><
 };
 const ic=(n,c='')=>`<svg class="ic ${c}" viewBox="0 0 24 24" aria-hidden="true">${ICONS[n]}</svg>`;
  $$('[data-icon]').forEach(el=>el.innerHTML=ic(el.dataset.icon));
-
-/* ================= data ================= */
 const U={
  you:{h:'aarav_wanders',n:'Aarav',av:'https://i.pravatar.cc/150?img=12'},
  kabir:{h:'mehra_films',n:'Kabir Mehra',v:1,av:'https://i.pravatar.cc/150?img=53',lastSeen:'1h ago'},
@@ -621,7 +564,6 @@ const U={
  leaf:{h:'leafandlens',n:'Leaf & Lens',av:'https://i.pravatar.cc/150?img=60',lastSeen:'2d ago',followed:1},
 };
 const avImg=(u,st='')=>`<img ${st} src="${U[u].av}" alt="${esc(U[u].n)}" onerror="this.onerror=null;this.src='https://picsum.photos/seed/av-${u}/150'">`;
-
 const posts=[
  {id:'p1',u:'sneha',img:ph('ig-sunrise'),likes:1284,t:'3h',cap:'4 baje ki alarm ki keemat… Golden hour hi asli hai.',cm:[{u:'rohan',t:'Worth it. Kya frame hai',tm:'2h'},{u:'ananya',t:'Colours bilkul unreal lag rahe hain',tm:'2h'},{u:'tanya',t:'Location batao na please!',tm:'1h'}]},
  {id:'p2',u:'dfr',img:ph('ig-butter'),likes:3402,t:'5h',cap:'Chandni Chowk ka asli butter chicken. Line lagane ke bhi din aa gaye.',cm:[{u:'kabir',t:'Ab raat ko bhookh nahi lagegi, thanks',tm:'4h'},{u:'vihaan',t:'Kal wahan ja rahe hain, table book karwado',tm:'3h'},{u:'sneha',t:'50mm pe shoot kiya na?',tm:'2h'}]},
@@ -684,8 +626,6 @@ const acts=[
 ];
 const NOTES=[{u:'kabir',t:'Reel bana raha hu'},{u:'tanya',t:'Practice at 6'},{u:'vihaan',t:'kab milenge?'},{u:'sneha',t:'Trip kal hai!'}];
 const REPL=['Hahaha sahi mein','Achha theek hai, done','Sun kal milte hain phir dekhte hain','Reel ka link bhej na jaldi','Chal baad mein baat karte hain','Haan bilkul!','Arey wah kya baat','Hmm sochke batata hu','2 min, photo bhej raha hu','LOL ekdum','Yaar ye toh bhool gaya tha'];
-
-/* ================= navigation ================= */
 const TABS=['feed','explore','reels','profile'];
 function go(id){
  $$('.screen').forEach(s=>s.classList.toggle('on',s.id==='scr-'+id));
@@ -703,8 +643,6 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-back]');if
  if(b.id==='nav-create'){openCreate('post');return}
  if(b.dataset.go)go(b.dataset.go);
 });
-
-/* ================= toast / clipboard / menu ================= */
 let toastT;
 function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('on'),1900)}
 function copyTxt(s){
@@ -714,14 +652,10 @@ function copyTxt(s){
 let menuItems=[];
 function menu(items){menuItems=items;$('#menu-list').innerHTML=items.map((it,i)=>`<button class="mn ${it.d?'danger':''}" data-mn="${i}">${it.l}</button>`).join('');openSheet('#sh-menu')}
  $('#sh-menu').addEventListener('click',e=>{const b=e.target.closest('[data-mn]');if(!b)return;const it=menuItems[+b.dataset.mn];hideSheets();it.f&&it.f()});
-
-/* ================= sheets ================= */
 function openSheet(id){$('#veil').classList.add('on');$(id).classList.add('up')}
 function hideSheets(){$$('.sheet').forEach(s=>s.classList.remove('up'));$('#veil').classList.remove('on')}
  $('#veil').addEventListener('click',hideSheets);
 [['#shr-x'],['#cm-x'],['#cr-x'],['#ed-x']].forEach(([s])=>$(s).addEventListener('click',hideSheets));
-
-/* ================= feed ================= */
 const postById=id=>posts.find(p=>p.id===id);
 function pavInner(u){const s=stories.find(x=>x.u===u);
  if(s&&s.items.length&&!s.seen)return `<span class="ring"><span class="in"><img src="${U[u].av}" alt=""></span></span>`;
@@ -754,7 +688,6 @@ function renderStories(){$('#stories').innerHTML=stories.map((s,i)=>{
   <span class="${ring}"><span class="in"><img src="${U[s.u].av}" alt=""></span></span>
   ${mine&&!has?`<span class="st-plus">${ic('plusS')}</span>`:''}
   <span class="st-nm">${mine?'Your story':U[s.u].h}</span></button>`}).join('')}
-
 function updLikeUI(pid){const p=postById(pid);const art=$(`[data-pid="${pid}"]`);
  art.querySelector('[data-like]').classList.toggle('on',p.liked);
  art.querySelector('[data-likes]').textContent=fmt(p.likes)+' likes'}
@@ -769,9 +702,7 @@ function toggleSave(pid){const p=postById(pid);p.saved=!p.saved;
 function toggleFollow(uid){const u=U[uid];u.followed=!u.followed;
  $$(`[data-follow="${uid}"]`).forEach(b=>{b.textContent=u.followed?'Following':'Follow'});
  toast(u.followed?`@${u.h} ko follow kar diya`:`@${u.h} ko unfollow kar diya`)}
-
 function dblTap(el){const n=Date.now();if(el._lt&&n-el._lt<330){el._lt=0;return true}el._lt=n;return false}
-
  $('#scr-feed').addEventListener('click',e=>{
  const t=s=>e.target.closest(s);let el;
  if(el=t('.p-img')){if(dblTap(el))likeOn(el.closest('.post').dataset.pid,true);return}
@@ -800,8 +731,6 @@ function dblTap(el){const n=Date.now();if(el._lt&&n-el._lt<330){el._lt=0;return 
 });
  $('#scr-feed').addEventListener('scroll',function(){const y=this.scrollTop;$('#feed-hd').classList.toggle('hid',y>72&&y>feedLast);feedLast=y},{passive:true});
 let feedLast=0;
-
-/* ================= comments sheet ================= */
 let cmTarget=null;
 function openComments(target){cmTarget=target;if(!cmTarget.obj.cm)cmTarget.obj.cm=[];renderCmList();openSheet('#sh-cm')}
 function renderCmList(){$('#cm-list').innerHTML=cmTarget.obj.cm.map(c=>`
@@ -814,8 +743,6 @@ function addComment(){const inp=$('#cm-inp');const t=inp.value.trim();if(!t||!cm
 }
  $('#cm-post').addEventListener('click',addComment);
  $('#cm-inp').addEventListener('keydown',e=>{if(e.key==='Enter')addComment()});
-
-/* ================= share sheet ================= */
 let sharePayload=null,shareMode='share';
 function openShare(payload){sharePayload=payload;shareMode='share';renderShare();openSheet('#sh-share')}
 function renderShare(){
@@ -835,8 +762,6 @@ function renderShare(){
 });
  $('#shr-x').addEventListener('click',hideSheets);
  $('#dm-new').addEventListener('click',()=>{shareMode='new';renderShare();openSheet('#sh-share')});
-
-/* ================= messages / chat ================= */
 let chatWith=null,botT1,botT2;
 const chatOf=u=>chats.find(c=>c.u===u)||(chats.unshift({u,msgs:[]}),chats[0]);
 function prevTxt(c){const m=c.msgs[c.msgs.length-1];
@@ -898,8 +823,6 @@ function sendTxt(){const inp=$('#chat-inp');const t=inp.value.trim();if(!t)retur
  $('#chat-img').addEventListener('click',()=>{camTarget=chatWith;$('#chat-file').click()});
  $('#chat-smile').addEventListener('click',()=>{const e=['😂','🔥','❤️','👀','🙌'];$('#chat-inp').value+=e[Math.floor(Math.random()*e.length)];sendBtnState();$('#chat-inp').focus()});
  $$('#scr-chat [data-call]').forEach(b=>b.addEventListener('click',()=>toast(U[chatWith].n+' ko call lag rahe hain… (demo)')));
-
-/* unsend: apne message par tap karo */
  $('#msgs').addEventListener('click',e=>{
  if(e.target.closest('#intro-vp')){toast('Profile view (demo)');return}
  const r=e.target.closest('.mrow');if(!r||r.dataset.mi===undefined)return;
@@ -924,14 +847,10 @@ let camTarget=null;
  $('#chat-cam').addEventListener('click',()=>{camTarget=chatWith;$('#chat-file').click()});
  $('#chat-file').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;
  const rd=new FileReader();rd.onload=()=>{pushTo(camTarget,{img:rd.result});if(camTarget===chatWith)botReply()};rd.readAsDataURL(f);e.target.value=''});
-
-/* ================= badges ================= */
 let actUnread=3;
 function updateBadges(){const un=chats.reduce((a,c)=>a+(c.unread||0),0);
  const bd=$('#bdg-dm');bd.textContent=un;bd.style.display=un?'flex':'none';
  const ba=$('#bdg-act');ba.textContent=actUnread;ba.style.display=actUnread?'flex':'none'}
-
-/* ================= explore ================= */
 function buildExplore(){$('#ex-grid').innerHTML=explore.map((o,i)=>`
  <button class="tile ${o.tall?'tall':''}" data-ex="${i}"><img src="${ph(o.seed,600,o.tall?1100:600)}" alt="" loading="lazy"></button>`).join('')}
  $('#ex-grid').addEventListener('click',e=>{const t=e.target.closest('[data-ex]');if(t)openPhoto(explore[+t.dataset.ex],true)});
@@ -943,8 +862,6 @@ function buildExplore(){$('#ex-grid').innerHTML=explore.map((o,i)=>`
   tile.style.display=show?'':'none';if(show)n++});
  $('#ex-empty').hidden=n>0});
  $('#ex-clear').addEventListener('click',()=>{$('#ex-q').value='';$('#ex-q').dispatchEvent(new Event('input'))});
-
-/* photo viewer */
 let pvObj=null;
 function openPhoto(o,isExp){pvObj={o,isExp};
  $('#pv-img').src=isExp?ph(o.seed,900,1200):(o.full||o.img);
@@ -960,8 +877,6 @@ function openPhoto(o,isExp){pvObj={o,isExp};
  $('#pv-likes').textContent=fmt(o.likes)+' likes'+(o.cm&&o.cm.length?' · '+o.cm.length+' comments':'')});
  $('#pv-cm').addEventListener('click',()=>{if(!pvObj.o.cm)pvObj.o.cm=[];openComments({type:'exp',obj:pvObj.o})});
  $('#pv-share').addEventListener('click',()=>openShare({img:$('#pv-img').src,text:pvObj.o.cap||''}));
-
-/* ================= reels ================= */
 let reelsReady=false,reelIO=null,reelsMuted=true;
 function initReels(){if(reelsReady)return;reelsReady=true;
  $('#rscroll').innerHTML=reels.map(r=>`
@@ -1019,8 +934,6 @@ function reelLike(r,burstIt){if(!r.liked){r.liked=true;r.likes++}
  if(el=t('[data-rmenu]')){menu([{l:'Copy link',f:()=>copyTxt('instagram.com/reels/'+el.dataset.rmenu)},
   {l:'Not interested',f:()=>toast('Theek hai, aisa content kam dikhega')},{l:'Cancel'}])}
 });
-
-/* ================= activity ================= */
 function renderAct(){$('#act-list').innerHTML=acts.map(a=>{
  if(a.g)return `<div class="act-g">${a.g}</div>`;
  const u=U[a.u];
@@ -1046,8 +959,6 @@ function renderAct(){$('#act-list').innerHTML=acts.map(a=>{
  const d=e.target.closest('[data-delrow]');
  if(d){const row=d.closest('.act-r');row.remove();toast('Request delete ho gayi')}
 });
-
-/* ================= profile ================= */
 let statsDone=false;
 function statUp(){if(statsDone)return;statsDone=true;
  [['st-posts',12],['st-followers',8462],['st-following',431]].forEach(([id,target])=>{
@@ -1085,8 +996,6 @@ function renderSaved(){const saved=posts.filter(p=>p.saved);
  $('#sv-empty').hidden=saved.length>0;$('#sv-grid').style.display=saved.length?'grid':'none'}
  $('#sv-grid').addEventListener('click',e=>{const t=e.target.closest('[data-sv]');if(!t)return;
  const p=postById(t.dataset.sv);openPhoto({u:p.u,likes:p.likes,liked:p.liked,cm:p.cm,img:p.img,full:p.img})});
-
-/* ================= create (post / story) ================= */
 let crSel=null,crMode='post',crStage=1;
 function buildCrGrid(){
  let html=`<button class="cr-t cr-up" id="cr-up">${ic('camera')}Upload</button>`;
@@ -1123,8 +1032,6 @@ function publish(){
   renderStories();renderPfAv();toast('Story add ho gayi')}
  else toast('Post share ho gayi');
 }
-
-/* ================= story viewer ================= */
 const sv={open:false,ui:0,ii:0,prog:0,hold:false,last:0};
 function openStory(i){sv.open=true;sv.ui=i;sv.ii=0;
  $('#sv').classList.add('on');svBuildSegs();svShow();
@@ -1173,11 +1080,12 @@ function svZoneUp(e,zone){sv.hold=false;
  const uid=stories[sv.ui].u;
  if(uid==='you'){toast('Ye aapki apni story hai');e.target.value='';return}
  pushTo(uid,{t:v});toast('Reply bhej diya');e.target.value=''});
-
-/* ================= init ================= */
  $('#cm-av').src=U.you.av;
 renderStories();renderFeed();buildExplore();renderNotes();renderChatList();renderAct();
 renderPfAv();renderHls();renderPfGrid('posts');buildCrGrid();updateBadges();
 </script>
 </body>
 </html>
+"""
+
+components.html(APP_HTML, height=940, scrolling=False)
