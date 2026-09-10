@@ -1,269 +1,324 @@
-import streamlit as st
-import json, os
-import html as html_mod
-
-st.set_page_config(page_title="HMF Book", page_icon="🟢", layout="centered")
-
-# ---------------- Data Helpers ----------------
-DATA_DIR = "/tmp" if os.path.isdir("/tmp") else "."
-USERS_FILE = os.path.join(DATA_DIR, "hmf_users.json")
-POSTS_FILE = os.path.join(DATA_DIR, "hmf_posts.json")
-
-def load_json(path, default):
-    if os.path.exists(path):
-        try:
-            with open(path, "r", encoding="utf-8") as f:
-                return json.load(f)
-        except Exception:
-            return default
-    return default
-
-def save_json(path, data):
-    try:
-        with open(path, "w", encoding="utf-8") as f:
-            json.dump(data, f, ensure_ascii=False)
-    except Exception:
-        pass
-
-def rerun():
-    try:
-        st.rerun()
-    except Exception:
-        st.experimental_rerun()
-
-DEMO_POSTS = [
-    {"name": "Ahmed Khan", "time": "2 hrs", "text": "HMF book is amazing! 🔥",
-     "likes": ["Sara Ali"], "comments": [{"n": "Sara Ali", "t": "Totally agree!"}]},
-    {"name": "Sara Ali", "time": "5 hrs", "text": "Good morning everyone ☀️ Have a great day!",
-     "likes": [], "comments": []},
-    {"name": "Bilal Ahmed", "time": "1 day", "text": "Just joined HMF book. Loving it so far!",
-     "likes": [], "comments": [{"n": "Fatima", "t": "Welcome! 👋"}]},
-]
-
-# ---------------- Session State ----------------
-for k, v in {
-    "page": "splash",
-    "user": None,
-    "users": load_json(USERS_FILE, []),
-    "posts": load_json(POSTS_FILE, DEMO_POSTS),
-    "post_n": 0,
-    "c_n": 0,
-}.items():
-    if k not in st.session_state:
-        st.session_state[k] = v
-
-# ---------------- CSS (Design) ----------------
-st.markdown("""
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>HMF Book</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap');
-#MainMenu, footer, header {visibility:hidden;}
-[data-testid="stToolbar"] {display:none;}
-html, body, .stApp {font-family:'Poppins',sans-serif; background:#eef2f5;}
-.block-container {padding-top:1.5rem; padding-bottom:3rem; max-width:700px;}
-div.stButton > button {border:none; border-radius:50px; font-weight:600; font-size:15px; padding:10px 0; width:100%;}
-div.stButton > button[kind="primary"] {background:#00b86e; color:#fff; box-shadow:0 4px 14px rgba(0,184,110,.35);}
-div.stButton > button[kind="primary"]:hover {background:#00a05a; color:#fff;}
-div.stButton > button[kind="secondary"] {background:#f0f2f5; color:#444; box-shadow:none;}
-div.stButton > button[kind="secondary"]:hover {background:#e2e7ec; color:#111;}
-.stTextInput input, .stTextArea textarea {
-  border:1.5px solid #dfe3e8 !important; border-radius:14px !important;
-  padding:12px 16px !important; font-size:15px !important; background:#fff !important;
-}
-.stTextInput input:focus, .stTextArea textarea:focus {border-color:#00b86e !important; box-shadow:none !important;}
-.logo-band {background:linear-gradient(135deg,#00a05a 0%,#00c47e 55%,#00d68f 100%);
-  border-radius:0 0 30px 30px; text-align:center; padding:34px 0 28px; margin-bottom:10px;}
-.logo-band .lg {font-size:58px; font-weight:800; color:#fff; letter-spacing:1px; line-height:1;}
-.avatar {width:42px; height:42px; border-radius:50%;
-  background:linear-gradient(135deg,#00b86e,#00d68f); color:#fff;
-  display:inline-flex; align-items:center; justify-content:center; font-weight:700; font-size:18px; flex:none;}
-.post-card {background:#fff; border-radius:16px; padding:16px;
-  box-shadow:0 1px 4px rgba(0,0,0,.08); margin-bottom:6px;}
-.post-name {font-weight:600; font-size:15px; color:#1c1e21;}
-.post-time {font-size:12px; color:#8a8d91;}
-.post-text {font-size:15px; color:#1c1e21; margin:8px 0 6px; white-space:pre-wrap;}
-.post-stats {font-size:13px; color:#65676b; border-bottom:1px solid #eef2f5;
-  padding-bottom:8px; margin-bottom:4px;}
-.comment {background:#f0f2f5; border-radius:14px; padding:8px 12px;
-  margin-bottom:6px; font-size:14px; color:#1c1e21;}
-.comment b {display:block; font-size:13px; margin-bottom:2px; color:#00a05a;}
-.topbar {display:flex; align-items:center; gap:12px; margin-bottom:6px;}
-.topbar .brand {font-size:34px; font-weight:800; color:#00b86e;}
-.chip {background:#eef2f5; border-radius:50px; padding:6px 14px;
-  font-weight:600; font-size:14px; color:#333;}
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Poppins',sans-serif}
+body{background:#dfe3e8;display:flex;justify-content:center;align-items:center;min-height:100vh}
+.phone{width:100%;max-width:400px;height:100vh;max-height:850px;background:#fff;border-radius:35px;overflow:hidden;position:relative;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.screen{position:absolute;inset:0;display:none;flex-direction:column;overflow:hidden}
+.screen.active{display:flex}
+/* ===== SPLASH ===== */
+.splash{background:linear-gradient(160deg,#00c980,#0a9e5c,#067a47);justify-content:center;align-items:center;position:relative}
+.shape{position:absolute;opacity:.15}
+.splash .logo{font-size:72px;font-weight:800;color:#fff;letter-spacing:-2px;text-shadow:0 5px 20px rgba(0,0,0,.2);z-index:2}
+.splash .tag{color:#fff;font-size:26px;font-weight:600;z-index:2;margin-top:-8px}
+.btn-get{margin-top:60px;background:#fff;color:#0a9e5c;border:none;padding:15px 55px;border-radius:50px;font-size:19px;font-weight:700;cursor:pointer;z-index:2;transition:.3s}
+.btn-get:active{transform:scale(.95)}
+/* ===== AUTH ===== */
+.auth{background:linear-gradient(180deg,#0a9e5c 0%,#0fae66 40%,#fff 40%)}
+.auth-head{height:38%;display:flex;justify-content:center;align-items:center}
+.auth-head .logo{font-size:64px;font-weight:800;color:#fff;letter-spacing:-2px}
+.sheet{background:#fff;border-radius:35px 35px 0 0;flex:1;padding:30px 28px;overflow-y:auto}
+.sheet h2{font-size:28px;color:#1a1a1a;margin-bottom:20px}
+.input-box{display:flex;align-items:center;gap:12px;border:2px solid #e3e6ea;border-radius:14px;padding:14px 16px;margin-bottom:14px}
+.input-box input{border:none;outline:none;flex:1;font-size:15px;background:transparent}
+.input-box svg{flex-shrink:0}
+.btn-main{width:100%;background:linear-gradient(90deg,#0fae66,#00c980);color:#fff;border:none;padding:16px;border-radius:50px;font-size:18px;font-weight:700;cursor:pointer;margin-top:8px;transition:.3s}
+.btn-main:active{transform:scale(.97)}
+.divider{display:flex;align-items:center;gap:12px;color:#9aa1ab;font-size:14px;margin:22px 0 16px}
+.divider::before,.divider::after{content:'';flex:1;height:1px;background:#e3e6ea}
+.socials{display:flex;justify-content:center;gap:22px}
+.soc{width:52px;height:52px;border-radius:50%;display:flex;justify-content:center;align-items:center;cursor:pointer;border:none;color:#fff;font-weight:800;font-size:20px;transition:.3s}
+.soc:active{transform:scale(.9)}
+.soc.g{background:#ea4335}.soc.s{background:#fffc00;color:#fff}.soc.f{background:#1877f2}
+.switch{text-align:center;margin-top:20px;font-size:14px;color:#666}
+.switch a{color:#0a9e5c;font-weight:600;cursor:pointer;text-decoration:none}
+/* ===== APP HEADER ===== */
+.app-header{padding:16px 18px 10px;display:flex;justify-content:space-between;align-items:center;background:#fff}
+.app-header .title{font-weight:800;font-size:22px;color:#1a1a1a}
+.app-header .logo-sm{font-weight:800;font-size:24px;color:#0a9e5c;letter-spacing:-1px}
+.icon-btn{background:#f2f4f6;border:none;width:38px;height:38px;border-radius:50%;cursor:pointer;display:flex;justify-content:center;align-items:center;margin-left:8px}
+/* ===== CONTENT ===== */
+.content{flex:1;overflow-y:auto;background:#fafafa;padding-bottom:80px}
+.stories{display:flex;gap:14px;padding:12px 16px;overflow-x:auto;background:#fff}
+.story{display:flex;flex-direction:column;align-items:center;gap:6px;min-width:64px;cursor:pointer}
+.story .ring{width:60px;height:60px;border-radius:50%;background:linear-gradient(45deg,#f09433,#e6683c,#dc2743,#bc1888);padding:3px}
+.story .ring .in{width:100%;height:100%;border-radius:50%;border:2px solid #fff;display:flex;justify-content:center;align-items:center;font-weight:700;color:#fff;font-size:18px}
+.story span{font-size:11px;color:#444}
+.post{background:#fff;margin:10px 0;border-radius:4px}
+.post-head{display:flex;align-items:center;gap:10px;padding:10px 14px}
+.avatar{width:38px;height:38px;border-radius:50%;background:linear-gradient(45deg,#00c980,#056a45);display:flex;justify-content:center;align-items:center;color:#fff;font-weight:700;font-size:15px;flex-shrink:0}
+.post-head b{font-size:14px}
+.post-img{width:100%;height:280px;display:flex;justify-content:center;align-items:center;color:#fff;font-size:40px}
+.post-actions{padding:10px 14px;font-size:20px;display:flex;gap:16px}
+.post-body{padding:0 14px 12px;font-size:13px;color:#333}
+/* ===== SHORTS ===== */
+.shorts-wrap{flex:1;overflow-y:auto;scroll-snap-type:y mandatory}
+.short{height:100%;scroll-snap-align:start;position:relative;display:flex;justify-content:center;align-items:center}
+.short-info{position:absolute;bottom:90px;left:14px;color:#fff;z-index:3}
+.short-info b{font-size:15px}.short-info p{font-size:13px;opacity:.9;margin-top:4px;max-width:230px}
+.short-side{position:absolute;bottom:100px;right:12px;display:flex;flex-direction:column;gap:18px;align-items:center;z-index:3;color:#fff;font-size:11px}
+.short-side .act{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;font-size:24px}
+/* ===== GAMES ===== */
+.games-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:16px}
+.game-card{background:#fff;border-radius:18px;padding:20px 14px;text-align:center;cursor:pointer;transition:.2s;box-shadow:0 2px 10px rgba(0,0,0,.05)}
+.game-card:active{transform:scale(.95)}
+.game-card .gi{font-size:44px}
+.game-card b{display:block;margin-top:8px;font-size:14px}
+.game-card small{color:#0a9e5c;font-weight:600;font-size:11px}
+/* ===== CHAT ===== */
+.chat-item{display:flex;align-items:center;gap:12px;padding:12px 16px;cursor:pointer;background:#fff}
+.chat-item:active{background:#f2f4f6}
+.chat-item .ci{width:52px;height:52px;border-radius:50%;display:flex;justify-content:center;align-items:center;color:#fff;font-weight:700;font-size:18px;flex-shrink:0}
+.chat-item div b{font-size:15px}.chat-item div p{font-size:13px;color:#888}
+.chat-item .time{margin-left:auto;font-size:12px;color:#aaa}
+/* ===== SEARCH ===== */
+.search-bar{display:flex;align-items:center;gap:10px;background:#fff;border:2px solid #e3e6ea;margin:14px 16px;padding:12px 16px;border-radius:50px}
+.search-bar input{border:none;outline:none;flex:1;font-size:15px}
+.trends{padding:0 16px}
+.trend{background:#fff;border-radius:14px;padding:14px;margin-bottom:10px;cursor:pointer}
+.trend small{color:#888}.trend b{display:block;font-size:15px}.trend p{font-size:13px;color:#555;margin-top:3px}
+/* ===== PROFILE ===== */
+.pro-head{background:#fff;padding:24px 16px;text-align:center}
+.pro-head .big{width:90px;height:90px;border-radius:50%;background:linear-gradient(45deg,#00c980,#056a45);margin:0 auto;display:flex;justify-content:center;align-items:center;color:#fff;font-size:34px;font-weight:800}
+.pro-stats{display:flex;justify-content:center;gap:34px;margin-top:16px}
+.pro-stats div{text-align:center}.pro-stats b{display:block;font-size:18px}.pro-stats span{font-size:12px;color:#888}
+.btn-edit{margin-top:16px;background:#f2f4f6;border:none;padding:10px 30px;border-radius:10px;font-weight:600;cursor:pointer;font-size:14px}
+.tabs{display:flex;background:#fff;border-top:1px solid #eee;border-bottom:1px solid #eee}
+.tabs div{flex:1;text-align:center;padding:12px;font-size:20px;cursor:pointer;border-bottom:2px solid transparent}
+.tabs div.on{border-color:#0a9e5c}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:2px;padding:2px}
+.grid3 div{aspect-ratio:1;background:linear-gradient(135deg,#a8e6cf,#00c980);display:flex;justify-content:center;align-items:center;font-size:26px}
+/* ===== SETTINGS ===== */
+.set-group{background:#fff;border-radius:16px;margin:12px 14px;overflow:hidden}
+.set-item{display:flex;align-items:center;gap:14px;padding:15px 16px;cursor:pointer;border-bottom:1px solid #f2f4f6}
+.set-item:last-child{border:none}
+.set-item:active{background:#f7f8f9}
+.set-item .si{width:36px;height:36px;border-radius:10px;display:flex;justify-content:center;align-items:center;font-size:17px;flex-shrink:0}
+.set-item div{flex:1}.set-item b{font-size:14.5px;font-weight:500;display:block}
+.set-item small{font-size:12px;color:#999}
+.set-item .arrow{color:#c5cbd2}
+.toggle{width:44px;height:26px;background:#dfe3e8;border-radius:20px;position:relative;transition:.3s;flex-shrink:0}
+.toggle.on{background:#0a9e5c}
+.toggle::after{content:'';position:absolute;width:20px;height:20px;background:#fff;border-radius:50%;top:3px;left:3px;transition:.3s}
+.toggle.on::after{left:21px}
+/* ===== BOTTOM NAV ===== */
+.bottom-nav{position:absolute;bottom:0;left:0;right:0;background:#fff;display:flex;border-top:1px solid #eee;padding:8px 0 12px;z-index:10}
+.bottom-nav div{flex:1;text-align:center;cursor:pointer;font-size:22px;opacity:.45;transition:.2s}
+.bottom-nav div.on{opacity:1}
+.bottom-nav div .center-btn{width:48px;height:48px;background:linear-gradient(90deg,#0fae66,#00c980);border-radius:14px;margin:-4px auto 0;display:flex;justify-content:center;align-items:center;color:#fff;font-size:24px}
+::-webkit-scrollbar{display:none}
 </style>
-""", unsafe_allow_html=True)
+</head>
+<body>
+<div class="phone">
 
-# ================= SPLASH SCREEN =================
-if st.session_state.page == "splash":
-    st.markdown("<style>.stApp{background:linear-gradient(160deg,#00915a 0%,#00c47e 55%,#0ad697 100%);}</style>",
-                unsafe_allow_html=True)
-    st.markdown("""
-    <div style="text-align:center;padding-top:14vh;">
-      <div style="font-size:96px;font-weight:800;color:#fff;letter-spacing:2px;line-height:1;">HMF</div>
-      <div style="font-size:34px;font-weight:600;color:#fff;margin-top:4px;">HMF book</div>
+<!-- SPLASH -->
+<div class="screen splash active" id="scr-splash">
+  <svg class="shape" style="top:40px;left:-30px" width="200" height="200"><polygon points="30,10 90,180 10,90" fill="none" stroke="#fff" stroke-width="2"/></svg>
+  <svg class="shape" style="top:120px;right:-20px" width="180" height="180"><polygon points="90,10 170,170 10,170" fill="none" stroke="#fff" stroke-width="2"/></svg>
+  <svg class="shape" style="bottom:120px;left:30px" width="140" height="140"><polygon points="70,10 130,130 10,130" fill="none" stroke="#fff" stroke-width="2"/></svg>
+  <svg class="shape" style="bottom:200px;right:40px" width="120" height="120"><polygon points="60,5 115,115 5,115" fill="none" stroke="#fff" stroke-width="2"/></svg>
+  <div class="logo">HMF</div>
+  <div class="tag">HMF book</div>
+  <button class="btn-get" onclick="show('scr-signup')">Get Started</button>
+</div>
+
+<!-- SIGNUP -->
+<div class="screen auth" id="scr-signup">
+  <div class="auth-head"><div class="logo">HMF</div></div>
+  <div class="sheet">
+    <h2>Create Account</h2>
+    <div class="input-box"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9aa1ab" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg><input id="su-user" placeholder="Username"></div>
+    <div class="input-box"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9aa1ab" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg><input id="su-email" type="email" placeholder="Email"></div>
+    <div class="input-box"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9aa1ab" stroke-width="2"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 018 0v3"/></svg><input id="su-pass" type="password" placeholder="Password"><span onclick="togglePass('su-pass',this)" style="cursor:pointer">👁</span></div>
+    <button class="btn-main" onclick="signup()">Sign Up</button>
+    <div class="divider">Or continue with</div>
+    <div class="socials">
+      <button class="soc g" onclick="enterApp('Google')">G</button>
+      <button class="soc s" onclick="enterApp('Snapchat')">👻</button>
+      <button class="soc f" onclick="enterApp('Facebook')">f</button>
     </div>
-    """, unsafe_allow_html=True)
-    st.write(""); st.write(""); st.write(""); st.write("")
-    c1, c2, c3 = st.columns([1, 1.3, 1])
-    with c2:
-        if st.button("Get Started", type="primary"):
-            st.session_state.page = "signup"
-            rerun()
+    <p class="switch">Already have an account? <a onclick="show('scr-login')">Log in</a></p>
+  </div>
+</div>
 
-# ================= SIGN UP =================
-elif st.session_state.page == "signup":
-    st.markdown("<style>.stApp{background:#ffffff;}</style>", unsafe_allow_html=True)
-    st.markdown('<div class="logo-band"><div class="lg">HMF</div></div>', unsafe_allow_html=True)
-    st.markdown('<h2 style="color:#222;margin:4px 0 12px;">Create Account</h2>', unsafe_allow_html=True)
+<!-- LOGIN -->
+<div class="screen auth" id="scr-login">
+  <div class="auth-head"><div class="logo">HMF</div></div>
+  <div class="sheet">
+    <h2>Welcome Back</h2>
+    <div class="input-box"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9aa1ab" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg><input type="email" placeholder="Email or Username"></div>
+    <div class="input-box"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9aa1ab" stroke-width="2"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 018 0v3"/></svg><input type="password" placeholder="Password"><span onclick="togglePass(this.previousElementSibling,this)" style="cursor:pointer">👁</span></div>
+    <button class="btn-main" onclick="enterApp()">Log In</button>
+    <div class="divider">Or continue with</div>
+    <div class="socials">
+      <button class="soc g" onclick="enterApp('Google')">G</button>
+      <button class="soc s" onclick="enterApp('Snapchat')">👻</button>
+      <button class="soc f" onclick="enterApp('Facebook')">f</button>
+    </div>
+    <p class="switch">Don't have an account? <a onclick="show('scr-signup')">Sign up</a></p>
+  </div>
+</div>
 
-    su_name = st.text_input("Username", placeholder="Username", label_visibility="collapsed", key="su_name")
-    su_email = st.text_input("Email", placeholder="Email", label_visibility="collapsed", key="su_email")
-    su_pass = st.text_input("Password", placeholder="Password", type="password",
-                            label_visibility="collapsed", key="su_pass")
-    st.caption("Password must be at least 6 characters long")
-
-    if st.button("Sign Up", type="primary"):
-        name, email, pw = su_name.strip(), su_email.strip(), su_pass
-        if not name or not email or not pw:
-            st.error("⚠️ Please fill all fields")
-        elif len(pw) < 6:
-            st.error("⚠️ Password must be at least 6 characters")
-        elif any(u["email"] == email for u in st.session_state.users):
-            st.error("⚠️ This email is already registered")
-        else:
-            st.session_state.users.append({"name": name, "email": email, "pass": pw})
-            save_json(USERS_FILE, st.session_state.users)
-            st.session_state.user = {"name": name, "email": email}
-            st.session_state.page = "home"
-            rerun()
-
-    st.write("")
-    if st.button("Already have an account? Log In", type="secondary"):
-        st.session_state.page = "login"
-        rerun()
-
-# ================= LOGIN =================
-elif st.session_state.page == "login":
-    st.markdown("<style>.stApp{background:#ffffff;}</style>", unsafe_allow_html=True)
-    st.markdown('<div class="logo-band"><div class="lg">HMF</div></div>', unsafe_allow_html=True)
-    st.markdown('<h2 style="color:#222;margin:4px 0 12px;">Log In</h2>', unsafe_allow_html=True)
-
-    li_id = st.text_input("Email or Username", placeholder="Email or Username",
-                          label_visibility="collapsed", key="li_id")
-    li_pass = st.text_input("Password", placeholder="Password", type="password",
-                            label_visibility="collapsed", key="li_pass")
-
-    if st.button("Log In", type="primary"):
-        uid = li_id.strip()
-        found = None
-        for u in st.session_state.users:
-            if (u["email"] == uid or u["name"] == uid) and u["pass"] == li_pass:
-                found = u
-                break
-        if found:
-            st.session_state.user = {"name": found["name"], "email": found["email"]}
-            st.session_state.page = "home"
-            rerun()
-        else:
-            st.error("⚠️ Invalid email/username or password")
-
-    st.write("")
-    if st.button("Don't have an account? Sign Up", type="secondary"):
-        st.session_state.page = "signup"
-        rerun()
-
-# ================= HOME / FEED =================
-else:
-    # Safety: agar session reset ho jaye to wapis splash par jao
-    if st.session_state.user is None:
-        st.session_state.page = "splash"
-        rerun()
-
-    user = st.session_state.user
-    posts = st.session_state.posts
-
-    tb1, tb2 = st.columns([4, 1])
-    with tb1:
-        st.markdown(
-            f'<div class="topbar"><span class="brand">HMF</span>'
-            f'<span class="chip">👋 {html_mod.escape(user["name"])}</span></div>',
-            unsafe_allow_html=True,
-        )
-    with tb2:
-        if st.button("Logout", type="secondary"):
-            st.session_state.user = None
-            st.session_state.page = "splash"
-            rerun()
-
-    st.markdown("**✍️ What's on your mind?**")
-    np_key = f"np_{st.session_state.post_n}"
-    np = st.text_area("Post", placeholder="Share something with your friends...",
-                      label_visibility="collapsed", key=np_key, height=70)
-    p1, p2, p3 = st.columns([1, 1, 1])
-    with p2:
-        if st.button("🚀 Post", type="primary"):
-            txt = np.strip()
-            if txt:
-                posts.insert(0, {"name": user["name"], "time": "Just now", "text": txt,
-                                 "likes": [], "comments": []})
-                save_json(POSTS_FILE, posts)
-                st.session_state.post_n += 1  # naya key = input box khali ho jayega
-                rerun()
-            else:
-                st.warning("Please write something first!")
-
-    st.write("---")
-    st.markdown("#### 📰 Feed")
-
-    for i, p in reversed(list(enumerate(posts))):
-        # Purana data safe rehne ke liye
-        if "likes" not in p:
-            p["likes"] = []
-        if "comments" not in p:
-            p["comments"] = []
-        liked = user["name"] in p["likes"]
-
-        st.markdown(f"""
-<div class="post-card">
-  <div style="display:flex;align-items:center;gap:10px;">
-    <div class="avatar">{html_mod.escape(p["name"][0].upper())}</div>
-    <div>
-      <div class="post-name">{html_mod.escape(p["name"])}</div>
-      <div class="post-time">{html_mod.escape(p["time"])}</div>
+<!-- HOME -->
+<div class="screen" id="scr-home">
+  <div class="app-header"><div class="logo-sm">HMF book</div><div><button class="icon-btn" onclick="show('scr-search')">🔍</button><button class="icon-btn" onclick="show('scr-settings')">⚙️</button></div></div>
+  <div class="content">
+    <div class="stories">
+      <div class="story"><div class="ring"><div class="in" style="background:#0a9e5c">+</div></div><span>Your story</span></div>
+      <div class="story"><div class="ring"><div class="in" style="background:#e1306c">A</div></div><span>ali_khan</span></div>
+      <div class="story"><div class="ring"><div class="in" style="background:#f77737">S</div></div><span>sara99</span></div>
+      <div class="story"><div class="ring"><div class="in" style="background:#833ab4">U</div></div><span>usman</span></div>
+      <div class="story"><div class="ring"><div class="in" style="background:#fdcb6e">Z</div></div><span>zain_12</span></div>
+    </div>
+    <div class="post">
+      <div class="post-head"><div class="avatar">A</div><div><b>ali_khan</b><br><small style="color:#999;font-size:12px">Lahore</small></div><span style="margin-left:auto">⋯</span></div>
+      <div class="post-img" style="background:linear-gradient(135deg,#00c980,#0a5c3c)">🌄</div>
+      <div class="post-actions"><span onclick="this.style.color='red'">❤️</span><span>💬</span><span>📤</span></div>
+      <div class="post-body"><b>1,240 likes</b><br>HMF book pehla post! 🎉 #hmfbook</div>
+    </div>
+    <div class="post">
+      <div class="post-head"><div class="avatar" style="background:linear-gradient(45deg,#f09433,#dc2743)">S</div><div><b>sara99</b><br><small style="color:#999;font-size:12px">Karachi</small></div><span style="margin-left:auto">⋯</span></div>
+      <div class="post-img" style="background:linear-gradient(135deg,#667eea,#764ba2)">🌇</div>
+      <div class="post-actions"><span>❤️</span><span>💬</span><span>📤</span></div>
+      <div class="post-body"><b>856 likes</b><br>Beautiful evening ✨</div>
     </div>
   </div>
-  <div class="post-text">{html_mod.escape(p["text"])}</div>
-  <div class="post-stats">👍❤️ {len(p["likes"])} likes &nbsp;·&nbsp; 💬 {len(p["comments"])} comments</div>
 </div>
-""", unsafe_allow_html=True)
 
-        a1, a2 = st.columns(2)
-        with a1:
-            if st.button("💚 Liked" if liked else "👍 Like", key=f"like{i}", type="secondary"):
-                if liked:
-                    posts[i]["likes"].remove(user["name"])
-                else:
-                    posts[i]["likes"].append(user["name"])
-                save_json(POSTS_FILE, posts)
-                rerun()
-        with a2:
-            if st.button("💬 Comments", key=f"cbtn{i}", type="secondary"):
-                st.session_state[f"open{i}"] = not st.session_state.get(f"open{i}", False)
-                rerun()
+<!-- SHORTS -->
+<div class="screen" id="scr-shorts">
+  <div class="app-header"><div class="title">Shorts</div><button class="icon-btn" onclick="show('scr-settings')">⚙️</button></div>
+  <div class="shorts-wrap" id="shortsWrap"></div>
+</div>
 
-        if st.session_state.get(f"open{i}", False):
-            for c in p["comments"]:
-                st.markdown(f'<div class="comment"><b>{html_mod.escape(c["n"])}</b>'
-                            f'{html_mod.escape(c["t"])}</div>', unsafe_allow_html=True)
-            ck = f"c{i}_{st.session_state.c_n}"
-            nc = st.text_input("Comment", placeholder="Write a comment...",
-                               label_visibility="collapsed", key=ck)
-            s1, s2, s3 = st.columns([1, 1, 1])
-            with s2:
-                if st.button("Send", key=f"s{i}_{st.session_state.c_n}", type="primary"):
-                    if nc.strip():
-                        posts[i]["comments"].append({"n": user["name"], "t": nc.strip()})
-                        save_json(POSTS_FILE, posts)
-                        st.session_state.c_n += 1  # naya key = comment box khali
-                        rerun()
-        st.write("")
+<!-- GAMES -->
+<div class="screen" id="scr-games">
+  <div class="app-header"><div class="title">🎮 Games</div><button class="icon-btn" onclick="show('scr-settings')">⚙️</button></div>
+  <div class="content"><div class="games-grid">
+    <div class="game-card" onclick="playGame('Snake')"><div class="gi">🐍</div><b>Snake</b><small>PLAY NOW</small></div>
+    <div class="game-card" onclick="playGame('Memory')"><div class="gi">🧠</div><b>Memory</b><small>PLAY NOW</small></div>
+    <div class="game-card" onclick="playGame('Tic Tac Toe')"><div class="gi">⭕</div><b>Tic Tac Toe</b><small>PLAY NOW</small></div>
+    <div class="game-card" onclick="playGame('2048')"><div class="gi">🔢</div><b>2048</b><small>PLAY NOW</small></div>
+    <div class="game-card" onclick="playGame('Quiz')"><div class="gi">❓</div><b>Quiz</b><small>PLAY NOW</small></div>
+    <div class="game-card" onclick="playGame('Racing')"><div class="gi">🏎️</div><b>Racing</b><small>PLAY NOW</small></div>
+  </div></div>
+</div>
+
+<!-- CHAT -->
+<div class="screen" id="scr-chat">
+  <div class="app-header"><div class="title">👻 Chats</div><button class="icon-btn" onclick="show('scr-settings')">⚙️</button></div>
+  <div class="content">
+    <div class="chat-item"><div class="ci" style="background:#fffc00;color:#333">👻</div><div><b>ali_khan</b><p><i style="color:#f43f5e;font-weight:700">❤ New Snap</i></p></div><span class="time">2m</span></div>
+    <div class="chat-item"><div class="ci" style="background:#833ab4">U</div><div><b>usman</b><p>Delivered</p></div><span class="time">10m</span></div>
+    <div class="chat-item"><div class="ci" style="background:#f77737">S</div><div><b>sara99</b><p><i style="color:#0a9e5c;font-weight:700">Opened</i></p></div><span class="time">1h</span></div>
+    <div class="chat-item"><div class="ci" style="background:#0a9e5c">G</div><div><b>HMF Group</b><p>Ali: Salam sab ko! 👋</p></div><span class="time">3h</span></div>
+    <div class="chat-item"><div class="ci" style="background:#e1306c">Z</div><div><b>zain_12</b><p><i style="color:#f43f5e;font-weight:700">🔥 Streak</i></p></div><span class="time">5h</span></div>
+  </div>
+</div>
+
+<!-- SEARCH -->
+<div class="screen" id="scr-search">
+  <div class="app-header"><div class="title">Search</div></div>
+  <div class="search-bar">🔍<input placeholder="Google, YouTube search karein..."></div>
+  <div class="content trends">
+    <div class="trend" onclick="openLink('https://youtube.com')"><small>📺 YouTube</small><b>Trending Videos</b><p>Watch latest videos on YouTube</p></div>
+    <div class="trend" onclick="openLink('https://google.com')"><small>🔎 Google</small><b>Search the Web</b><p>Search anything on Google</p></div>
+    <div class="trend" onclick="openLink('https://tiktok.com')"><small>🎵 TikTok</small><b>Trending Now</b><p>Viral TikTok videos</p></div>
+    <div class="trend" onclick="openLink('https://instagram.com')"><small>📸 Instagram</small><b>Explore</b><p>Photos & reels from Instagram</p></div>
+    <div class="trend" onclick="openLink('https://snapchat.com')"><small>👻 Snapchat</small><b>Snap Map</b><p>See what's happening nearby</p></div>
+  </div>
+</div>
+
+<!-- PROFILE -->
+<div class="screen" id="scr-profile">
+  <div class="app-header"><div class="title">My Profile</div><div><button class="icon-btn" onclick="show('scr-settings')">☰</button></div></div>
+  <div class="pro-head">
+    <div class="big" id="proAvatar">H</div>
+    <h3 style="margin-top:10px" id="proName">@hmf_user</h3>
+    <p style="font-size:13px;color:#888">HMF Book 🚀 | All-in-one app</p>
+    <div class="pro-stats">
+      <div><b>24</b><span>Posts</span></div>
+      <div><b>1.2K</b><span>Followers</span></div>
+      <div><b>380</b><span>Following</span></div>
+    </div>
+    <button class="btn-edit" onclick="show('scr-settings')">Edit Profile</button>
+  </div>
+  <div class="tabs"><div class="on">🖼️</div><div>🎬</div><div>🏷️</div></div>
+  <div class="content" style="padding-bottom:90px"><div class="grid3">
+    <div>🌄</div><div>🌇</div><div>🌊</div><div>🏔️</div><div>🌆</div><div>🌺</div><div>🎮</div><div>📸</div><div>✨</div>
+  </div></div>
+</div>
+
+<!-- SETTINGS (Instagram Style) -->
+<div class="screen" id="scr-settings">
+  <div class="app-header"><div class="title">Settings & Privacy</div></div>
+  <div class="content" style="padding-bottom:30px">
+    <div class="set-item" style="cursor:default"><div class="avatar">H</div><div><b id="setName">@hmf_user</b><small>HMF Book account</small></div></div>
+
+    <div class="set-group">
+      <div class="set-item" onclick="alert('Account Center')"><div class="si" style="background:#e8f7f0">👤</div><div><b>Account Center</b><small>Password, Personal details</small></div><span class="arrow">›</span></div>
+      <div class="set-item" onclick="alert('Saved posts')"><div class="si" style="background:#fff5e6">🔖</div><div><b>Saved</b><small>Manage saved posts</small></div><span class="arrow">›</span></div>
+      <div class="set-item" onclick="alert('Archive')"><div class="si" style="background:#f0efff">🗄️</div><div><b>Archive</b><small>Stories & posts archive</small></div><span class="arrow">›</span></div>
+    </div>
+
+    <div class="set-group">
+      <div class="set-item" onclick="alert('Notifications')"><div class="si" style="background:#ffe8ec">🔔</div><div><b>Notifications</b><small>Likes, comments, follows</small></div><span class="arrow">›</span></div>
+      <div class="set-item" onclick="toggleT(this)"><div class="si" style="background:#e8f2ff">🌙</div><div><b>Dark Mode</b><small>Change app theme</small></div><div class="toggle"></div></div>
+      <div class="set-item" onclick="toggleT(this)"><div class="si" style="background:#e8f7f0">⏰</div><div><b>Your Activity</b><small>Time spent reminders</small></div><div class="toggle on"></div></div>
+    </div>
+
+    <div class="set-group">
+      <div class="set-item" onclick="alert('Privacy')"><div class="si" style="background:#e8f7f0">🔒</div><div><b>Privacy</b><small>Private account, comments</small></div><span class="arrow">›</span></div>
+      <div class="set-item" onclick="alert('Security')"><div class="si" style="background:#fff5e6">🛡️</div><div><b>Security</b><small>Two-factor authentication</small></div><span class="arrow">›</span></div>
+      <div class="set-item" onclick="alert('Blocked accounts')"><div class="si" style="background:#ffe8ec">🚫</div><div><b>Blocked</b><small>Blocked accounts list</small></div><span class="arrow">›</span></div>
+    </div>
+
+    <div class="set-group">
+      <div class="set-item" onclick="alert('Language: English / اردو')"><div class="si" style="background:#f0efff">🌐</div><div><b>Language</b><small>English (US)</small></div><span class="arrow">›</span></div>
+      <div class="set-item" onclick="alert('Data Saver')"><div class="si" style="background:#e8f2ff">📶</div><div><b>Data Usage & Media Quality</b><small>Data saver mode</small></div><span class="arrow">›</span></div>
+      <div class="set-item" onclick="alert('Linked apps: YouTube, TikTok, Google, Snapchat, Instagram, Games')"><div class="si" style="background:#e8f7f0">🔗</div><div><b>Linked Apps</b><small>Connect your other apps</small></div><span class="arrow">›</span></div>
+    </div>
+
+    <div class="set-group">
+      <div class="set-item" onclick="alert('Help Center')"><div class="si" style="background:#fff5e6">❓</div><div><b>Help</b><small>Report a problem</small></div><span class="arrow">›</span></div>
+      <div class="set-item" onclick="alert('About HMF Book v1.0')"><div class="si" style="background:#f0efff">ℹ️</div><div><b>About</b><small>HMF Book v1.0</small></div><span class="arrow">›</span></div>
+    </div>
+
+    <div class="set-group" style="text-align:center;padding:8px 0">
+      <div class="set-item" style="justify-content:center;color:#e1306c;font-weight:600" onclick="logout()">Log Out</div>
+    </div>
+  </div>
+</div>
+
+<!-- BOTTOM NAV -->
+<div class="bottom-nav" id="bottomNav" style="display:none">
+  <div class="on" onclick="goTab(this,'scr-home')">🏠</div>
+  <div onclick="goTab(this,'scr-shorts')">🎬</div>
+  <div onclick="goTab(this,'scr-games')"><div class="center-btn">🎮</div></div>
+  <div onclick="goTab(this,'scr-chat')">👻</div>
+  <div onclick="goTab(this,'scr-profile')">👤</div>
+</div>
+
+</div>
+<script>
+function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');}
+function togglePass(id,el){id.type=id.type==='password'?'text':'password';}
+function signup(){const u=document.getElementById('su-user').value;if(!u){alert('Username likhein!');return;}enterApp();}
+function enterApp(via){if(via)alert('Signed in with '+via+'!');document.getElementById('proName').textContent='@'+(document.getElementById('su-user').value||'hmf_user');document.getElementById('setName').textContent='@'+(document.getElementById('su-user').value||'hmf_user');document.getElementById('proAvatar').textContent=(document.getElementById('su-user').value||'H')[0].toUpperCase();show('scr-home');document.getElementById('bottomNav').style.display='flex';}
+function logout(){document.getElementById('bottomNav').style.display='none';show('scr-login');}
+function goTab(el,id){document.querySelectorAll('.bottom-nav div').forEach(d=>d.classList.remove('on'));el.classList.add('on');show(id);}
+function toggleT(el){el.querySelector('.toggle').classList.toggle('on');}
+function openLink(url){window.open(url,'_blank');}
+function playGame(g){alert('🎮 '+g+' loading... Coming soon!');}
+/* Shorts content */
+const shorts=[{g:'linear-gradient(135deg,#ff6b6b,#ee5a24)',u:'ali_khan',d:'Viral dance 🔥 #trending',l:'12.5K'},{g:'linear-gradient(135deg,#0abde3,#341f97)',u:'sara99',d:'Nature vibes 🌊',l:'8.2K'},{g:'linear-gradient(135deg,#00c980,#0a5c3c)',u:'usman',d:'HMF Book shorts! 🚀',l:'21K'},{g:'linear-gradient(135deg,#f368e0,#a55eea)',u:'zain_12',d:'Funny moment 😂',l:'15K'}];
+document.getElementById('shortsWrap').innerHTML=shorts.map(s=>`<div class="short" style="background:${s.g}"><div class="short-info"><b>@${s.u}</b><p>${s.d}</p></div><div class="short-side"><div class="act">❤️<span>${s.l}</span></div><div class="act">💬<span>320</span></div><div class="act">📤<span>Share</span></div></div><div style="font-size:70px;opacity:.5">▶️</div></div>`).join('');
+</script>
+</body>
+</html>
