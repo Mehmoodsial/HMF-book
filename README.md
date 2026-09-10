@@ -1,324 +1,590 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>HMF Book</title>
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-*{margin:0;padding:0;box-sizing:border-box;font-family:'Poppins',sans-serif}
-body{background:#dfe3e8;display:flex;justify-content:center;align-items:center;min-height:100vh}
-.phone{width:100%;max-width:400px;height:100vh;max-height:850px;background:#fff;border-radius:35px;overflow:hidden;position:relative;box-shadow:0 20px 60px rgba(0,0,0,.3)}
-.screen{position:absolute;inset:0;display:none;flex-direction:column;overflow:hidden}
-.screen.active{display:flex}
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',Arial,sans-serif;-webkit-tap-highlight-color:transparent}
+body{background:#e8eaed;display:flex;justify-content:center}
+.phone{width:100%;max-width:430px;min-height:100vh;background:#fff;position:relative;box-shadow:0 0 30px rgba(0,0,0,.15)}
+.screen{display:none;min-height:100vh;flex-direction:column;position:relative}
+.screen.active{display:flex;animation:fade .35s ease}
+@keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
 /* ===== SPLASH ===== */
-.splash{background:linear-gradient(160deg,#00c980,#0a9e5c,#067a47);justify-content:center;align-items:center;position:relative}
-.shape{position:absolute;opacity:.15}
-.splash .logo{font-size:72px;font-weight:800;color:#fff;letter-spacing:-2px;text-shadow:0 5px 20px rgba(0,0,0,.2);z-index:2}
-.splash .tag{color:#fff;font-size:26px;font-weight:600;z-index:2;margin-top:-8px}
-.btn-get{margin-top:60px;background:#fff;color:#0a9e5c;border:none;padding:15px 55px;border-radius:50px;font-size:19px;font-weight:700;cursor:pointer;z-index:2;transition:.3s}
-.btn-get:active{transform:scale(.95)}
+.shape{position:absolute;border:2px solid rgba(255,255,255,.18)}
+.dotgrid{position:absolute;background-image:radial-gradient(rgba(255,255,255,.4) 1.5px,transparent 1.5px);background-size:12px 12px}
+#splash{background:linear-gradient(140deg,#00e08a,#00b45a 45%,#009e4f);justify-content:center;align-items:center;position:relative;overflow:hidden}
+.hmf-logo{font-size:78px;font-weight:900;color:#fff;letter-spacing:2px;font-style:italic;text-shadow:0 4px 18px rgba(0,0,0,.15)}
+.hmf-sub{font-size:26px;color:#fff;font-weight:600;margin-top:6px}
+.get-started{margin-top:70px;padding:15px 60px;border:none;border-radius:999px;background:#fff;color:#009e4f;font-size:19px;font-weight:800;cursor:pointer;box-shadow:0 8px 20px rgba(0,0,0,.18);z-index:2}
+.get-started:active{transform:scale(.97)}
+
 /* ===== AUTH ===== */
-.auth{background:linear-gradient(180deg,#0a9e5c 0%,#0fae66 40%,#fff 40%)}
-.auth-head{height:38%;display:flex;justify-content:center;align-items:center}
-.auth-head .logo{font-size:64px;font-weight:800;color:#fff;letter-spacing:-2px}
-.sheet{background:#fff;border-radius:35px 35px 0 0;flex:1;padding:30px 28px;overflow-y:auto}
-.sheet h2{font-size:28px;color:#1a1a1a;margin-bottom:20px}
-.input-box{display:flex;align-items:center;gap:12px;border:2px solid #e3e6ea;border-radius:14px;padding:14px 16px;margin-bottom:14px}
-.input-box input{border:none;outline:none;flex:1;font-size:15px;background:transparent}
-.input-box svg{flex-shrink:0}
-.btn-main{width:100%;background:linear-gradient(90deg,#0fae66,#00c980);color:#fff;border:none;padding:16px;border-radius:50px;font-size:18px;font-weight:700;cursor:pointer;margin-top:8px;transition:.3s}
-.btn-main:active{transform:scale(.97)}
-.divider{display:flex;align-items:center;gap:12px;color:#9aa1ab;font-size:14px;margin:22px 0 16px}
-.divider::before,.divider::after{content:'';flex:1;height:1px;background:#e3e6ea}
-.socials{display:flex;justify-content:center;gap:22px}
-.soc{width:52px;height:52px;border-radius:50%;display:flex;justify-content:center;align-items:center;cursor:pointer;border:none;color:#fff;font-weight:800;font-size:20px;transition:.3s}
-.soc:active{transform:scale(.9)}
-.soc.g{background:#ea4335}.soc.s{background:#fffc00;color:#fff}.soc.f{background:#1877f2}
-.switch{text-align:center;margin-top:20px;font-size:14px;color:#666}
-.switch a{color:#0a9e5c;font-weight:600;cursor:pointer;text-decoration:none}
-/* ===== APP HEADER ===== */
-.app-header{padding:16px 18px 10px;display:flex;justify-content:space-between;align-items:center;background:#fff}
-.app-header .title{font-weight:800;font-size:22px;color:#1a1a1a}
-.app-header .logo-sm{font-weight:800;font-size:24px;color:#0a9e5c;letter-spacing:-1px}
-.icon-btn{background:#f2f4f6;border:none;width:38px;height:38px;border-radius:50%;cursor:pointer;display:flex;justify-content:center;align-items:center;margin-left:8px}
-/* ===== CONTENT ===== */
-.content{flex:1;overflow-y:auto;background:#fafafa;padding-bottom:80px}
-.stories{display:flex;gap:14px;padding:12px 16px;overflow-x:auto;background:#fff}
-.story{display:flex;flex-direction:column;align-items:center;gap:6px;min-width:64px;cursor:pointer}
-.story .ring{width:60px;height:60px;border-radius:50%;background:linear-gradient(45deg,#f09433,#e6683c,#dc2743,#bc1888);padding:3px}
-.story .ring .in{width:100%;height:100%;border-radius:50%;border:2px solid #fff;display:flex;justify-content:center;align-items:center;font-weight:700;color:#fff;font-size:18px}
-.story span{font-size:11px;color:#444}
-.post{background:#fff;margin:10px 0;border-radius:4px}
-.post-head{display:flex;align-items:center;gap:10px;padding:10px 14px}
-.avatar{width:38px;height:38px;border-radius:50%;background:linear-gradient(45deg,#00c980,#056a45);display:flex;justify-content:center;align-items:center;color:#fff;font-weight:700;font-size:15px;flex-shrink:0}
-.post-head b{font-size:14px}
-.post-img{width:100%;height:280px;display:flex;justify-content:center;align-items:center;color:#fff;font-size:40px}
-.post-actions{padding:10px 14px;font-size:20px;display:flex;gap:16px}
-.post-body{padding:0 14px 12px;font-size:13px;color:#333}
-/* ===== SHORTS ===== */
-.shorts-wrap{flex:1;overflow-y:auto;scroll-snap-type:y mandatory}
-.short{height:100%;scroll-snap-align:start;position:relative;display:flex;justify-content:center;align-items:center}
-.short-info{position:absolute;bottom:90px;left:14px;color:#fff;z-index:3}
-.short-info b{font-size:15px}.short-info p{font-size:13px;opacity:.9;margin-top:4px;max-width:230px}
-.short-side{position:absolute;bottom:100px;right:12px;display:flex;flex-direction:column;gap:18px;align-items:center;z-index:3;color:#fff;font-size:11px}
-.short-side .act{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;font-size:24px}
-/* ===== GAMES ===== */
-.games-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:16px}
-.game-card{background:#fff;border-radius:18px;padding:20px 14px;text-align:center;cursor:pointer;transition:.2s;box-shadow:0 2px 10px rgba(0,0,0,.05)}
-.game-card:active{transform:scale(.95)}
-.game-card .gi{font-size:44px}
-.game-card b{display:block;margin-top:8px;font-size:14px}
-.game-card small{color:#0a9e5c;font-weight:600;font-size:11px}
-/* ===== CHAT ===== */
-.chat-item{display:flex;align-items:center;gap:12px;padding:12px 16px;cursor:pointer;background:#fff}
-.chat-item:active{background:#f2f4f6}
-.chat-item .ci{width:52px;height:52px;border-radius:50%;display:flex;justify-content:center;align-items:center;color:#fff;font-weight:700;font-size:18px;flex-shrink:0}
-.chat-item div b{font-size:15px}.chat-item div p{font-size:13px;color:#888}
-.chat-item .time{margin-left:auto;font-size:12px;color:#aaa}
-/* ===== SEARCH ===== */
-.search-bar{display:flex;align-items:center;gap:10px;background:#fff;border:2px solid #e3e6ea;margin:14px 16px;padding:12px 16px;border-radius:50px}
-.search-bar input{border:none;outline:none;flex:1;font-size:15px}
-.trends{padding:0 16px}
-.trend{background:#fff;border-radius:14px;padding:14px;margin-bottom:10px;cursor:pointer}
-.trend small{color:#888}.trend b{display:block;font-size:15px}.trend p{font-size:13px;color:#555;margin-top:3px}
-/* ===== PROFILE ===== */
-.pro-head{background:#fff;padding:24px 16px;text-align:center}
-.pro-head .big{width:90px;height:90px;border-radius:50%;background:linear-gradient(45deg,#00c980,#056a45);margin:0 auto;display:flex;justify-content:center;align-items:center;color:#fff;font-size:34px;font-weight:800}
-.pro-stats{display:flex;justify-content:center;gap:34px;margin-top:16px}
-.pro-stats div{text-align:center}.pro-stats b{display:block;font-size:18px}.pro-stats span{font-size:12px;color:#888}
-.btn-edit{margin-top:16px;background:#f2f4f6;border:none;padding:10px 30px;border-radius:10px;font-weight:600;cursor:pointer;font-size:14px}
-.tabs{display:flex;background:#fff;border-top:1px solid #eee;border-bottom:1px solid #eee}
-.tabs div{flex:1;text-align:center;padding:12px;font-size:20px;cursor:pointer;border-bottom:2px solid transparent}
-.tabs div.on{border-color:#0a9e5c}
-.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:2px;padding:2px}
-.grid3 div{aspect-ratio:1;background:linear-gradient(135deg,#a8e6cf,#00c980);display:flex;justify-content:center;align-items:center;font-size:26px}
-/* ===== SETTINGS ===== */
-.set-group{background:#fff;border-radius:16px;margin:12px 14px;overflow:hidden}
-.set-item{display:flex;align-items:center;gap:14px;padding:15px 16px;cursor:pointer;border-bottom:1px solid #f2f4f6}
-.set-item:last-child{border:none}
-.set-item:active{background:#f7f8f9}
-.set-item .si{width:36px;height:36px;border-radius:10px;display:flex;justify-content:center;align-items:center;font-size:17px;flex-shrink:0}
-.set-item div{flex:1}.set-item b{font-size:14.5px;font-weight:500;display:block}
-.set-item small{font-size:12px;color:#999}
-.set-item .arrow{color:#c5cbd2}
-.toggle{width:44px;height:26px;background:#dfe3e8;border-radius:20px;position:relative;transition:.3s;flex-shrink:0}
-.toggle.on{background:#0a9e5c}
-.toggle::after{content:'';position:absolute;width:20px;height:20px;background:#fff;border-radius:50%;top:3px;left:3px;transition:.3s}
-.toggle.on::after{left:21px}
-/* ===== BOTTOM NAV ===== */
-.bottom-nav{position:absolute;bottom:0;left:0;right:0;background:#fff;display:flex;border-top:1px solid #eee;padding:8px 0 12px;z-index:10}
-.bottom-nav div{flex:1;text-align:center;cursor:pointer;font-size:22px;opacity:.45;transition:.2s}
-.bottom-nav div.on{opacity:1}
-.bottom-nav div .center-btn{width:48px;height:48px;background:linear-gradient(90deg,#0fae66,#00c980);border-radius:14px;margin:-4px auto 0;display:flex;justify-content:center;align-items:center;color:#fff;font-size:24px}
-::-webkit-scrollbar{display:none}
+.auth-top{background:linear-gradient(140deg,#00e08a,#00b45a 45%,#009e4f);padding:60px 30px 90px;text-align:center;position:relative;overflow:hidden}
+.auth-card{background:#fff;border-radius:28px 28px 0 0;margin-top:-45px;padding:30px 24px 40px;flex:1}
+.auth-card h1{font-size:30px;color:#222;margin-bottom:22px}
+.input-box{display:flex;align-items:center;gap:10px;border:1.5px solid #dfe3e8;border-radius:14px;padding:13px 14px;margin-bottom:14px;background:#fff}
+.input-box:focus-within{border-color:#00b45a}
+.input-box input{border:none;outline:none;flex:1;font-size:15px;background:transparent;min-width:0}
+.eye{cursor:pointer;background:none;border:none;font-size:16px}
+.btn{width:100%;padding:14px;border:none;border-radius:999px;background:linear-gradient(135deg,#00d67e,#009e4f);color:#fff;font-size:17px;font-weight:800;cursor:pointer;margin-top:8px}
+.btn:active{transform:scale(.98)}
+.divider{display:flex;align-items:center;gap:12px;color:#8a9299;font-size:14px;margin:22px 0 16px}
+.divider::before,.divider::after{content:"";flex:1;height:1px;background:#e3e7eb}
+.social-row{display:flex;justify-content:center;gap:26px}
+.social{width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:900;cursor:pointer;border:none;color:#fff}
+.social:active{transform:scale(.92)}
+.g-g{background:#fff;border:2px solid #eee;color:#ea4335}
+.g-s{background:#fffc00}
+.g-f{background:#1877f2}
+.switch-auth{text-align:center;margin-top:24px;font-size:14px;color:#5b6167}
+.switch-auth a{color:#009e4f;font-weight:700;cursor:pointer}
+
+/* ===== APP ===== */
+#app{height:100vh}
+.app-header{background:linear-gradient(140deg,#00e08a,#009e4f);color:#fff;padding:14px 18px;display:flex;align-items:center;justify-content:space-between}
+.app-header .brand{font-size:22px;font-weight:900;font-style:italic}
+.content{flex:1;overflow-y:auto;background:#f7f8fa;padding-bottom:10px}
+.page{display:none}
+.page.active{display:block;animation:fade .3s ease}
+.bottom-nav{display:flex;background:#fff;border-top:1px solid #eceff2}
+.nav-btn{flex:1;padding:10px 0 12px;text-align:center;font-size:20px;background:none;border:none;cursor:pointer;filter:grayscale(1);opacity:.55}
+.nav-btn.active{filter:none;opacity:1;transform:translateY(-2px)}
+.nav-btn span{display:block;font-size:10px;color:#5b6167;margin-top:2px}
+
+/* Stories */
+.stories{display:flex;gap:14px;overflow-x:auto;padding:14px;background:#fff;border-bottom:1px solid #eceff2}
+.story{text-align:center;font-size:11px;color:#333;min-width:60px;cursor:pointer}
+.story-av{width:56px;height:56px;border-radius:50%;border:2.5px solid #00d67e;padding:2.5px;display:flex;align-items:center;justify-content:center;background:#fff}
+.story-av div{width:100%;height:100%;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:20px}
+.av1{background:linear-gradient(135deg,#f9ce34,#ee2a7b)}.av2{background:linear-gradient(135deg,#667eea,#764ba2)}
+.av3{background:linear-gradient(135deg,#11998e,#38ef7d)}.av4{background:linear-gradient(135deg,#fc4a1a,#f7b733)}
+.av5{background:linear-gradient(135deg,#12c2e9,#f64f59)}
+.my-story .story-av{border-style:dashed;color:#009e4f;font-size:26px;font-weight:800}
+
+/* Posts */
+.post{background:#fff;margin:12px;border-radius:16px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.05)}
+.post-head{display:flex;align-items:center;gap:10px;padding:10px 12px}
+.mini-av{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800}
+.muted{color:#8a9299;font-size:12px}
+.dots{margin-left:auto;font-size:20px;color:#5b6167;cursor:pointer}
+.post-img{height:230px;display:flex;align-items:center;justify-content:center;font-size:74px;position:relative;cursor:pointer;user-select:none}
+.p1{background:linear-gradient(135deg,#89f7fe,#66a6ff)}
+.p2{background:linear-gradient(135deg,#fddb92,#d1fdff)}
+.p3{background:linear-gradient(135deg,#a18cd1,#fbc2eb)}
+.big-heart{position:absolute;font-size:90px;animation:pop .8s ease}
+@keyframes pop{0%{transform:scale(0);opacity:0}40%{transform:scale(1.2);opacity:1}100%{transform:scale(1);opacity:0}}
+.post-actions{display:flex;gap:16px;padding:10px 12px;font-size:20px}
+.icon-btn{background:none;border:none;font-size:20px;cursor:pointer}
+.icon-btn.liked{animation:beat .3s ease}
+@keyframes beat{50%{transform:scale(1.4)}}
+.save-btn{margin-left:auto}
+.caption{padding:0 12px 12px;font-size:14px}
+
+/* Reels */
+.reel{height:72vh;min-height:430px;border-radius:18px;margin:12px;position:relative;display:flex;align-items:flex-end;color:#fff;overflow:hidden}
+.r1{background:linear-gradient(160deg,#ff512f,#dd2476)}
+.r2{background:linear-gradient(160deg,#11998e,#38ef7d)}
+.r3{background:linear-gradient(160deg,#41295a,#2f0743)}
+.reel-emoji{position:absolute;top:22%;left:50%;transform:translateX(-50%);font-size:90px}
+.reel-info{padding:16px;width:100%}
+.reel-info h3{font-size:16px;margin-bottom:4px}
+.reel-side{position:absolute;right:12px;bottom:20px;display:flex;flex-direction:column;gap:18px;align-items:center}
+.reel-side .icon-btn{color:#fff;font-size:24px}
+
+/* Search */
+.search-wrap{padding:20px}
+.google-logo{text-align:center;font-size:42px;font-weight:800;margin:14px 0 20px}
+.l-red{color:#ea4335}.l-blue{color:#4285f4}.l-green{color:#34a853}.l-yellow{color:#fbbc05}
+.search-bar{display:flex;align-items:center;gap:10px;background:#fff;border:1.5px solid #dfe3e8;border-radius:999px;padding:13px 18px;box-shadow:0 2px 8px rgba(0,0,0,.05)}
+.search-bar input{border:none;outline:none;flex:1;font-size:15px;min-width:0}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+.chip{background:#fff;border:1px solid #dfe3e8;border-radius:999px;padding:8px 14px;font-size:13px;cursor:pointer}
+.chip:active{background:#eafaf2}
+.link-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:24px}
+.link-card{background:#fff;border-radius:16px;padding:16px 6px;text-align:center;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.05)}
+.link-card div{width:44px;height:44px;border-radius:50%;margin:0 auto 8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;font-weight:900}
+.link-card p{font-size:12px;color:#333}
+
+/* YouTube */
+.yt-section{padding:6px 20px 20px}
+.yt-section h2{margin:18px 0 10px;font-size:18px}
+.yt-card{background:#fff;border-radius:16px;overflow:hidden;margin-bottom:14px;box-shadow:0 2px 8px rgba(0,0,0,.05)}
+.yt-card iframe{width:100%;height:210px;border:0;display:block}
+.yt-info{padding:10px 12px;font-size:13px}
+.yt-info b{display:block;font-size:14px}
+
+/* Games */
+.game-wrap{padding:20px;text-align:center}
+#gameStatus{font-size:17px;font-weight:700;margin:12px 0;color:#009e4f}
+#ttt{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-width:300px;margin:0 auto}
+.cell{aspect-ratio:1;background:#fff;border:2px solid #e3e7eb;border-radius:12px;font-size:36px;font-weight:800;color:#009e4f;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.cell:active{background:#eafaf2}
+.btn-outline{margin-top:16px;padding:10px 30px;border:2px solid #009e4f;border-radius:999px;background:#fff;color:#009e4f;font-weight:700;cursor:pointer}
+.coming{margin-top:26px;background:#fff;border-radius:16px;padding:22px;box-shadow:0 2px 8px rgba(0,0,0,.05)}
+
+/* Profile */
+.profile-head{background:#fff;padding:24px 16px;text-align:center;border-bottom:1px solid #eceff2}
+.big-av{width:86px;height:86px;border-radius:50%;background:linear-gradient(135deg,#00d67e,#009e4f);color:#fff;font-size:36px;font-weight:800;display:flex;align-items:center;justify-content:center;margin:0 auto 10px}
+.stats{display:flex;justify-content:center;gap:34px;margin:16px 0}
+.stats b{display:block;font-size:18px}
+.stats span{font-size:12px;color:#8a9299}
+.pill-row{display:flex;gap:10px;justify-content:center}
+.pill{padding:9px 22px;border-radius:999px;border:1.5px solid #dfe3e8;background:#fff;font-weight:700;cursor:pointer;font-size:14px}
+.pill.green{background:linear-gradient(135deg,#00d67e,#009e4f);color:#fff;border:none}
+.grid6{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;padding:4px}
+.gtile{aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:38px;color:#fff}
+
+/* Settings (Instagram style) */
+#settingsScreen{position:absolute;inset:0;background:#f3f4f6;overflow-y:auto;display:none;z-index:50}
+#settingsScreen.active{display:block}
+.set-head{background:linear-gradient(140deg,#00e08a,#009e4f);color:#fff;padding:16px 18px 20px;display:flex;align-items:center;gap:14px}
+.back-btn{background:none;border:none;color:#fff;font-size:22px;cursor:pointer}
+.set-summary{background:#fff;margin:14px;border-radius:16px;padding:16px;display:flex;gap:14px;align-items:center}
+.set-group{background:#fff;margin:14px;border-radius:16px;overflow:hidden}
+.set-group h4{padding:12px 16px 4px;color:#009e4f;font-size:13px;text-transform:uppercase}
+.set-row{display:flex;align-items:center;gap:12px;padding:14px 16px;border-top:1px solid #f0f2f4;cursor:pointer;font-size:15px}
+.set-row:active{background:#f7f8fa}
+.set-row .chev{margin-left:auto;color:#b3b9bf}
+.set-row.danger{color:#ed4956}
+
+/* Toast */
+#toast{position:fixed;bottom:95px;left:50%;transform:translateX(-50%);background:#222;color:#fff;padding:11px 20px;border-radius:999px;font-size:14px;opacity:0;pointer-events:none;transition:.3s;z-index:100;max-width:85%;text-align:center}
+#toast.show{opacity:1}
 </style>
 </head>
 <body>
 <div class="phone">
 
-<!-- SPLASH -->
-<div class="screen splash active" id="scr-splash">
-  <svg class="shape" style="top:40px;left:-30px" width="200" height="200"><polygon points="30,10 90,180 10,90" fill="none" stroke="#fff" stroke-width="2"/></svg>
-  <svg class="shape" style="top:120px;right:-20px" width="180" height="180"><polygon points="90,10 170,170 10,170" fill="none" stroke="#fff" stroke-width="2"/></svg>
-  <svg class="shape" style="bottom:120px;left:30px" width="140" height="140"><polygon points="70,10 130,130 10,130" fill="none" stroke="#fff" stroke-width="2"/></svg>
-  <svg class="shape" style="bottom:200px;right:40px" width="120" height="120"><polygon points="60,5 115,115 5,115" fill="none" stroke="#fff" stroke-width="2"/></svg>
-  <div class="logo">HMF</div>
-  <div class="tag">HMF book</div>
-  <button class="btn-get" onclick="show('scr-signup')">Get Started</button>
+<!-- ============ SPLASH SCREEN ============ -->
+<div id="splash" class="screen active">
+  <div class="shape" style="width:120px;height:120px;top:8%;left:-30px;transform:rotate(30deg)"></div>
+  <div class="shape" style="width:90px;height:90px;top:18%;right:-20px;transform:rotate(-15deg)"></div>
+  <div class="dotgrid" style="width:110px;height:80px;top:10%;right:12%"></div>
+  <div class="shape" style="width:150px;height:150px;bottom:-40px;left:-40px;transform:rotate(20deg)"></div>
+  <div class="dotgrid" style="width:100px;height:90px;bottom:14%;left:10%"></div>
+  <div class="shape" style="width:70px;height:70px;bottom:24%;right:14%;transform:rotate(45deg)"></div>
+  <div style="text-align:center;z-index:2">
+    <div class="hmf-logo">HMF</div>
+    <div class="hmf-sub">HMF book</div>
+  </div>
+  <button class="get-started" onclick="showScreen('auth')">Get Started</button>
 </div>
 
-<!-- SIGNUP -->
-<div class="screen auth" id="scr-signup">
-  <div class="auth-head"><div class="logo">HMF</div></div>
-  <div class="sheet">
-    <h2>Create Account</h2>
-    <div class="input-box"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9aa1ab" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg><input id="su-user" placeholder="Username"></div>
-    <div class="input-box"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9aa1ab" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg><input id="su-email" type="email" placeholder="Email"></div>
-    <div class="input-box"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9aa1ab" stroke-width="2"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 018 0v3"/></svg><input id="su-pass" type="password" placeholder="Password"><span onclick="togglePass('su-pass',this)" style="cursor:pointer">👁</span></div>
-    <button class="btn-main" onclick="signup()">Sign Up</button>
+<!-- ============ CREATE ACCOUNT ============ -->
+<div id="auth" class="screen">
+  <div class="auth-top">
+    <div class="shape" style="width:100px;height:100px;top:10px;left:-25px;transform:rotate(25deg)"></div>
+    <div class="shape" style="width:70px;height:70px;bottom:20px;right:-15px;transform:rotate(-20deg)"></div>
+    <div class="dotgrid" style="width:90px;height:60px;top:16px;right:14%"></div>
+    <div class="hmf-logo" style="font-size:56px">HMF</div>
+  </div>
+  <div class="auth-card">
+    <h1>Create Account</h1>
+    <div class="input-box">👤<input id="suUser" type="text" placeholder="Username"></div>
+    <div class="input-box">✉️<input id="suEmail" type="email" placeholder="Email"></div>
+    <div class="input-box">🔒<input id="suPass" type="password" placeholder="Password"><button class="eye" onclick="togglePass('suPass',this)">👁️</button></div>
+    <button class="btn" onclick="signup()">Sign Up</button>
     <div class="divider">Or continue with</div>
-    <div class="socials">
-      <button class="soc g" onclick="enterApp('Google')">G</button>
-      <button class="soc s" onclick="enterApp('Snapchat')">👻</button>
-      <button class="soc f" onclick="enterApp('Facebook')">f</button>
+    <div class="social-row">
+      <button class="social g-g" onclick="socialLogin('Google')">G</button>
+      <button class="social g-s" onclick="socialLogin('Snapchat')">👻</button>
+      <button class="social g-f" onclick="socialLogin('Facebook')">f</button>
     </div>
-    <p class="switch">Already have an account? <a onclick="show('scr-login')">Log in</a></p>
+    <p class="switch-auth">Already have an account? <a onclick="showScreen('login')">Log in</a></p>
   </div>
 </div>
 
-<!-- LOGIN -->
-<div class="screen auth" id="scr-login">
-  <div class="auth-head"><div class="logo">HMF</div></div>
-  <div class="sheet">
-    <h2>Welcome Back</h2>
-    <div class="input-box"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9aa1ab" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg><input type="email" placeholder="Email or Username"></div>
-    <div class="input-box"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9aa1ab" stroke-width="2"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 018 0v3"/></svg><input type="password" placeholder="Password"><span onclick="togglePass(this.previousElementSibling,this)" style="cursor:pointer">👁</span></div>
-    <button class="btn-main" onclick="enterApp()">Log In</button>
-    <div class="divider">Or continue with</div>
-    <div class="socials">
-      <button class="soc g" onclick="enterApp('Google')">G</button>
-      <button class="soc s" onclick="enterApp('Snapchat')">👻</button>
-      <button class="soc f" onclick="enterApp('Facebook')">f</button>
-    </div>
-    <p class="switch">Don't have an account? <a onclick="show('scr-signup')">Sign up</a></p>
+<!-- ============ LOGIN ============ -->
+<div id="login" class="screen">
+  <div class="auth-top"><div class="hmf-logo" style="font-size:56px">HMF</div></div>
+  <div class="auth-card">
+    <h1>Welcome Back</h1>
+    <div class="input-box">✉️<input id="liEmail" type="email" placeholder="Email"></div>
+    <div class="input-box">🔒<input id="liPass" type="password" placeholder="Password"><button class="eye" onclick="togglePass('liPass',this)">👁️</button></div>
+    <button class="btn" onclick="login()">Log In</button>
+    <p class="switch-auth">New here? <a onclick="showScreen('auth')">Create Account</a></p>
   </div>
 </div>
 
-<!-- HOME -->
-<div class="screen" id="scr-home">
-  <div class="app-header"><div class="logo-sm">HMF book</div><div><button class="icon-btn" onclick="show('scr-search')">🔍</button><button class="icon-btn" onclick="show('scr-settings')">⚙️</button></div></div>
+<!-- ============ MAIN APP ============ -->
+<div id="app" class="screen">
+  <div class="app-header">
+    <div class="brand">HMF book</div>
+    <div style="display:flex;gap:14px;font-size:20px">
+      <span onclick="showToast('Messages — demo')" style="cursor:pointer">📩</span>
+      <span onclick="openSettings()" style="cursor:pointer">⚙️</span>
+    </div>
+  </div>
+
   <div class="content">
-    <div class="stories">
-      <div class="story"><div class="ring"><div class="in" style="background:#0a9e5c">+</div></div><span>Your story</span></div>
-      <div class="story"><div class="ring"><div class="in" style="background:#e1306c">A</div></div><span>ali_khan</span></div>
-      <div class="story"><div class="ring"><div class="in" style="background:#f77737">S</div></div><span>sara99</span></div>
-      <div class="story"><div class="ring"><div class="in" style="background:#833ab4">U</div></div><span>usman</span></div>
-      <div class="story"><div class="ring"><div class="in" style="background:#fdcb6e">Z</div></div><span>zain_12</span></div>
+    <!-- HOME (Instagram + Snapchat style) -->
+    <div id="pageHome" class="page active">
+      <div class="stories">
+        <div class="story my-story"><div class="story-av"><div id="myStoryAvatar">+</div></div>Your story</div>
+        <div class="story"><div class="story-av"><div class="av1">A</div></div>Ahmed</div>
+        <div class="story"><div class="story-av"><div class="av2">S</div></div>Sara</div>
+        <div class="story"><div class="story-av"><div class="av3">B</div></div>Bilal</div>
+        <div class="story"><div class="story-av"><div class="av4">Z</div></div>Zara</div>
+        <div class="story"><div class="story-av"><div class="av5">U</div></div>Usman</div>
+      </div>
+
+      <div class="post">
+        <div class="post-head">
+          <div class="mini-av av1">A</div>
+          <div><b>Ahmed</b><br><span class="muted">Hunza Valley</span></div>
+          <span class="dots" onclick="showToast('Options — demo')">⋯</span>
+        </div>
+        <div class="post-img p1" onclick="doubleLike(this)">🏔️</div>
+        <div class="post-actions">
+          <button class="icon-btn like-btn" onclick="toggleLike(this)">🤍</button>
+          <button class="icon-btn" onclick="showToast('Comments — demo')">💬</button>
+          <button class="icon-btn" onclick="showToast('Shared! — demo')">✈️</button>
+          <button class="icon-btn save-btn" onclick="showToast('Saved — demo')">🔖</button>
+        </div>
+        <div class="caption"><b>Ahmed</b> Beautiful Pakistan 🇵🇰 #hmfbook</div>
+      </div>
+
+      <div class="post">
+        <div class="post-head">
+          <div class="mini-av av2">S</div>
+          <div><b>Sara</b><br><span class="muted">Original audio</span></div>
+          <span class="dots" onclick="showToast('Options — demo')">⋯</span>
+        </div>
+        <div class="post-img p2" onclick="doubleLike(this)">🎵</div>
+        <div class="post-actions">
+          <button class="icon-btn like-btn" onclick="toggleLike(this)">🤍</button>
+          <button class="icon-btn" onclick="showToast('Comments — demo')">💬</button>
+          <button class="icon-btn" onclick="showToast('Shared! — demo')">✈️</button>
+          <button class="icon-btn save-btn" onclick="showToast('Saved — demo')">🔖</button>
+        </div>
+        <div class="caption"><b>Sara</b> New reel trend! 🔥</div>
+      </div>
+
+      <div class="post">
+        <div class="post-head">
+          <div class="mini-av av3">B</div>
+          <div><b>Bilal</b><br><span class="muted">Gaming</span></div>
+          <span class="dots" onclick="showToast('Options — demo')">⋯</span>
+        </div>
+        <div class="post-img p3" onclick="doubleLike(this)">🎮</div>
+        <div class="post-actions">
+          <button class="icon-btn like-btn" onclick="toggleLike(this)">🤍</button>
+          <button class="icon-btn" onclick="showToast('Comments — demo')">💬</button>
+          <button class="icon-btn" onclick="showToast('Shared! — demo')">✈️</button>
+          <button class="icon-btn save-btn" onclick="showToast('Saved — demo')">🔖</button>
+        </div>
+        <div class="caption"><b>Bilal</b> Game night on HMF 🕹️</div>
+      </div>
     </div>
-    <div class="post">
-      <div class="post-head"><div class="avatar">A</div><div><b>ali_khan</b><br><small style="color:#999;font-size:12px">Lahore</small></div><span style="margin-left:auto">⋯</span></div>
-      <div class="post-img" style="background:linear-gradient(135deg,#00c980,#0a5c3c)">🌄</div>
-      <div class="post-actions"><span onclick="this.style.color='red'">❤️</span><span>💬</span><span>📤</span></div>
-      <div class="post-body"><b>1,240 likes</b><br>HMF book pehla post! 🎉 #hmfbook</div>
+
+    <!-- REELS (TikTok + YouTube) -->
+    <div id="pageReels" class="page">
+      <div class="reel r1">
+        <div class="reel-emoji">💃</div>
+        <div class="reel-side">
+          <button class="icon-btn like-btn" onclick="toggleLike(this)">🤍</button>
+          <button class="icon-btn" onclick="showToast('Comments — demo')">💬</button>
+          <button class="icon-btn" onclick="showToast('Shared! — demo')">✈️</button>
+        </div>
+        <div class="reel-info"><h3>@trendstar</h3><p>TikTok style trend 🎶 #trending</p></div>
+      </div>
+      <div class="reel r2">
+        <div class="reel-emoji">🐱</div>
+        <div class="reel-side">
+          <button class="icon-btn like-btn" onclick="toggleLike(this)">🤍</button>
+          <button class="icon-btn" onclick="showToast('Comments — demo')">💬</button>
+          <button class="icon-btn" onclick="showToast('Shared! — demo')">✈️</button>
+        </div>
+        <div class="reel-info"><h3>@funny.pets</h3><p>Cat boss 😹 #funny</p></div>
+      </div>
+      <div class="reel r3">
+        <div class="reel-emoji">⚽</div>
+        <div class="reel-side">
+          <button class="icon-btn like-btn" onclick="toggleLike(this)">🤍</button>
+          <button class="icon-btn" onclick="showToast('Comments — demo')">💬</button>
+          <button class="icon-btn" onclick="showToast('Shared! — demo')">✈️</button>
+        </div>
+        <div class="reel-info"><h3>@sports.hub</h3><p>Goal of the year! 🥅 #sports</p></div>
+      </div>
+
+      <div class="yt-section">
+        <h2>▶️ YouTube Videos</h2>
+        <div class="yt-card">
+          <iframe src="https://www.youtube.com/embed/jNQXAC9IVRw" title="YouTube video 1" loading="lazy" allowfullscreen></iframe>
+          <div class="yt-info"><b>Me at the zoo</b>The first YouTube video ever 🎬</div>
+        </div>
+        <div class="yt-card">
+          <iframe src="https://www.youtube.com/embed/9bZkp7q19f0" title="YouTube video 2" loading="lazy" allowfullscreen></iframe>
+          <div class="yt-info"><b>PSY - GANGNAM STYLE</b>Most legendary video 🎵</div>
+        </div>
+      </div>
     </div>
-    <div class="post">
-      <div class="post-head"><div class="avatar" style="background:linear-gradient(45deg,#f09433,#dc2743)">S</div><div><b>sara99</b><br><small style="color:#999;font-size:12px">Karachi</small></div><span style="margin-left:auto">⋯</span></div>
-      <div class="post-img" style="background:linear-gradient(135deg,#667eea,#764ba2)">🌇</div>
-      <div class="post-actions"><span>❤️</span><span>💬</span><span>📤</span></div>
-      <div class="post-body"><b>856 likes</b><br>Beautiful evening ✨</div>
+
+    <!-- SEARCH (Google style) -->
+    <div id="pageSearch" class="page">
+      <div class="search-wrap">
+        <div class="google-logo"><span class="l-blue">H</span><span class="l-red">M</span><span class="l-yellow">F</span><span class="l-green"> Search</span></div>
+        <div class="search-bar">🔍<input id="searchInput" type="text" placeholder="Search Google or type a URL" onkeydown="if(event.key==='Enter')doSearch()"></div>
+        <div class="chips">
+          <span class="chip" onclick="setQuery('TikTok trending')">TikTok trending</span>
+          <span class="chip" onclick="setQuery('YouTube shorts')">YouTube shorts</span>
+          <span class="chip" onclick="setQuery('Instagram reels')">Instagram reels</span>
+          <span class="chip" onclick="setQuery('Snapchat filters')">Snapchat filters</span>
+          <span class="chip" onclick="setQuery('Free online games')">Free online games</span>
+        </div>
+
+        <div class="link-grid">
+          <div class="link-card" onclick="openSite('https://www.google.com')"><div style="background:#fff;border:2px solid #eee;color:#4285f4">G</div><p>Google</p></div>
+          <div class="link-card" onclick="openSite('https://www.youtube.com')"><div style="background:#ff0000">▶</div><p>YouTube</p></div>
+          <div class="link-card" onclick="openSite('https://www.tiktok.com')"><div style="background:#010101">🎵</div><p>TikTok</p></div>
+          <div class="link-card" onclick="openSite('https://www.instagram.com')"><div style="background:linear-gradient(135deg,#f9ce34,#ee2a7b)">📷</div><p>Instagram</p></div>
+          <div class="link-card" onclick="openSite('https://www.snapchat.com')"><div style="background:#fffc00">👻</div><p>Snapchat</p></div>
+          <div class="link-card" onclick="openSite('https://www.facebook.com')"><div style="background:#1877f2">f</div><p>Facebook</p></div>
+        </div>
+      </div>
     </div>
+
+    <!-- GAMES -->
+    <div id="pageGames" class="page">
+      <div class="game-wrap">
+        <h2 style="font-size:20px">🎮 Tic Tac Toe</h2>
+        <div id="gameStatus">Turn: X</div>
+        <div id="ttt"></div>
+        <button class="btn-outline" onclick="resetGame()">🔄 Reset Game</button>
+        <div class="coming">
+          <div style="font-size:40px">🕹️</div>
+          <h3>More games coming soon!</h3>
+          <p class="muted">Racing, Puzzle, Ludo & more</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- PROFILE -->
+    <div id="pageProfile" class="page">
+      <div class="profile-head">
+        <div class="big-av" id="profileAvatar">H</div>
+        <h2 id="profileName">HMF User</h2>
+        <p class="muted" id="profileHandle">@hmfuser</p>
+        <div class="stats">
+          <div><b>12</b><span>Posts</span></div>
+          <div><b>1.2K</b><span>Followers</span></div>
+          <div><b>340</b><span>Following</span></div>
+        </div>
+        <div class="pill-row">
+          <button class="pill green" onclick="showToast('Edit profile — demo')">Edit Profile</button>
+          <button class="pill" onclick="openSettings()">Settings</button>
+        </div>
+      </div>
+      <div class="grid6">
+        <div class="gtile p1">🏔️</div>
+        <div class="gtile av1">📷</div>
+        <div class="gtile p2">🎵</div>
+        <div class="gtile r2">🌳</div>
+        <div class="gtile p3">🎨</div>
+        <div class="gtile av2">🍛</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOTTOM NAV -->
+  <div class="bottom-nav">
+    <button class="nav-btn active" onclick="switchTab(this,'pageHome')">🏠<span>Home</span></button>
+    <button class="nav-btn" onclick="switchTab(this,'pageReels')">🎬<span>Reels</span></button>
+    <button class="nav-btn" onclick="switchTab(this,'pageSearch')">🔍<span>Search</span></button>
+    <button class="nav-btn" onclick="switchTab(this,'pageGames')">🎮<span>Games</span></button>
+    <button class="nav-btn" onclick="switchTab(this,'pageProfile')">👤<span>Profile</span></button>
+  </div>
+
+  <!-- SETTINGS (Instagram style) -->
+  <div id="settingsScreen">
+    <div class="set-head">
+      <button class="back-btn" onclick="closeSettings()">←</button>
+      <h2>Settings</h2>
+    </div>
+    <div class="set-summary">
+      <div class="big-av" style="width:56px;height:56px;font-size:24px" id="settingsAvatar">H</div>
+      <div><b id="settingsName">HMF User</b><br><span class="muted" id="settingsHandle">@hmfuser</span></div>
+    </div>
+
+    <div class="set-group">
+      <h4>How you use HMF</h4>
+      <div class="set-row" onclick="showToast('Saved — demo')">🔖 Saved<span class="chev">›</span></div>
+      <div class="set-row" onclick="showToast('Archive — demo')">🗂️ Archive<span class="chev">›</span></div>
+      <div class="set-row" onclick="showToast('Your activity — demo')">📊 Your Activity<span class="chev">›</span></div>
+    </div>
+
+    <div class="set-group">
+      <h4>Who can see your content</h4>
+      <div class="set-row" onclick="showToast('Account privacy — demo')">🔒 Account Privacy<span class="chev">›</span></div>
+      <div class="set-row" onclick="showToast('Close friends — demo')">⭐ Close Friends<span class="chev">›</span></div>
+      <div class="set-row" onclick="showToast('Blocked — demo')">🚫 Blocked Accounts<span class="chev">›</span></div>
+    </div>
+
+    <div class="set-group">
+      <h4>Your app and media</h4>
+      <div class="set-row" onclick="showToast('Notifications — demo')">🔔 Notifications<span class="chev">›</span></div>
+      <div class="set-row" onclick="showToast('Time spent — demo')">⏰ Time Spent<span class="chev">›</span></div>
+      <div class="set-row" onclick="showToast('Language — demo')">🌐 Language<span class="chev">›</span></div>
+    </div>
+
+    <div class="set-group">
+      <h4>About</h4>
+      <div class="set-row" onclick="showToast('Help center — demo')">❓ Help Center<span class="chev">›</span></div>
+      <div class="set-row" onclick="showToast('HMF Book v1.0 — demo')">ℹ️ About HMF Book<span class="chev">›</span></div>
+      <div class="set-row danger" onclick="logout()">🚪 Log Out</div>
+    </div>
+    <div style="height:30px"></div>
   </div>
 </div>
 
-<!-- SHORTS -->
-<div class="screen" id="scr-shorts">
-  <div class="app-header"><div class="title">Shorts</div><button class="icon-btn" onclick="show('scr-settings')">⚙️</button></div>
-  <div class="shorts-wrap" id="shortsWrap"></div>
+<div id="toast"></div>
 </div>
 
-<!-- GAMES -->
-<div class="screen" id="scr-games">
-  <div class="app-header"><div class="title">🎮 Games</div><button class="icon-btn" onclick="show('scr-settings')">⚙️</button></div>
-  <div class="content"><div class="games-grid">
-    <div class="game-card" onclick="playGame('Snake')"><div class="gi">🐍</div><b>Snake</b><small>PLAY NOW</small></div>
-    <div class="game-card" onclick="playGame('Memory')"><div class="gi">🧠</div><b>Memory</b><small>PLAY NOW</small></div>
-    <div class="game-card" onclick="playGame('Tic Tac Toe')"><div class="gi">⭕</div><b>Tic Tac Toe</b><small>PLAY NOW</small></div>
-    <div class="game-card" onclick="playGame('2048')"><div class="gi">🔢</div><b>2048</b><small>PLAY NOW</small></div>
-    <div class="game-card" onclick="playGame('Quiz')"><div class="gi">❓</div><b>Quiz</b><small>PLAY NOW</small></div>
-    <div class="game-card" onclick="playGame('Racing')"><div class="gi">🏎️</div><b>Racing</b><small>PLAY NOW</small></div>
-  </div></div>
-</div>
-
-<!-- CHAT -->
-<div class="screen" id="scr-chat">
-  <div class="app-header"><div class="title">👻 Chats</div><button class="icon-btn" onclick="show('scr-settings')">⚙️</button></div>
-  <div class="content">
-    <div class="chat-item"><div class="ci" style="background:#fffc00;color:#333">👻</div><div><b>ali_khan</b><p><i style="color:#f43f5e;font-weight:700">❤ New Snap</i></p></div><span class="time">2m</span></div>
-    <div class="chat-item"><div class="ci" style="background:#833ab4">U</div><div><b>usman</b><p>Delivered</p></div><span class="time">10m</span></div>
-    <div class="chat-item"><div class="ci" style="background:#f77737">S</div><div><b>sara99</b><p><i style="color:#0a9e5c;font-weight:700">Opened</i></p></div><span class="time">1h</span></div>
-    <div class="chat-item"><div class="ci" style="background:#0a9e5c">G</div><div><b>HMF Group</b><p>Ali: Salam sab ko! 👋</p></div><span class="time">3h</span></div>
-    <div class="chat-item"><div class="ci" style="background:#e1306c">Z</div><div><b>zain_12</b><p><i style="color:#f43f5e;font-weight:700">🔥 Streak</i></p></div><span class="time">5h</span></div>
-  </div>
-</div>
-
-<!-- SEARCH -->
-<div class="screen" id="scr-search">
-  <div class="app-header"><div class="title">Search</div></div>
-  <div class="search-bar">🔍<input placeholder="Google, YouTube search karein..."></div>
-  <div class="content trends">
-    <div class="trend" onclick="openLink('https://youtube.com')"><small>📺 YouTube</small><b>Trending Videos</b><p>Watch latest videos on YouTube</p></div>
-    <div class="trend" onclick="openLink('https://google.com')"><small>🔎 Google</small><b>Search the Web</b><p>Search anything on Google</p></div>
-    <div class="trend" onclick="openLink('https://tiktok.com')"><small>🎵 TikTok</small><b>Trending Now</b><p>Viral TikTok videos</p></div>
-    <div class="trend" onclick="openLink('https://instagram.com')"><small>📸 Instagram</small><b>Explore</b><p>Photos & reels from Instagram</p></div>
-    <div class="trend" onclick="openLink('https://snapchat.com')"><small>👻 Snapchat</small><b>Snap Map</b><p>See what's happening nearby</p></div>
-  </div>
-</div>
-
-<!-- PROFILE -->
-<div class="screen" id="scr-profile">
-  <div class="app-header"><div class="title">My Profile</div><div><button class="icon-btn" onclick="show('scr-settings')">☰</button></div></div>
-  <div class="pro-head">
-    <div class="big" id="proAvatar">H</div>
-    <h3 style="margin-top:10px" id="proName">@hmf_user</h3>
-    <p style="font-size:13px;color:#888">HMF Book 🚀 | All-in-one app</p>
-    <div class="pro-stats">
-      <div><b>24</b><span>Posts</span></div>
-      <div><b>1.2K</b><span>Followers</span></div>
-      <div><b>380</b><span>Following</span></div>
-    </div>
-    <button class="btn-edit" onclick="show('scr-settings')">Edit Profile</button>
-  </div>
-  <div class="tabs"><div class="on">🖼️</div><div>🎬</div><div>🏷️</div></div>
-  <div class="content" style="padding-bottom:90px"><div class="grid3">
-    <div>🌄</div><div>🌇</div><div>🌊</div><div>🏔️</div><div>🌆</div><div>🌺</div><div>🎮</div><div>📸</div><div>✨</div>
-  </div></div>
-</div>
-
-<!-- SETTINGS (Instagram Style) -->
-<div class="screen" id="scr-settings">
-  <div class="app-header"><div class="title">Settings & Privacy</div></div>
-  <div class="content" style="padding-bottom:30px">
-    <div class="set-item" style="cursor:default"><div class="avatar">H</div><div><b id="setName">@hmf_user</b><small>HMF Book account</small></div></div>
-
-    <div class="set-group">
-      <div class="set-item" onclick="alert('Account Center')"><div class="si" style="background:#e8f7f0">👤</div><div><b>Account Center</b><small>Password, Personal details</small></div><span class="arrow">›</span></div>
-      <div class="set-item" onclick="alert('Saved posts')"><div class="si" style="background:#fff5e6">🔖</div><div><b>Saved</b><small>Manage saved posts</small></div><span class="arrow">›</span></div>
-      <div class="set-item" onclick="alert('Archive')"><div class="si" style="background:#f0efff">🗄️</div><div><b>Archive</b><small>Stories & posts archive</small></div><span class="arrow">›</span></div>
-    </div>
-
-    <div class="set-group">
-      <div class="set-item" onclick="alert('Notifications')"><div class="si" style="background:#ffe8ec">🔔</div><div><b>Notifications</b><small>Likes, comments, follows</small></div><span class="arrow">›</span></div>
-      <div class="set-item" onclick="toggleT(this)"><div class="si" style="background:#e8f2ff">🌙</div><div><b>Dark Mode</b><small>Change app theme</small></div><div class="toggle"></div></div>
-      <div class="set-item" onclick="toggleT(this)"><div class="si" style="background:#e8f7f0">⏰</div><div><b>Your Activity</b><small>Time spent reminders</small></div><div class="toggle on"></div></div>
-    </div>
-
-    <div class="set-group">
-      <div class="set-item" onclick="alert('Privacy')"><div class="si" style="background:#e8f7f0">🔒</div><div><b>Privacy</b><small>Private account, comments</small></div><span class="arrow">›</span></div>
-      <div class="set-item" onclick="alert('Security')"><div class="si" style="background:#fff5e6">🛡️</div><div><b>Security</b><small>Two-factor authentication</small></div><span class="arrow">›</span></div>
-      <div class="set-item" onclick="alert('Blocked accounts')"><div class="si" style="background:#ffe8ec">🚫</div><div><b>Blocked</b><small>Blocked accounts list</small></div><span class="arrow">›</span></div>
-    </div>
-
-    <div class="set-group">
-      <div class="set-item" onclick="alert('Language: English / اردو')"><div class="si" style="background:#f0efff">🌐</div><div><b>Language</b><small>English (US)</small></div><span class="arrow">›</span></div>
-      <div class="set-item" onclick="alert('Data Saver')"><div class="si" style="background:#e8f2ff">📶</div><div><b>Data Usage & Media Quality</b><small>Data saver mode</small></div><span class="arrow">›</span></div>
-      <div class="set-item" onclick="alert('Linked apps: YouTube, TikTok, Google, Snapchat, Instagram, Games')"><div class="si" style="background:#e8f7f0">🔗</div><div><b>Linked Apps</b><small>Connect your other apps</small></div><span class="arrow">›</span></div>
-    </div>
-
-    <div class="set-group">
-      <div class="set-item" onclick="alert('Help Center')"><div class="si" style="background:#fff5e6">❓</div><div><b>Help</b><small>Report a problem</small></div><span class="arrow">›</span></div>
-      <div class="set-item" onclick="alert('About HMF Book v1.0')"><div class="si" style="background:#f0efff">ℹ️</div><div><b>About</b><small>HMF Book v1.0</small></div><span class="arrow">›</span></div>
-    </div>
-
-    <div class="set-group" style="text-align:center;padding:8px 0">
-      <div class="set-item" style="justify-content:center;color:#e1306c;font-weight:600" onclick="logout()">Log Out</div>
-    </div>
-  </div>
-</div>
-
-<!-- BOTTOM NAV -->
-<div class="bottom-nav" id="bottomNav" style="display:none">
-  <div class="on" onclick="goTab(this,'scr-home')">🏠</div>
-  <div onclick="goTab(this,'scr-shorts')">🎬</div>
-  <div onclick="goTab(this,'scr-games')"><div class="center-btn">🎮</div></div>
-  <div onclick="goTab(this,'scr-chat')">👻</div>
-  <div onclick="goTab(this,'scr-profile')">👤</div>
-</div>
-
-</div>
 <script>
-function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');}
-function togglePass(id,el){id.type=id.type==='password'?'text':'password';}
-function signup(){const u=document.getElementById('su-user').value;if(!u){alert('Username likhein!');return;}enterApp();}
-function enterApp(via){if(via)alert('Signed in with '+via+'!');document.getElementById('proName').textContent='@'+(document.getElementById('su-user').value||'hmf_user');document.getElementById('setName').textContent='@'+(document.getElementById('su-user').value||'hmf_user');document.getElementById('proAvatar').textContent=(document.getElementById('su-user').value||'H')[0].toUpperCase();show('scr-home');document.getElementById('bottomNav').style.display='flex';}
-function logout(){document.getElementById('bottomNav').style.display='none';show('scr-login');}
-function goTab(el,id){document.querySelectorAll('.bottom-nav div').forEach(d=>d.classList.remove('on'));el.classList.add('on');show(id);}
-function toggleT(el){el.querySelector('.toggle').classList.toggle('on');}
-function openLink(url){window.open(url,'_blank');}
-function playGame(g){alert('🎮 '+g+' loading... Coming soon!');}
-/* Shorts content */
-const shorts=[{g:'linear-gradient(135deg,#ff6b6b,#ee5a24)',u:'ali_khan',d:'Viral dance 🔥 #trending',l:'12.5K'},{g:'linear-gradient(135deg,#0abde3,#341f97)',u:'sara99',d:'Nature vibes 🌊',l:'8.2K'},{g:'linear-gradient(135deg,#00c980,#0a5c3c)',u:'usman',d:'HMF Book shorts! 🚀',l:'21K'},{g:'linear-gradient(135deg,#f368e0,#a55eea)',u:'zain_12',d:'Funny moment 😂',l:'15K'}];
-document.getElementById('shortsWrap').innerHTML=shorts.map(s=>`<div class="short" style="background:${s.g}"><div class="short-info"><b>@${s.u}</b><p>${s.d}</p></div><div class="short-side"><div class="act">❤️<span>${s.l}</span></div><div class="act">💬<span>320</span></div><div class="act">📤<span>Share</span></div></div><div style="font-size:70px;opacity:.5">▶️</div></div>`).join('');
+/* ---------- Navigation ---------- */
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});
+  document.getElementById(id).classList.add('active');
+}
+function switchTab(btn,id){
+  document.querySelectorAll('.nav-btn').forEach(function(b){b.classList.remove('active');});
+  btn.classList.add('active');
+  document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});
+  document.getElementById(id).classList.add('active');
+  closeSettings();
+}
+function openSettings(){document.getElementById('settingsScreen').classList.add('active');}
+function closeSettings(){document.getElementById('settingsScreen').classList.remove('active');}
+
+/* ---------- Toast ---------- */
+var toastTimer;
+function showToast(msg){
+  var t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(function(){t.classList.remove('show');},2500);
+}
+
+/* ---------- Auth ---------- */
+function togglePass(id,btn){
+  var inp=document.getElementById(id);
+  if(inp.type==='password'){inp.type='text';btn.textContent='🙈';}
+  else{inp.type='password';btn.textContent='👁️';}
+}
+function signup(){
+  var u=document.getElementById('suUser').value.trim();
+  var e=document.getElementById('suEmail').value.trim();
+  var p=document.getElementById('suPass').value;
+  if(!u||!e||!p){showToast('⚠️ Please fill all fields');return;}
+  if(p.length<6){showToast('⚠️ Password must be 6+ characters');return;}
+  localStorage.setItem('hmfUser',JSON.stringify({u:u,e:e,p:p}));
+  enterApp(u);
+  showToast('✅ Account created. Welcome '+u+'!');
+}
+function login(){
+  var e=document.getElementById('liEmail').value.trim();
+  var p=document.getElementById('liPass').value;
+  var saved=JSON.parse(localStorage.getItem('hmfUser')||'null');
+  if(saved&&saved.e===e&&saved.p===p){enterApp(saved.u);showToast('✅ Welcome back '+saved.u+'!');}
+  else{showToast('❌ Invalid email or password');}
+}
+function socialLogin(name){
+  var u=name+' User';
+  localStorage.setItem('hmfUser',JSON.stringify({u:u,e:name.toLowerCase()+'.user@demo.com',p:'demo123'}));
+  enterApp(u);
+  showToast('✅ '+name+' demo login successful');
+}
+function enterApp(name){
+  var ini=name.charAt(0).toUpperCase();
+  var handle='@'+name.toLowerCase().replace(/\s+/g,'');
+  document.getElementById('profileName').textContent=name;
+  document.getElementById('settingsName').textContent=name;
+  document.getElementById('profileHandle').textContent=handle;
+  document.getElementById('settingsHandle').textContent=handle;
+  document.getElementById('profileAvatar').textContent=ini;
+  document.getElementById('settingsAvatar').textContent=ini;
+  document.getElementById('myStoryAvatar').textContent=ini;
+  showScreen('app');
+  switchTab(document.querySelector('.nav-btn'),'pageHome');
+}
+function logout(){
+  closeSettings();
+  showScreen('splash');
+  showToast('👋 Logged out');
+}
+
+/* ---------- Likes ---------- */
+function toggleLike(btn){
+  btn.classList.toggle('liked');
+  if(btn.classList.contains('liked')){btn.textContent='❤️';showToast('Liked ❤️');}
+  else{btn.textContent='🤍';}
+}
+var lastTap=0;
+function doubleLike(el){
+  var now=Date.now();
+  if(now-lastTap<350){
+    var btn=el.parentElement.querySelector('.like-btn');
+    if(btn&&!btn.classList.contains('liked')){btn.classList.add('liked');btn.textContent='❤️';}
+    var h=document.createElement('div');
+    h.className='big-heart';h.textContent='❤️';
+    el.appendChild(h);
+    setTimeout(function(){h.remove();},800);
+  }
+  lastTap=now;
+}
+
+/* ---------- Search ---------- */
+function doSearch(){
+  var q=document.getElementById('searchInput').value.trim();
+  if(!q){showToast('Type something to search');return;}
+  window.open('https://www.google.com/search?q='+encodeURIComponent(q),'_blank');
+}
+function setQuery(q){document.getElementById('searchInput').value=q;doSearch();}
+function openSite(url){window.open(url,'_blank');}
+
+/* ---------- Tic Tac Toe Game ---------- */
+var board=['','','','','','','','',''];
+var current='X';
+var gameOver=false;
+function renderBoard(){
+  var c=document.getElementById('ttt');
+  c.innerHTML='';
+  for(var i=0;i<9;i++){
+    (function(i){
+      var d=document.createElement('div');
+      d.className='cell';d.textContent=board[i];
+      d.onclick=function(){playCell(i);};
+      c.appendChild(d);
+    })(i);
+  }
+}
+function playCell(i){
+  if(gameOver||board[i]!=='')return;
+  board[i]=current;renderBoard();
+  var w=checkWin();
+  if(w){gameOver=true;
+    document.getElementById('gameStatus').textContent=(w==='Draw')?'Draw! 🤝':(w+' wins! 🎉');
+    return;}
+  current=(current==='X')?'O':'X';
+  document.getElementById('gameStatus').textContent='Turn: '+current;
+}
+function checkWin(){
+  var lines=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+  for(var i=0;i<lines.length;i++){
+    var a=lines[i][0],b=lines[i][1],c=lines[i][2];
+    if(board[a]!==''&&board[a]===board[b]&&board[a]===board[c])return board[a];
+  }
+  return board.indexOf('')===-1?'Draw':null;
+}
+function resetGame(){
+  board=['','','','','','','','',''];current='X';gameOver=false;
+  renderBoard();
+  document.getElementById('gameStatus').textContent='Turn: X';
+}
+renderBoard();
 </script>
 </body>
 </html>
