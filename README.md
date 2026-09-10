@@ -1,33 +1,36 @@
+import streamlit as st
+import streamlit.components.v1 as components
+
+st.set_page_config(page_title="HMF Book", page_icon="🟢", layout="wide")
+
+st.markdown("<style>#MainMenu{visibility:hidden}footer{visibility:hidden}header{visibility:hidden}</style>", unsafe_allow_html=True)
+
+APP_HTML = r"""
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>HMF Book</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',Arial,sans-serif;-webkit-tap-highlight-color:transparent}
-body{background:#e8eaed;display:flex;justify-content:center}
-.phone{width:100%;max-width:430px;min-height:100vh;background:#fff;position:relative;box-shadow:0 0 30px rgba(0,0,0,.15)}
+body{background:#fff;display:flex;justify-content:center}
+.phone{width:100%;max-width:430px;min-height:100vh;background:#fff;position:relative}
 .screen{display:none;min-height:100vh;flex-direction:column;position:relative}
 .screen.active{display:flex;animation:fade .35s ease}
 @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
-
-/* ===== SPLASH ===== */
 .shape{position:absolute;border:2px solid rgba(255,255,255,.18)}
 .dotgrid{position:absolute;background-image:radial-gradient(rgba(255,255,255,.4) 1.5px,transparent 1.5px);background-size:12px 12px}
-#splash{background:linear-gradient(140deg,#00e08a,#00b45a 45%,#009e4f);justify-content:center;align-items:center;position:relative;overflow:hidden}
-.hmf-logo{font-size:78px;font-weight:900;color:#fff;letter-spacing:2px;font-style:italic;text-shadow:0 4px 18px rgba(0,0,0,.15)}
+#splash{background:linear-gradient(140deg,#00e08a,#00b45a 45%,#009e4f);justify-content:center;align-items:center;overflow:hidden}
+.hmf-logo{font-size:78px;font-weight:900;color:#fff;letter-spacing:2px;font-style:italic}
 .hmf-sub{font-size:26px;color:#fff;font-weight:600;margin-top:6px}
 .get-started{margin-top:70px;padding:15px 60px;border:none;border-radius:999px;background:#fff;color:#009e4f;font-size:19px;font-weight:800;cursor:pointer;box-shadow:0 8px 20px rgba(0,0,0,.18);z-index:2}
 .get-started:active{transform:scale(.97)}
-
-/* ===== AUTH ===== */
 .auth-top{background:linear-gradient(140deg,#00e08a,#00b45a 45%,#009e4f);padding:60px 30px 90px;text-align:center;position:relative;overflow:hidden}
 .auth-card{background:#fff;border-radius:28px 28px 0 0;margin-top:-45px;padding:30px 24px 40px;flex:1}
 .auth-card h1{font-size:30px;color:#222;margin-bottom:22px}
-.input-box{display:flex;align-items:center;gap:10px;border:1.5px solid #dfe3e8;border-radius:14px;padding:13px 14px;margin-bottom:14px;background:#fff}
-.input-box:focus-within{border-color:#00b45a}
-.input-box input{border:none;outline:none;flex:1;font-size:15px;background:transparent;min-width:0}
+.input-box{display:flex;align-items:center;gap:10px;border:1.5px solid #dfe3e8;border-radius:14px;padding:13px 14px;margin-bottom:14px}
+.input-box input{border:none;outline:none;flex:1;font-size:15px;min-width:0}
 .eye{cursor:pointer;background:none;border:none;font-size:16px}
 .btn{width:100%;padding:14px;border:none;border-radius:999px;background:linear-gradient(135deg,#00d67e,#009e4f);color:#fff;font-size:17px;font-weight:800;cursor:pointer;margin-top:8px}
 .btn:active{transform:scale(.98)}
@@ -35,14 +38,11 @@ body{background:#e8eaed;display:flex;justify-content:center}
 .divider::before,.divider::after{content:"";flex:1;height:1px;background:#e3e7eb}
 .social-row{display:flex;justify-content:center;gap:26px}
 .social{width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:900;cursor:pointer;border:none;color:#fff}
-.social:active{transform:scale(.92)}
 .g-g{background:#fff;border:2px solid #eee;color:#ea4335}
 .g-s{background:#fffc00}
 .g-f{background:#1877f2}
 .switch-auth{text-align:center;margin-top:24px;font-size:14px;color:#5b6167}
 .switch-auth a{color:#009e4f;font-weight:700;cursor:pointer}
-
-/* ===== APP ===== */
 #app{height:100vh}
 .app-header{background:linear-gradient(140deg,#00e08a,#009e4f);color:#fff;padding:14px 18px;display:flex;align-items:center;justify-content:space-between}
 .app-header .brand{font-size:22px;font-weight:900;font-style:italic}
@@ -53,18 +53,16 @@ body{background:#e8eaed;display:flex;justify-content:center}
 .nav-btn{flex:1;padding:10px 0 12px;text-align:center;font-size:20px;background:none;border:none;cursor:pointer;filter:grayscale(1);opacity:.55}
 .nav-btn.active{filter:none;opacity:1;transform:translateY(-2px)}
 .nav-btn span{display:block;font-size:10px;color:#5b6167;margin-top:2px}
-
-/* Stories */
 .stories{display:flex;gap:14px;overflow-x:auto;padding:14px;background:#fff;border-bottom:1px solid #eceff2}
 .story{text-align:center;font-size:11px;color:#333;min-width:60px;cursor:pointer}
 .story-av{width:56px;height:56px;border-radius:50%;border:2.5px solid #00d67e;padding:2.5px;display:flex;align-items:center;justify-content:center;background:#fff}
 .story-av div{width:100%;height:100%;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:20px}
-.av1{background:linear-gradient(135deg,#f9ce34,#ee2a7b)}.av2{background:linear-gradient(135deg,#667eea,#764ba2)}
-.av3{background:linear-gradient(135deg,#11998e,#38ef7d)}.av4{background:linear-gradient(135deg,#fc4a1a,#f7b733)}
+.av1{background:linear-gradient(135deg,#f9ce34,#ee2a7b)}
+.av2{background:linear-gradient(135deg,#667eea,#764ba2)}
+.av3{background:linear-gradient(135deg,#11998e,#38ef7d)}
+.av4{background:linear-gradient(135deg,#fc4a1a,#f7b733)}
 .av5{background:linear-gradient(135deg,#12c2e9,#f64f59)}
 .my-story .story-av{border-style:dashed;color:#009e4f;font-size:26px;font-weight:800}
-
-/* Posts */
 .post{background:#fff;margin:12px;border-radius:16px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.05)}
 .post-head{display:flex;align-items:center;gap:10px;padding:10px 12px}
 .mini-av{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800}
@@ -82,50 +80,32 @@ body{background:#e8eaed;display:flex;justify-content:center}
 @keyframes beat{50%{transform:scale(1.4)}}
 .save-btn{margin-left:auto}
 .caption{padding:0 12px 12px;font-size:14px}
-
-/* Reels */
-.reel{height:72vh;min-height:430px;border-radius:18px;margin:12px;position:relative;display:flex;align-items:flex-end;color:#fff;overflow:hidden}
+.reel{height:60vh;min-height:380px;border-radius:18px;margin:12px;position:relative;display:flex;align-items:flex-end;color:#fff;overflow:hidden}
 .r1{background:linear-gradient(160deg,#ff512f,#dd2476)}
 .r2{background:linear-gradient(160deg,#11998e,#38ef7d)}
 .r3{background:linear-gradient(160deg,#41295a,#2f0743)}
-.reel-emoji{position:absolute;top:22%;left:50%;transform:translateX(-50%);font-size:90px}
+.reel-emoji{position:absolute;top:20%;left:50%;transform:translateX(-50%);font-size:90px}
 .reel-info{padding:16px;width:100%}
 .reel-info h3{font-size:16px;margin-bottom:4px}
-.reel-side{position:absolute;right:12px;bottom:20px;display:flex;flex-direction:column;gap:18px;align-items:center}
+.reel-side{position:absolute;right:12px;bottom:20px;display:flex;flex-direction:column;gap:18px}
 .reel-side .icon-btn{color:#fff;font-size:24px}
-
-/* Search */
 .search-wrap{padding:20px}
-.google-logo{text-align:center;font-size:42px;font-weight:800;margin:14px 0 20px}
+.google-logo{text-align:center;font-size:40px;font-weight:800;margin:14px 0 20px}
 .l-red{color:#ea4335}.l-blue{color:#4285f4}.l-green{color:#34a853}.l-yellow{color:#fbbc05}
-.search-bar{display:flex;align-items:center;gap:10px;background:#fff;border:1.5px solid #dfe3e8;border-radius:999px;padding:13px 18px;box-shadow:0 2px 8px rgba(0,0,0,.05)}
+.search-bar{display:flex;align-items:center;gap:10px;background:#fff;border:1.5px solid #dfe3e8;border-radius:999px;padding:13px 18px}
 .search-bar input{border:none;outline:none;flex:1;font-size:15px;min-width:0}
 .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
 .chip{background:#fff;border:1px solid #dfe3e8;border-radius:999px;padding:8px 14px;font-size:13px;cursor:pointer}
-.chip:active{background:#eafaf2}
 .link-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:24px}
 .link-card{background:#fff;border-radius:16px;padding:16px 6px;text-align:center;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.05)}
 .link-card div{width:44px;height:44px;border-radius:50%;margin:0 auto 8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;font-weight:900}
 .link-card p{font-size:12px;color:#333}
-
-/* YouTube */
-.yt-section{padding:6px 20px 20px}
-.yt-section h2{margin:18px 0 10px;font-size:18px}
-.yt-card{background:#fff;border-radius:16px;overflow:hidden;margin-bottom:14px;box-shadow:0 2px 8px rgba(0,0,0,.05)}
-.yt-card iframe{width:100%;height:210px;border:0;display:block}
-.yt-info{padding:10px 12px;font-size:13px}
-.yt-info b{display:block;font-size:14px}
-
-/* Games */
 .game-wrap{padding:20px;text-align:center}
 #gameStatus{font-size:17px;font-weight:700;margin:12px 0;color:#009e4f}
 #ttt{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-width:300px;margin:0 auto}
 .cell{aspect-ratio:1;background:#fff;border:2px solid #e3e7eb;border-radius:12px;font-size:36px;font-weight:800;color:#009e4f;display:flex;align-items:center;justify-content:center;cursor:pointer}
-.cell:active{background:#eafaf2}
 .btn-outline{margin-top:16px;padding:10px 30px;border:2px solid #009e4f;border-radius:999px;background:#fff;color:#009e4f;font-weight:700;cursor:pointer}
 .coming{margin-top:26px;background:#fff;border-radius:16px;padding:22px;box-shadow:0 2px 8px rgba(0,0,0,.05)}
-
-/* Profile */
 .profile-head{background:#fff;padding:24px 16px;text-align:center;border-bottom:1px solid #eceff2}
 .big-av{width:86px;height:86px;border-radius:50%;background:linear-gradient(135deg,#00d67e,#009e4f);color:#fff;font-size:36px;font-weight:800;display:flex;align-items:center;justify-content:center;margin:0 auto 10px}
 .stats{display:flex;justify-content:center;gap:34px;margin:16px 0}
@@ -136,8 +116,6 @@ body{background:#e8eaed;display:flex;justify-content:center}
 .pill.green{background:linear-gradient(135deg,#00d67e,#009e4f);color:#fff;border:none}
 .grid6{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;padding:4px}
 .gtile{aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:38px;color:#fff}
-
-/* Settings (Instagram style) */
 #settingsScreen{position:absolute;inset:0;background:#f3f4f6;overflow-y:auto;display:none;z-index:50}
 #settingsScreen.active{display:block}
 .set-head{background:linear-gradient(140deg,#00e08a,#009e4f);color:#fff;padding:16px 18px 20px;display:flex;align-items:center;gap:14px}
@@ -146,11 +124,8 @@ body{background:#e8eaed;display:flex;justify-content:center}
 .set-group{background:#fff;margin:14px;border-radius:16px;overflow:hidden}
 .set-group h4{padding:12px 16px 4px;color:#009e4f;font-size:13px;text-transform:uppercase}
 .set-row{display:flex;align-items:center;gap:12px;padding:14px 16px;border-top:1px solid #f0f2f4;cursor:pointer;font-size:15px}
-.set-row:active{background:#f7f8fa}
 .set-row .chev{margin-left:auto;color:#b3b9bf}
 .set-row.danger{color:#ed4956}
-
-/* Toast */
 #toast{position:fixed;bottom:95px;left:50%;transform:translateX(-50%);background:#222;color:#fff;padding:11px 20px;border-radius:999px;font-size:14px;opacity:0;pointer-events:none;transition:.3s;z-index:100;max-width:85%;text-align:center}
 #toast.show{opacity:1}
 </style>
@@ -158,14 +133,11 @@ body{background:#e8eaed;display:flex;justify-content:center}
 <body>
 <div class="phone">
 
-<!-- ============ SPLASH SCREEN ============ -->
 <div id="splash" class="screen active">
   <div class="shape" style="width:120px;height:120px;top:8%;left:-30px;transform:rotate(30deg)"></div>
   <div class="shape" style="width:90px;height:90px;top:18%;right:-20px;transform:rotate(-15deg)"></div>
   <div class="dotgrid" style="width:110px;height:80px;top:10%;right:12%"></div>
   <div class="shape" style="width:150px;height:150px;bottom:-40px;left:-40px;transform:rotate(20deg)"></div>
-  <div class="dotgrid" style="width:100px;height:90px;bottom:14%;left:10%"></div>
-  <div class="shape" style="width:70px;height:70px;bottom:24%;right:14%;transform:rotate(45deg)"></div>
   <div style="text-align:center;z-index:2">
     <div class="hmf-logo">HMF</div>
     <div class="hmf-sub">HMF book</div>
@@ -173,14 +145,8 @@ body{background:#e8eaed;display:flex;justify-content:center}
   <button class="get-started" onclick="showScreen('auth')">Get Started</button>
 </div>
 
-<!-- ============ CREATE ACCOUNT ============ -->
 <div id="auth" class="screen">
-  <div class="auth-top">
-    <div class="shape" style="width:100px;height:100px;top:10px;left:-25px;transform:rotate(25deg)"></div>
-    <div class="shape" style="width:70px;height:70px;bottom:20px;right:-15px;transform:rotate(-20deg)"></div>
-    <div class="dotgrid" style="width:90px;height:60px;top:16px;right:14%"></div>
-    <div class="hmf-logo" style="font-size:56px">HMF</div>
-  </div>
+  <div class="auth-top"><div class="hmf-logo" style="font-size:56px">HMF</div></div>
   <div class="auth-card">
     <h1>Create Account</h1>
     <div class="input-box">👤<input id="suUser" type="text" placeholder="Username"></div>
@@ -197,7 +163,6 @@ body{background:#e8eaed;display:flex;justify-content:center}
   </div>
 </div>
 
-<!-- ============ LOGIN ============ -->
 <div id="login" class="screen">
   <div class="auth-top"><div class="hmf-logo" style="font-size:56px">HMF</div></div>
   <div class="auth-card">
@@ -209,18 +174,15 @@ body{background:#e8eaed;display:flex;justify-content:center}
   </div>
 </div>
 
-<!-- ============ MAIN APP ============ -->
 <div id="app" class="screen">
   <div class="app-header">
     <div class="brand">HMF book</div>
     <div style="display:flex;gap:14px;font-size:20px">
-      <span onclick="showToast('Messages — demo')" style="cursor:pointer">📩</span>
+      <span onclick="showToast('Messages - demo')" style="cursor:pointer">📩</span>
       <span onclick="openSettings()" style="cursor:pointer">⚙️</span>
     </div>
   </div>
-
   <div class="content">
-    <!-- HOME (Instagram + Snapchat style) -->
     <div id="pageHome" class="page active">
       <div class="stories">
         <div class="story my-story"><div class="story-av"><div id="myStoryAvatar">+</div></div>Your story</div>
@@ -228,102 +190,45 @@ body{background:#e8eaed;display:flex;justify-content:center}
         <div class="story"><div class="story-av"><div class="av2">S</div></div>Sara</div>
         <div class="story"><div class="story-av"><div class="av3">B</div></div>Bilal</div>
         <div class="story"><div class="story-av"><div class="av4">Z</div></div>Zara</div>
-        <div class="story"><div class="story-av"><div class="av5">U</div></div>Usman</div>
       </div>
-
       <div class="post">
-        <div class="post-head">
-          <div class="mini-av av1">A</div>
-          <div><b>Ahmed</b><br><span class="muted">Hunza Valley</span></div>
-          <span class="dots" onclick="showToast('Options — demo')">⋯</span>
-        </div>
+        <div class="post-head"><div class="mini-av av1">A</div><div><b>Ahmed</b><br><span class="muted">Hunza Valley</span></div><span class="dots" onclick="showToast('Options - demo')">⋯</span></div>
         <div class="post-img p1" onclick="doubleLike(this)">🏔️</div>
-        <div class="post-actions">
-          <button class="icon-btn like-btn" onclick="toggleLike(this)">🤍</button>
-          <button class="icon-btn" onclick="showToast('Comments — demo')">💬</button>
-          <button class="icon-btn" onclick="showToast('Shared! — demo')">✈️</button>
-          <button class="icon-btn save-btn" onclick="showToast('Saved — demo')">🔖</button>
-        </div>
+        <div class="post-actions"><button class="icon-btn like-btn" onclick="toggleLike(this)">🤍</button><button class="icon-btn" onclick="showToast('Comments - demo')">💬</button><button class="icon-btn" onclick="showToast('Shared! - demo')">✈️</button><button class="icon-btn save-btn" onclick="showToast('Saved - demo')">🔖</button></div>
         <div class="caption"><b>Ahmed</b> Beautiful Pakistan 🇵🇰 #hmfbook</div>
       </div>
-
       <div class="post">
-        <div class="post-head">
-          <div class="mini-av av2">S</div>
-          <div><b>Sara</b><br><span class="muted">Original audio</span></div>
-          <span class="dots" onclick="showToast('Options — demo')">⋯</span>
-        </div>
+        <div class="post-head"><div class="mini-av av2">S</div><div><b>Sara</b><br><span class="muted">Original audio</span></div><span class="dots" onclick="showToast('Options - demo')">⋯</span></div>
         <div class="post-img p2" onclick="doubleLike(this)">🎵</div>
-        <div class="post-actions">
-          <button class="icon-btn like-btn" onclick="toggleLike(this)">🤍</button>
-          <button class="icon-btn" onclick="showToast('Comments — demo')">💬</button>
-          <button class="icon-btn" onclick="showToast('Shared! — demo')">✈️</button>
-          <button class="icon-btn save-btn" onclick="showToast('Saved — demo')">🔖</button>
-        </div>
+        <div class="post-actions"><button class="icon-btn like-btn" onclick="toggleLike(this)">🤍</button><button class="icon-btn" onclick="showToast('Comments - demo')">💬</button><button class="icon-btn" onclick="showToast('Shared! - demo')">✈️</button><button class="icon-btn save-btn" onclick="showToast('Saved - demo')">🔖</button></div>
         <div class="caption"><b>Sara</b> New reel trend! 🔥</div>
       </div>
-
       <div class="post">
-        <div class="post-head">
-          <div class="mini-av av3">B</div>
-          <div><b>Bilal</b><br><span class="muted">Gaming</span></div>
-          <span class="dots" onclick="showToast('Options — demo')">⋯</span>
-        </div>
+        <div class="post-head"><div class="mini-av av3">B</div><div><b>Bilal</b><br><span class="muted">Gaming</span></div><span class="dots" onclick="showToast('Options - demo')">⋯</span></div>
         <div class="post-img p3" onclick="doubleLike(this)">🎮</div>
-        <div class="post-actions">
-          <button class="icon-btn like-btn" onclick="toggleLike(this)">🤍</button>
-          <button class="icon-btn" onclick="showToast('Comments — demo')">💬</button>
-          <button class="icon-btn" onclick="showToast('Shared! — demo')">✈️</button>
-          <button class="icon-btn save-btn" onclick="showToast('Saved — demo')">🔖</button>
-        </div>
+        <div class="post-actions"><button class="icon-btn like-btn" onclick="toggleLike(this)">🤍</button><button class="icon-btn" onclick="showToast('Comments - demo')">💬</button><button class="icon-btn" onclick="showToast('Shared! - demo')">✈️</button><button class="icon-btn save-btn" onclick="showToast('Saved - demo')">🔖</button></div>
         <div class="caption"><b>Bilal</b> Game night on HMF 🕹️</div>
       </div>
     </div>
 
-    <!-- REELS (TikTok + YouTube) -->
     <div id="pageReels" class="page">
       <div class="reel r1">
         <div class="reel-emoji">💃</div>
-        <div class="reel-side">
-          <button class="icon-btn like-btn" onclick="toggleLike(this)">🤍</button>
-          <button class="icon-btn" onclick="showToast('Comments — demo')">💬</button>
-          <button class="icon-btn" onclick="showToast('Shared! — demo')">✈️</button>
-        </div>
+        <div class="reel-side"><button class="icon-btn like-btn" onclick="toggleLike(this)">🤍</button><button class="icon-btn" onclick="showToast('Comments - demo')">💬</button><button class="icon-btn" onclick="showToast('Shared! - demo')">✈️</button></div>
         <div class="reel-info"><h3>@trendstar</h3><p>TikTok style trend 🎶 #trending</p></div>
       </div>
       <div class="reel r2">
         <div class="reel-emoji">🐱</div>
-        <div class="reel-side">
-          <button class="icon-btn like-btn" onclick="toggleLike(this)">🤍</button>
-          <button class="icon-btn" onclick="showToast('Comments — demo')">💬</button>
-          <button class="icon-btn" onclick="showToast('Shared! — demo')">✈️</button>
-        </div>
+        <div class="reel-side"><button class="icon-btn like-btn" onclick="toggleLike(this)">🤍</button><button class="icon-btn" onclick="showToast('Comments - demo')">💬</button><button class="icon-btn" onclick="showToast('Shared! - demo')">✈️</button></div>
         <div class="reel-info"><h3>@funny.pets</h3><p>Cat boss 😹 #funny</p></div>
       </div>
       <div class="reel r3">
         <div class="reel-emoji">⚽</div>
-        <div class="reel-side">
-          <button class="icon-btn like-btn" onclick="toggleLike(this)">🤍</button>
-          <button class="icon-btn" onclick="showToast('Comments — demo')">💬</button>
-          <button class="icon-btn" onclick="showToast('Shared! — demo')">✈️</button>
-        </div>
+        <div class="reel-side"><button class="icon-btn like-btn" onclick="toggleLike(this)">🤍</button><button class="icon-btn" onclick="showToast('Comments - demo')">💬</button><button class="icon-btn" onclick="showToast('Shared! - demo')">✈️</button></div>
         <div class="reel-info"><h3>@sports.hub</h3><p>Goal of the year! 🥅 #sports</p></div>
-      </div>
-
-      <div class="yt-section">
-        <h2>▶️ YouTube Videos</h2>
-        <div class="yt-card">
-          <iframe src="https://www.youtube.com/embed/jNQXAC9IVRw" title="YouTube video 1" loading="lazy" allowfullscreen></iframe>
-          <div class="yt-info"><b>Me at the zoo</b>The first YouTube video ever 🎬</div>
-        </div>
-        <div class="yt-card">
-          <iframe src="https://www.youtube.com/embed/9bZkp7q19f0" title="YouTube video 2" loading="lazy" allowfullscreen></iframe>
-          <div class="yt-info"><b>PSY - GANGNAM STYLE</b>Most legendary video 🎵</div>
-        </div>
       </div>
     </div>
 
-    <!-- SEARCH (Google style) -->
     <div id="pageSearch" class="page">
       <div class="search-wrap">
         <div class="google-logo"><span class="l-blue">H</span><span class="l-red">M</span><span class="l-yellow">F</span><span class="l-green"> Search</span></div>
@@ -332,10 +237,8 @@ body{background:#e8eaed;display:flex;justify-content:center}
           <span class="chip" onclick="setQuery('TikTok trending')">TikTok trending</span>
           <span class="chip" onclick="setQuery('YouTube shorts')">YouTube shorts</span>
           <span class="chip" onclick="setQuery('Instagram reels')">Instagram reels</span>
-          <span class="chip" onclick="setQuery('Snapchat filters')">Snapchat filters</span>
           <span class="chip" onclick="setQuery('Free online games')">Free online games</span>
         </div>
-
         <div class="link-grid">
           <div class="link-card" onclick="openSite('https://www.google.com')"><div style="background:#fff;border:2px solid #eee;color:#4285f4">G</div><p>Google</p></div>
           <div class="link-card" onclick="openSite('https://www.youtube.com')"><div style="background:#ff0000">▶</div><p>YouTube</p></div>
@@ -347,49 +250,31 @@ body{background:#e8eaed;display:flex;justify-content:center}
       </div>
     </div>
 
-    <!-- GAMES -->
     <div id="pageGames" class="page">
       <div class="game-wrap">
         <h2 style="font-size:20px">🎮 Tic Tac Toe</h2>
         <div id="gameStatus">Turn: X</div>
         <div id="ttt"></div>
         <button class="btn-outline" onclick="resetGame()">🔄 Reset Game</button>
-        <div class="coming">
-          <div style="font-size:40px">🕹️</div>
-          <h3>More games coming soon!</h3>
-          <p class="muted">Racing, Puzzle, Ludo & more</p>
-        </div>
+        <div class="coming"><div style="font-size:40px">🕹️</div><h3>More games coming soon!</h3><p class="muted">Racing, Puzzle, Ludo and more</p></div>
       </div>
     </div>
 
-    <!-- PROFILE -->
     <div id="pageProfile" class="page">
       <div class="profile-head">
         <div class="big-av" id="profileAvatar">H</div>
         <h2 id="profileName">HMF User</h2>
         <p class="muted" id="profileHandle">@hmfuser</p>
-        <div class="stats">
-          <div><b>12</b><span>Posts</span></div>
-          <div><b>1.2K</b><span>Followers</span></div>
-          <div><b>340</b><span>Following</span></div>
-        </div>
-        <div class="pill-row">
-          <button class="pill green" onclick="showToast('Edit profile — demo')">Edit Profile</button>
-          <button class="pill" onclick="openSettings()">Settings</button>
-        </div>
+        <div class="stats"><div><b>12</b><span>Posts</span></div><div><b>1.2K</b><span>Followers</span></div><div><b>340</b><span>Following</span></div></div>
+        <div class="pill-row"><button class="pill green" onclick="showToast('Edit profile - demo')">Edit Profile</button><button class="pill" onclick="openSettings()">Settings</button></div>
       </div>
       <div class="grid6">
-        <div class="gtile p1">🏔️</div>
-        <div class="gtile av1">📷</div>
-        <div class="gtile p2">🎵</div>
-        <div class="gtile r2">🌳</div>
-        <div class="gtile p3">🎨</div>
-        <div class="gtile av2">🍛</div>
+        <div class="gtile p1">🏔️</div><div class="gtile av1">📷</div><div class="gtile p2">🎵</div>
+        <div class="gtile r2">🌳</div><div class="gtile p3">🎨</div><div class="gtile av2">🍛</div>
       </div>
     </div>
   </div>
 
-  <!-- BOTTOM NAV -->
   <div class="bottom-nav">
     <button class="nav-btn active" onclick="switchTab(this,'pageHome')">🏠<span>Home</span></button>
     <button class="nav-btn" onclick="switchTab(this,'pageReels')">🎬<span>Reels</span></button>
@@ -398,42 +283,31 @@ body{background:#e8eaed;display:flex;justify-content:center}
     <button class="nav-btn" onclick="switchTab(this,'pageProfile')">👤<span>Profile</span></button>
   </div>
 
-  <!-- SETTINGS (Instagram style) -->
   <div id="settingsScreen">
-    <div class="set-head">
-      <button class="back-btn" onclick="closeSettings()">←</button>
-      <h2>Settings</h2>
-    </div>
-    <div class="set-summary">
-      <div class="big-av" style="width:56px;height:56px;font-size:24px" id="settingsAvatar">H</div>
-      <div><b id="settingsName">HMF User</b><br><span class="muted" id="settingsHandle">@hmfuser</span></div>
-    </div>
-
+    <div class="set-head"><button class="back-btn" onclick="closeSettings()">←</button><h2>Settings</h2></div>
+    <div class="set-summary"><div class="big-av" style="width:56px;height:56px;font-size:24px" id="settingsAvatar">H</div><div><b id="settingsName">HMF User</b><br><span class="muted" id="settingsHandle">@hmfuser</span></div></div>
     <div class="set-group">
       <h4>How you use HMF</h4>
-      <div class="set-row" onclick="showToast('Saved — demo')">🔖 Saved<span class="chev">›</span></div>
-      <div class="set-row" onclick="showToast('Archive — demo')">🗂️ Archive<span class="chev">›</span></div>
-      <div class="set-row" onclick="showToast('Your activity — demo')">📊 Your Activity<span class="chev">›</span></div>
+      <div class="set-row" onclick="showToast('Saved - demo')">🔖 Saved<span class="chev">›</span></div>
+      <div class="set-row" onclick="showToast('Archive - demo')">🗂️ Archive<span class="chev">›</span></div>
+      <div class="set-row" onclick="showToast('Your activity - demo')">📊 Your Activity<span class="chev">›</span></div>
     </div>
-
     <div class="set-group">
       <h4>Who can see your content</h4>
-      <div class="set-row" onclick="showToast('Account privacy — demo')">🔒 Account Privacy<span class="chev">›</span></div>
-      <div class="set-row" onclick="showToast('Close friends — demo')">⭐ Close Friends<span class="chev">›</span></div>
-      <div class="set-row" onclick="showToast('Blocked — demo')">🚫 Blocked Accounts<span class="chev">›</span></div>
+      <div class="set-row" onclick="showToast('Account privacy - demo')">🔒 Account Privacy<span class="chev">›</span></div>
+      <div class="set-row" onclick="showToast('Close friends - demo')">⭐ Close Friends<span class="chev">›</span></div>
+      <div class="set-row" onclick="showToast('Blocked - demo')">🚫 Blocked Accounts<span class="chev">›</span></div>
     </div>
-
     <div class="set-group">
       <h4>Your app and media</h4>
-      <div class="set-row" onclick="showToast('Notifications — demo')">🔔 Notifications<span class="chev">›</span></div>
-      <div class="set-row" onclick="showToast('Time spent — demo')">⏰ Time Spent<span class="chev">›</span></div>
-      <div class="set-row" onclick="showToast('Language — demo')">🌐 Language<span class="chev">›</span></div>
+      <div class="set-row" onclick="showToast('Notifications - demo')">🔔 Notifications<span class="chev">›</span></div>
+      <div class="set-row" onclick="showToast('Time spent - demo')">⏰ Time Spent<span class="chev">›</span></div>
+      <div class="set-row" onclick="showToast('Language - demo')">🌐 Language<span class="chev">›</span></div>
     </div>
-
     <div class="set-group">
       <h4>About</h4>
-      <div class="set-row" onclick="showToast('Help center — demo')">❓ Help Center<span class="chev">›</span></div>
-      <div class="set-row" onclick="showToast('HMF Book v1.0 — demo')">ℹ️ About HMF Book<span class="chev">›</span></div>
+      <div class="set-row" onclick="showToast('Help center - demo')">❓ Help Center<span class="chev">›</span></div>
+      <div class="set-row" onclick="showToast('HMF Book v1.0 - demo')">ℹ️ About HMF Book<span class="chev">›</span></div>
       <div class="set-row danger" onclick="logout()">🚪 Log Out</div>
     </div>
     <div style="height:30px"></div>
@@ -444,147 +318,36 @@ body{background:#e8eaed;display:flex;justify-content:center}
 </div>
 
 <script>
-/* ---------- Navigation ---------- */
-function showScreen(id){
-  document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});
-  document.getElementById(id).classList.add('active');
-}
-function switchTab(btn,id){
-  document.querySelectorAll('.nav-btn').forEach(function(b){b.classList.remove('active');});
-  btn.classList.add('active');
-  document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});
-  document.getElementById(id).classList.add('active');
-  closeSettings();
-}
+var hmfUser=null;
+function saveUser(obj){hmfUser=obj;try{localStorage.setItem('hmfUser',JSON.stringify(obj));}catch(e){}}
+function loadUser(){try{return JSON.parse(localStorage.getItem('hmfUser')||'null');}catch(e){return null;}}
+function showScreen(id){document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});document.getElementById(id).classList.add('active');}
+function switchTab(btn,id){document.querySelectorAll('.nav-btn').forEach(function(b){b.classList.remove('active');});btn.classList.add('active');document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});document.getElementById(id).classList.add('active');closeSettings();}
 function openSettings(){document.getElementById('settingsScreen').classList.add('active');}
 function closeSettings(){document.getElementById('settingsScreen').classList.remove('active');}
-
-/* ---------- Toast ---------- */
 var toastTimer;
-function showToast(msg){
-  var t=document.getElementById('toast');
-  t.textContent=msg;t.classList.add('show');
-  clearTimeout(toastTimer);
-  toastTimer=setTimeout(function(){t.classList.remove('show');},2500);
-}
-
-/* ---------- Auth ---------- */
-function togglePass(id,btn){
-  var inp=document.getElementById(id);
-  if(inp.type==='password'){inp.type='text';btn.textContent='🙈';}
-  else{inp.type='password';btn.textContent='👁️';}
-}
-function signup(){
-  var u=document.getElementById('suUser').value.trim();
-  var e=document.getElementById('suEmail').value.trim();
-  var p=document.getElementById('suPass').value;
-  if(!u||!e||!p){showToast('⚠️ Please fill all fields');return;}
-  if(p.length<6){showToast('⚠️ Password must be 6+ characters');return;}
-  localStorage.setItem('hmfUser',JSON.stringify({u:u,e:e,p:p}));
-  enterApp(u);
-  showToast('✅ Account created. Welcome '+u+'!');
-}
-function login(){
-  var e=document.getElementById('liEmail').value.trim();
-  var p=document.getElementById('liPass').value;
-  var saved=JSON.parse(localStorage.getItem('hmfUser')||'null');
-  if(saved&&saved.e===e&&saved.p===p){enterApp(saved.u);showToast('✅ Welcome back '+saved.u+'!');}
-  else{showToast('❌ Invalid email or password');}
-}
-function socialLogin(name){
-  var u=name+' User';
-  localStorage.setItem('hmfUser',JSON.stringify({u:u,e:name.toLowerCase()+'.user@demo.com',p:'demo123'}));
-  enterApp(u);
-  showToast('✅ '+name+' demo login successful');
-}
-function enterApp(name){
-  var ini=name.charAt(0).toUpperCase();
-  var handle='@'+name.toLowerCase().replace(/\s+/g,'');
-  document.getElementById('profileName').textContent=name;
-  document.getElementById('settingsName').textContent=name;
-  document.getElementById('profileHandle').textContent=handle;
-  document.getElementById('settingsHandle').textContent=handle;
-  document.getElementById('profileAvatar').textContent=ini;
-  document.getElementById('settingsAvatar').textContent=ini;
-  document.getElementById('myStoryAvatar').textContent=ini;
-  showScreen('app');
-  switchTab(document.querySelector('.nav-btn'),'pageHome');
-}
-function logout(){
-  closeSettings();
-  showScreen('splash');
-  showToast('👋 Logged out');
-}
-
-/* ---------- Likes ---------- */
-function toggleLike(btn){
-  btn.classList.toggle('liked');
-  if(btn.classList.contains('liked')){btn.textContent='❤️';showToast('Liked ❤️');}
-  else{btn.textContent='🤍';}
-}
+function showToast(msg){var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(function(){t.classList.remove('show');},2500);}
+function togglePass(id,btn){var inp=document.getElementById(id);if(inp.type==='password'){inp.type='text';btn.textContent='🙈';}else{inp.type='password';btn.textContent='👁️';}}
+function signup(){var u=document.getElementById('suUser').value.trim();var e=document.getElementById('suEmail').value.trim();var p=document.getElementById('suPass').value;if(!u||!e||!p){showToast('⚠️ Please fill all fields');return;}if(p.length<6){showToast('⚠️ Password must be 6+ characters');return;}saveUser({u:u,e:e,p:p});enterApp(u);showToast('✅ Account created. Welcome '+u+'!');}
+function login(){var e=document.getElementById('liEmail').value.trim();var p=document.getElementById('liPass').value;var saved=hmfUser||loadUser();if(saved&&saved.e===e&&saved.p===p){enterApp(saved.u);showToast('✅ Welcome back '+saved.u+'!');}else{showToast('❌ Invalid email or password');}}
+function socialLogin(name){var u=name+' User';saveUser({u:u,e:name.toLowerCase()+'.user@demo.com',p:'demo123'});enterApp(u);showToast('✅ '+name+' demo login successful');}
+function enterApp(name){var ini=name.charAt(0).toUpperCase();var handle='@'+name.toLowerCase().replace(/\s+/g,'');document.getElementById('profileName').textContent=name;document.getElementById('settingsName').textContent=name;document.getElementById('profileHandle').textContent=handle;document.getElementById('settingsHandle').textContent=handle;document.getElementById('profileAvatar').textContent=ini;document.getElementById('settingsAvatar').textContent=ini;document.getElementById('myStoryAvatar').textContent=ini;showScreen('app');switchTab(document.querySelector('.nav-btn'),'pageHome');}
+function logout(){closeSettings();showScreen('splash');showToast('👋 Logged out');}
+function toggleLike(btn){btn.classList.toggle('liked');if(btn.classList.contains('liked')){btn.textContent='❤️';showToast('Liked ❤️');}else{btn.textContent='🤍';}}
 var lastTap=0;
-function doubleLike(el){
-  var now=Date.now();
-  if(now-lastTap<350){
-    var btn=el.parentElement.querySelector('.like-btn');
-    if(btn&&!btn.classList.contains('liked')){btn.classList.add('liked');btn.textContent='❤️';}
-    var h=document.createElement('div');
-    h.className='big-heart';h.textContent='❤️';
-    el.appendChild(h);
-    setTimeout(function(){h.remove();},800);
-  }
-  lastTap=now;
-}
-
-/* ---------- Search ---------- */
-function doSearch(){
-  var q=document.getElementById('searchInput').value.trim();
-  if(!q){showToast('Type something to search');return;}
-  window.open('https://www.google.com/search?q='+encodeURIComponent(q),'_blank');
-}
+function doubleLike(el){var now=Date.now();if(now-lastTap<350){var btn=el.parentElement.querySelector('.like-btn');if(btn&&!btn.classList.contains('liked')){btn.classList.add('liked');btn.textContent='❤️';}var h=document.createElement('div');h.className='big-heart';h.textContent='❤️';el.appendChild(h);setTimeout(function(){h.remove();},800);}lastTap=now;}
+function doSearch(){var q=document.getElementById('searchInput').value.trim();if(!q){showToast('Type something to search');return;}window.open('https://www.google.com/search?q='+encodeURIComponent(q),'_blank');}
 function setQuery(q){document.getElementById('searchInput').value=q;doSearch();}
 function openSite(url){window.open(url,'_blank');}
-
-/* ---------- Tic Tac Toe Game ---------- */
-var board=['','','','','','','','',''];
-var current='X';
-var gameOver=false;
-function renderBoard(){
-  var c=document.getElementById('ttt');
-  c.innerHTML='';
-  for(var i=0;i<9;i++){
-    (function(i){
-      var d=document.createElement('div');
-      d.className='cell';d.textContent=board[i];
-      d.onclick=function(){playCell(i);};
-      c.appendChild(d);
-    })(i);
-  }
-}
-function playCell(i){
-  if(gameOver||board[i]!=='')return;
-  board[i]=current;renderBoard();
-  var w=checkWin();
-  if(w){gameOver=true;
-    document.getElementById('gameStatus').textContent=(w==='Draw')?'Draw! 🤝':(w+' wins! 🎉');
-    return;}
-  current=(current==='X')?'O':'X';
-  document.getElementById('gameStatus').textContent='Turn: '+current;
-}
-function checkWin(){
-  var lines=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
-  for(var i=0;i<lines.length;i++){
-    var a=lines[i][0],b=lines[i][1],c=lines[i][2];
-    if(board[a]!==''&&board[a]===board[b]&&board[a]===board[c])return board[a];
-  }
-  return board.indexOf('')===-1?'Draw':null;
-}
-function resetGame(){
-  board=['','','','','','','','',''];current='X';gameOver=false;
-  renderBoard();
-  document.getElementById('gameStatus').textContent='Turn: X';
-}
+var board=['','','','','','','','',''];var current='X';var gameOver=false;
+function renderBoard(){var c=document.getElementById('ttt');c.innerHTML='';for(var i=0;i<9;i++){(function(i){var d=document.createElement('div');d.className='cell';d.textContent=board[i];d.onclick=function(){playCell(i);};c.appendChild(d);})(i);}}
+function playCell(i){if(gameOver||board[i]!=='')return;board[i]=current;renderBoard();var w=checkWin();if(w){gameOver=true;document.getElementById('gameStatus').textContent=(w==='Draw')?'Draw! 🤝':(w+' wins! 🎉');return;}current=(current==='X')?'O':'X';document.getElementById('gameStatus').textContent='Turn: '+current;}
+function checkWin(){var lines=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];for(var i=0;i<lines.length;i++){var a=lines[i][0],b=lines[i][1],c=lines[i][2];if(board[a]!==''&&board[a]===board[b]&&board[a]===board[c])return board[a];}return board.indexOf('')===-1?'Draw':null;}
+function resetGame(){board=['','','','','','','','',''];current='X';gameOver=false;renderBoard();document.getElementById('gameStatus').textContent='Turn: X';}
 renderBoard();
 </script>
 </body>
 </html>
+"""
+
+components.html(APP_HTML, height=880, scrolling=True)
