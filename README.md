@@ -41,14 +41,16 @@ DEMO_POSTS = [
 ]
 
 # ---------------- Session State ----------------
-if "page" not in st.session_state:
-    st.session_state.page = "splash"
-if "user" not in st.session_state:
-    st.session_state.user = None
-if "users" not in st.session_state:
-    st.session_state.users = load_json(USERS_FILE, [])
-if "posts" not in st.session_state:
-    st.session_state.posts = load_json(POSTS_FILE, DEMO_POSTS)
+for k, v in {
+    "page": "splash",
+    "user": None,
+    "users": load_json(USERS_FILE, []),
+    "posts": load_json(POSTS_FILE, DEMO_POSTS),
+    "post_n": 0,
+    "c_n": 0,
+}.items():
+    if k not in st.session_state:
+        st.session_state[k] = v
 
 # ---------------- CSS (Design) ----------------
 st.markdown("""
@@ -172,14 +174,21 @@ elif st.session_state.page == "login":
 
 # ================= HOME / FEED =================
 else:
+    # Safety: agar session reset ho jaye to wapis splash par jao
+    if st.session_state.user is None:
+        st.session_state.page = "splash"
+        rerun()
+
     user = st.session_state.user
     posts = st.session_state.posts
 
     tb1, tb2 = st.columns([4, 1])
     with tb1:
-        st.markdown(f'<div class="topbar"><span class="brand">HMF</span>'
-                    f'<span class="chip">👋 {html_mod.escape(user["name"])}</span></div>',
-                    unsafe_allow_html=True)
+        st.markdown(
+            f'<div class="topbar"><span class="brand">HMF</span>'
+            f'<span class="chip">👋 {html_mod.escape(user["name"])}</span></div>',
+            unsafe_allow_html=True,
+        )
     with tb2:
         if st.button("Logout", type="secondary"):
             st.session_state.user = None
@@ -187,17 +196,18 @@ else:
             rerun()
 
     st.markdown("**✍️ What's on your mind?**")
+    np_key = f"np_{st.session_state.post_n}"
     np = st.text_area("Post", placeholder="Share something with your friends...",
-                      label_visibility="collapsed", key="np", height=70)
+                      label_visibility="collapsed", key=np_key, height=70)
     p1, p2, p3 = st.columns([1, 1, 1])
     with p2:
-        if st.button("Post", type="primary"):
+        if st.button("🚀 Post", type="primary"):
             txt = np.strip()
             if txt:
                 posts.insert(0, {"name": user["name"], "time": "Just now", "text": txt,
                                  "likes": [], "comments": []})
                 save_json(POSTS_FILE, posts)
-                st.session_state["np"] = ""
+                st.session_state.post_n += 1  # naya key = input box khali ho jayega
                 rerun()
             else:
                 st.warning("Please write something first!")
@@ -206,7 +216,13 @@ else:
     st.markdown("#### 📰 Feed")
 
     for i, p in reversed(list(enumerate(posts))):
+        # Purana data safe rehne ke liye
+        if "likes" not in p:
+            p["likes"] = []
+        if "comments" not in p:
+            p["comments"] = []
         liked = user["name"] in p["likes"]
+
         st.markdown(f"""
 <div class="post-card">
   <div style="display:flex;align-items:center;gap:10px;">
@@ -239,14 +255,15 @@ else:
             for c in p["comments"]:
                 st.markdown(f'<div class="comment"><b>{html_mod.escape(c["n"])}</b>'
                             f'{html_mod.escape(c["t"])}</div>', unsafe_allow_html=True)
+            ck = f"c{i}_{st.session_state.c_n}"
             nc = st.text_input("Comment", placeholder="Write a comment...",
-                               label_visibility="collapsed", key=f"c{i}")
+                               label_visibility="collapsed", key=ck)
             s1, s2, s3 = st.columns([1, 1, 1])
             with s2:
-                if st.button("Send", key=f"s{i}", type="primary"):
+                if st.button("Send", key=f"s{i}_{st.session_state.c_n}", type="primary"):
                     if nc.strip():
                         posts[i]["comments"].append({"n": user["name"], "t": nc.strip()})
                         save_json(POSTS_FILE, posts)
-                        st.session_state[f"c{i}"] = ""
+                        st.session_state.c_n += 1  # naya key = comment box khali
                         rerun()
         st.write("")
