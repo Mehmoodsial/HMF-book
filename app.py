@@ -120,6 +120,33 @@ body{background:#fff;display:flex;justify-content:center}
 .set-row.danger{color:#ed4956}
 #toast{position:fixed;bottom:95px;left:50%;transform:translateX(-50%);background:#222;color:#fff;padding:11px 20px;border-radius:999px;font-size:14px;opacity:0;pointer-events:none;transition:.3s;z-index:100}
 #toast.show{opacity:1}
+#msgScreen{position:absolute;top:0;left:0;right:0;bottom:0;background:#fff;display:none;z-index:60;flex-direction:column}
+#msgScreen.active{display:flex}
+.msg-head{background:linear-gradient(140deg,#00e08a,#009e4f);color:#fff;padding:14px 16px;display:flex;align-items:center;gap:12px}
+.msg-head h2{font-size:18px}
+.msg-tabs{display:flex;background:#fff;border-bottom:1px solid #eceff2}
+.msg-tab{flex:1;padding:12px;font-size:24px;background:none;border:none;cursor:pointer;opacity:.4;border-bottom:3px solid transparent}
+.msg-tab.active{opacity:1;border-bottom-color:#00b45a}
+.msg-list{flex:1;overflow-y:auto;display:none}
+.msg-list.active{display:block}
+.chat-row{display:flex;align-items:center;gap:12px;padding:12px 16px;cursor:pointer;border-bottom:1px solid #f3f4f6}
+.chat-row:active{background:#f7f8fa}
+.chat-av{width:52px;height:52px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:20px;flex:none}
+.chat-info{flex:1;min-width:0}
+.chat-info b{font-size:15px}
+.chat-info p{font-size:13px;color:#8a9299;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chat-time{font-size:11px;color:#b3b9bf;flex:none}
+.snap-av{background:#fffc00;color:#fff;border-radius:16px}
+.new-snap p{color:#ed4956;font-weight:700}
+#chatView{position:absolute;top:0;left:0;right:0;bottom:0;background:#fff;display:none;z-index:70;flex-direction:column}
+#chatView.active{display:flex}
+.chat-body{flex:1;overflow-y:auto;padding:16px;background:#f7f8fa;display:flex;flex-direction:column;gap:8px}
+.bubble{max-width:75%;padding:10px 14px;border-radius:18px;font-size:14px;line-height:1.4}
+.bubble.me{align-self:flex-end;background:linear-gradient(135deg,#00d67e,#009e4f);color:#fff;border-bottom-right-radius:4px}
+.bubble.them{align-self:flex-start;background:#e9ecef;color:#333;border-bottom-left-radius:4px}
+.chat-input{display:flex;gap:8px;padding:10px;border-top:1px solid #eceff2;background:#fff}
+.chat-input input{flex:1;border:1.5px solid #dfe3e8;border-radius:999px;padding:11px 16px;font-size:14px;outline:none}
+.chat-input button{width:44px;height:44px;border:none;border-radius:50%;background:linear-gradient(135deg,#00d67e,#009e4f);color:#fff;font-size:18px;cursor:pointer;flex:none}
 </style>
 </head>
 <body>
@@ -159,7 +186,7 @@ body{background:#fff;display:flex;justify-content:center}
   <div class="app-header">
     <div class="brand">HMF book</div>
     <div style="display:flex;gap:14px;font-size:20px">
-      <span onclick="showToast('Messages')" style="cursor:pointer">📩</span>
+      <span onclick="openMessages()" style="cursor:pointer">📩</span>
       <span onclick="openSettings()" style="cursor:pointer">⚙️</span>
     </div>
   </div>
@@ -263,9 +290,9 @@ body{background:#fff;display:flex;justify-content:center}
     <div class="set-summary"><div class="big-av" style="width:56px;height:56px;font-size:24px" id="settingsAvatar">H</div><div><b id="settingsName">HMF User</b><br><span class="muted" id="settingsHandle">@hmfuser</span></div></div>
     <div class="set-group">
       <h4>How you use HMF</h4>
+      <div class="set-row" onclick="openMessages()">📩 Messages<span class="chev">›</span></div>
       <div class="set-row" onclick="showToast('Saved')">🔖 Saved<span class="chev">›</span></div>
       <div class="set-row" onclick="showToast('Archive')">🗂️ Archive<span class="chev">›</span></div>
-      <div class="set-row" onclick="showToast('Your activity')">📊 Your Activity<span class="chev">›</span></div>
     </div>
     <div class="set-group">
       <h4>Who can see your content</h4>
@@ -282,19 +309,59 @@ body{background:#fff;display:flex;justify-content:center}
     <div class="set-group">
       <h4>About</h4>
       <div class="set-row" onclick="showToast('Help center')">❓ Help Center<span class="chev">›</span></div>
-      <div class="set-row" onclick="showToast('HMF Book v1.0')">ℹ️ About HMF Book<span class="chev">›</span></div>
+      <div class="set-row" onclick="showToast('HMF Book v1.1')">ℹ️ About HMF Book<span class="chev">›</span></div>
       <div class="set-row danger" onclick="logout()">🚪 Log Out</div>
     </div>
     <div style="height:30px"></div>
+  </div>
+  <div id="msgScreen">
+    <div class="msg-head"><button class="back-btn" onclick="closeMessages()">←</button><h2>Messages</h2></div>
+    <div class="msg-tabs">
+      <button class="msg-tab active" onclick="switchMsgTab(this,'instaList')">📷</button>
+      <button class="msg-tab" onclick="switchMsgTab(this,'tiktokList')">🎵</button>
+      <button class="msg-tab" onclick="switchMsgTab(this,'snapList')">👻</button>
+    </div>
+    <div class="msg-list active" id="instaList">
+      <div class="chat-row" onclick="openChatView('Ahmed','av1','A')"><div class="chat-av av1">A</div><div class="chat-info"><b>Ahmed</b><p>Sent a photo 📸</p></div><span class="chat-time">2m</span></div>
+      <div class="chat-row" onclick="openChatView('Sara','av2','S')"><div class="chat-av av2">S</div><div class="chat-info"><b>Sara</b><p>Reacted ❤️ to your story</p></div><span class="chat-time">15m</span></div>
+      <div class="chat-row" onclick="openChatView('Bilal','av3','B')"><div class="chat-av av3">B</div><div class="chat-info"><b>Bilal</b><p>Game khelo ge? 🎮</p></div><span class="chat-time">1h</span></div>
+      <div class="chat-row" onclick="openChatView('Zara','av4','Z')"><div class="chat-av av4">Z</div><div class="chat-info"><b>Zara</b><p>Shared a reel 🎬</p></div><span class="chat-time">3h</span></div>
+      <div class="chat-row" onclick="openChatView('Usman','av1','U')"><div class="chat-av av1">U</div><div class="chat-info"><b>Usman</b><p>Salam! Kya haal hai?</p></div><span class="chat-time">1d</span></div>
+    </div>
+    <div class="msg-list" id="tiktokList">
+      <div class="chat-row" onclick="openChatView('trendstar','r1','T')"><div class="chat-av r1">T</div><div class="chat-info"><b>trendstar</b><p>Sent you a video 🎵</p></div><span class="chat-time">5m</span></div>
+      <div class="chat-row" onclick="openChatView('funny.pets','r2','F')"><div class="chat-av r2">F</div><div class="chat-info"><b>funny.pets</b><p>Haha dekho ye 😹</p></div><span class="chat-time">30m</span></div>
+      <div class="chat-row" onclick="openChatView('dance.queen','r1','D')"><div class="chat-av r1">D</div><div class="chat-info"><b>dance.queen</b><p>New trend try karo! 💃</p></div><span class="chat-time">2h</span></div>
+      <div class="chat-row" onclick="openChatView('sports.hub','r3','S')"><div class="chat-av r3">S</div><div class="chat-info"><b>sports.hub</b><p>Match dekha? ⚽</p></div><span class="chat-time">5h</span></div>
+    </div>
+    <div class="msg-list" id="snapList">
+      <div class="chat-row new-snap" onclick="openChatView('Ahmed','snap-av','👻')"><div class="chat-av snap-av">👻</div><div class="chat-info"><b>Ahmed</b><p>New Snap 🔴</p></div><span class="chat-time">🔥 56</span></div>
+      <div class="chat-row" onclick="openChatView('Sara','snap-av','👻')"><div class="chat-av snap-av">👻</div><div class="chat-info"><b>Sara</b><p>Delivered</p></div><span class="chat-time">🔥 120</span></div>
+      <div class="chat-row" onclick="openChatView('Bilal','snap-av','👻')"><div class="chat-av snap-av">👻</div><div class="chat-info"><b>Bilal</b><p>Opened</p></div><span class="chat-time">🔥 34</span></div>
+      <div class="chat-row new-snap" onclick="openChatView('Bestie','snap-av','👻')"><div class="chat-av snap-av">👻</div><div class="chat-info"><b>Bestie</b><p>New Snap 🔴</p></div><span class="chat-time">🔥 365</span></div>
+    </div>
+    <div id="chatView">
+      <div class="msg-head"><button class="back-btn" onclick="closeChatView()">←</button><div class="chat-av" id="chatUserAv" style="width:36px;height:36px;font-size:15px">A</div><h2 id="chatUserName">Chat</h2></div>
+      <div class="chat-body" id="chatBody"></div>
+      <div class="chat-input"><input id="msgInput" type="text" placeholder="Message..." onkeydown="if(event.key==='Enter')sendMsg()"><button onclick="sendMsg()">➤</button></div>
+    </div>
   </div>
 </div>
 <div id="toast"></div>
 </div>
 <script>
 function showScreen(id){document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});document.getElementById(id).classList.add('active');}
-function switchTab(btn,id){document.querySelectorAll('.nav-btn').forEach(function(b){b.classList.remove('active');});btn.classList.add('active');document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});document.getElementById(id).classList.add('active');closeSettings();}
-function openSettings(){document.getElementById('settingsScreen').classList.add('active');}
+function switchTab(btn,id){document.querySelectorAll('.nav-btn').forEach(function(b){b.classList.remove('active');});btn.classList.add('active');document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});document.getElementById(id).classList.add('active');closeSettings();closeMessages();}
+function openSettings(){closeMessages();document.getElementById('settingsScreen').classList.add('active');}
 function closeSettings(){document.getElementById('settingsScreen').classList.remove('active');}
+function openMessages(){document.getElementById('msgScreen').classList.add('active');}
+function closeMessages(){document.getElementById('msgScreen').classList.remove('active');closeChatView();}
+function switchMsgTab(btn,id){document.querySelectorAll('.msg-tab').forEach(function(b){b.classList.remove('active');});btn.classList.add('active');document.querySelectorAll('.msg-list').forEach(function(l){l.classList.remove('active');});document.getElementById(id).classList.add('active');}
+var replies=['Hi! 😊','Kya haal hai?','Sounds good! 👍','Haha 😄','Okay done!','Acha? Phir kya hua?','Interesting... tell me more','Main bhi soch raha tha yehi 🤔','Cool! 🎉'];
+function openChatView(name,avClass,letter){document.getElementById('chatUserName').textContent=name;var av=document.getElementById('chatUserAv');av.className='chat-av '+avClass;av.textContent=letter;document.getElementById('chatView').classList.add('active');document.getElementById('chatBody').innerHTML='';setTimeout(function(){addBubble('them','Hi! 👋');},400);}
+function closeChatView(){document.getElementById('chatView').classList.remove('active');}
+function addBubble(who,text){var b=document.createElement('div');b.className='bubble '+who;b.textContent=text;var body=document.getElementById('chatBody');body.appendChild(b);body.scrollTop=body.scrollHeight;}
+function sendMsg(){var inp=document.getElementById('msgInput');var t=inp.value.trim();if(!t)return;addBubble('me',t);inp.value='';setTimeout(function(){addBubble('them',replies[Math.floor(Math.random()*replies.length)]);},1000);}
 var toastTimer;
 function showToast(msg){var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(function(){t.classList.remove('show');},2500);}
 function togglePass(id,btn){var inp=document.getElementById(id);if(inp.type==='password'){inp.type='text';btn.textContent='🙈';}else{inp.type='password';btn.textContent='👁️';}}
@@ -305,7 +372,7 @@ function signup(){var u=document.getElementById('suUser').value.trim();var e=doc
 function login(){var e=document.getElementById('liEmail').value.trim();var p=document.getElementById('liPass').value;if(hmfUser&&hmfUser.e===e&&hmfUser.p===p){enterApp(hmfUser.u);showToast('Welcome back!');}else{showToast('Invalid email or password');}}
 function socialLogin(name){var u=name+' User';saveUser({u:u,e:name.toLowerCase()+'.user@demo.com',p:'demo123'});enterApp(u);showToast(name+' login successful');}
 function enterApp(name){var ini=name.charAt(0).toUpperCase();var handle='@'+name.toLowerCase().replace(/\s+/g,'');document.getElementById('profileName').textContent=name;document.getElementById('settingsName').textContent=name;document.getElementById('profileHandle').textContent=handle;document.getElementById('settingsHandle').textContent=handle;document.getElementById('profileAvatar').textContent=ini;document.getElementById('settingsAvatar').textContent=ini;document.getElementById('myStoryAvatar').textContent=ini;showScreen('app');}
-function logout(){closeSettings();showScreen('splash');showToast('Logged out');}
+function logout(){closeSettings();closeMessages();showScreen('splash');showToast('Logged out');}
 function toggleLike(btn){if(btn.textContent==='🤍'){btn.textContent='❤️';}else{btn.textContent='🤍';}}
 var lastTap=0;
 function doubleLike(el){var now=Date.now();if(now-lastTap<350){var btn=el.parentElement.querySelector('.like-btn');if(btn){btn.textContent='❤️';}var h=document.createElement('div');h.className='big-heart';h.textContent='❤️';el.appendChild(h);setTimeout(function(){h.remove();},800);}lastTap=now;}
