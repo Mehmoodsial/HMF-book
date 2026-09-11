@@ -39,15 +39,18 @@ body{background:#fff;display:flex;justify-content:center}
 .switch-auth{text-align:center;margin-top:24px;font-size:14px;color:#5b6167}
 .switch-auth a{color:#009e4f;font-weight:700;cursor:pointer}
 #app{height:100vh}
-.app-header{background:linear-gradient(140deg,#00e08a,#009e4f);color:#fff;padding:14px 18px;display:flex;align-items:center;justify-content:space-between}
-.brand{font-size:22px;font-weight:900;font-style:italic}
+.app-header{background:#fff;color:#262626;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #dbdbdb}
+.brand{font-size:24px;font-weight:800;font-style:italic;color:#009e4f}
+.header-ico{font-size:22px;cursor:pointer;position:relative}
+.app-header .right-icons{display:flex;gap:20px;align-items:center}
 .content{flex:1;overflow-y:auto;background:#f7f8fa}
 .page{display:none}
 .page.active{display:block}
-.bottom-nav{display:flex;background:#fff;border-top:1px solid #eceff2}
-.nav-btn{flex:1;padding:10px 0 12px;font-size:20px;background:none;border:none;cursor:pointer;filter:grayscale(1);opacity:.55}
-.nav-btn.active{filter:none;opacity:1}
-.nav-btn span{display:block;font-size:10px;color:#5b6167;margin-top:2px}
+.bottom-nav{display:flex;justify-content:space-around;align-items:center;background:#fff;border-top:1px solid #dbdbdb;padding:10px 0 14px}
+.nav-btn{background:none;border:none;font-size:24px;line-height:1;cursor:pointer;filter:grayscale(1);opacity:.55;position:relative;padding:2px 6px;transition:transform .15s,opacity .15s}
+.nav-btn:active{transform:scale(.9)}
+.nav-btn.active{filter:none;opacity:1;transform:scale(1.15)}
+.nav-badge{position:absolute;top:-5px;right:-8px;background:#ff3040;color:#fff;font-size:9px;font-weight:700;min-width:16px;height:16px;border-radius:999px;display:flex;align-items:center;justify-content:center;padding:0 4px;border:2px solid #fff}
 .stories{display:flex;gap:14px;overflow-x:auto;padding:14px;background:#fff;border-bottom:1px solid #eceff2}
 .story{text-align:center;font-size:11px;color:#333;min-width:60px}
 .story-av{width:56px;height:56px;border-radius:50%;border:2.5px solid #00d67e;padding:2.5px;display:flex;align-items:center;justify-content:center;background:#fff;margin:0 auto}
@@ -130,7 +133,6 @@ body{background:#fff;display:flex;justify-content:center}
 .msg-list{flex:1;overflow-y:auto;display:none}
 .msg-list.active{display:block}
 .chat-row{display:flex;align-items:center;gap:12px;padding:12px 16px;cursor:pointer;border-bottom:1px solid #f3f4f6}
-.chat-row:active{background:#f7f8fa}
 .chat-av{width:52px;height:52px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:20px;flex:none}
 .chat-info{flex:1;min-width:0}
 .chat-info b{font-size:15px}
@@ -185,9 +187,9 @@ body{background:#fff;display:flex;justify-content:center}
 <div id="app" class="screen">
   <div class="app-header">
     <div class="brand">HMF book</div>
-    <div style="display:flex;gap:14px;font-size:20px">
-      <span onclick="openMessages()" style="cursor:pointer">📩</span>
-      <span onclick="openSettings()" style="cursor:pointer">⚙️</span>
+    <div class="right-icons">
+      <span class="header-ico" onclick="openMessages()">📩</span>
+      <span class="header-ico" onclick="openSettings()">⚙️</span>
     </div>
   </div>
   <div class="content">
@@ -279,11 +281,11 @@ body{background:#fff;display:flex;justify-content:center}
     </div>
   </div>
   <div class="bottom-nav">
-    <button class="nav-btn active" onclick="switchTab(this,'pageHome')">🏠<span>Home</span></button>
-    <button class="nav-btn" onclick="switchTab(this,'pageReels')">🎬<span>Reels</span></button>
-    <button class="nav-btn" onclick="switchTab(this,'pageSearch')">🔍<span>Search</span></button>
-    <button class="nav-btn" onclick="switchTab(this,'pageGames')">🎮<span>Games</span></button>
-    <button class="nav-btn" onclick="switchTab(this,'pageProfile')">👤<span>Profile</span></button>
+    <button class="nav-btn active" onclick="switchTab(this,'pageHome')">🏠</button>
+    <button class="nav-btn" onclick="switchTab(this,'pageSearch')">🔍</button>
+    <button class="nav-btn" onclick="switchTab(this,'pageReels')">🎬</button>
+    <button class="nav-btn" onclick="switchTab(this,'pageGames')">🎮<span class="nav-badge">1</span></button>
+    <button class="nav-btn" onclick="switchTab(this,'pageProfile')">👤</button>
   </div>
   <div id="settingsScreen">
     <div class="set-head"><button class="back-btn" onclick="closeSettings()">←</button><h2>Settings</h2></div>
@@ -309,7 +311,7 @@ body{background:#fff;display:flex;justify-content:center}
     <div class="set-group">
       <h4>About</h4>
       <div class="set-row" onclick="showToast('Help center')">❓ Help Center<span class="chev">›</span></div>
-      <div class="set-row" onclick="showToast('HMF Book v1.1')">ℹ️ About HMF Book<span class="chev">›</span></div>
+      <div class="set-row" onclick="showToast('HMF Book v1.2')">ℹ️ About HMF Book<span class="chev">›</span></div>
       <div class="set-row danger" onclick="logout()">🚪 Log Out</div>
     </div>
     <div style="height:30px"></div>
