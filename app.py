@@ -26,7 +26,7 @@ body{background:#fff;display:flex;justify-content:center}
 .auth-card{background:#fff;border-radius:28px 28px 0 0;margin-top:-45px;padding:30px 24px 40px;flex:1}
 .auth-card h1{font-size:30px;color:#222;margin-bottom:22px}
 .input-box{display:flex;align-items:center;gap:10px;border:1.5px solid #dfe3e8;border-radius:14px;padding:13px 14px;margin-bottom:14px}
-.input-box input{border:none;outline:none;flex:1;font-size:15px}
+.input-box input{border:none;outline:none;flex:1;font-size:15px;min-width:0;background:transparent}
 .eye{cursor:pointer;background:none;border:none;font-size:16px}
 .btn{width:100%;padding:14px;border:none;border-radius:999px;background:linear-gradient(135deg,#00d67e,#009e4f);color:#fff;font-size:17px;font-weight:800;cursor:pointer;margin-top:8px}
 .divider{display:flex;align-items:center;gap:12px;color:#8a9299;font-size:14px;margin:22px 0 16px}
@@ -41,8 +41,8 @@ body{background:#fff;display:flex;justify-content:center}
 #app{height:100vh}
 .app-header{background:#fff;color:#262626;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #dbdbdb}
 .brand{font-size:24px;font-weight:800;font-style:italic;color:#009e4f}
-.header-ico{font-size:22px;cursor:pointer;position:relative}
-.app-header .right-icons{display:flex;gap:20px;align-items:center}
+.header-ico{font-size:22px;cursor:pointer}
+.app-header .right-icons{display:flex;gap:18px;align-items:center}
 .content{flex:1;overflow-y:auto;background:#f7f8fa}
 .page{display:none}
 .page.active{display:block}
@@ -52,9 +52,10 @@ body{background:#fff;display:flex;justify-content:center}
 .nav-btn.active{filter:none;opacity:1;transform:scale(1.15)}
 .nav-badge{position:absolute;top:-5px;right:-8px;background:#ff3040;color:#fff;font-size:9px;font-weight:700;min-width:16px;height:16px;border-radius:999px;display:flex;align-items:center;justify-content:center;padding:0 4px;border:2px solid #fff}
 .stories{display:flex;gap:14px;overflow-x:auto;padding:14px;background:#fff;border-bottom:1px solid #eceff2}
-.story{text-align:center;font-size:11px;color:#333;min-width:60px}
-.story-av{width:56px;height:56px;border-radius:50%;border:2.5px solid #00d67e;padding:2.5px;display:flex;align-items:center;justify-content:center;background:#fff;margin:0 auto}
+.story{text-align:center;font-size:11px;color:#333;min-width:60px;cursor:pointer}
+.story-av{width:56px;height:56px;border-radius:50%;border:2.5px solid #00d67e;padding:2.5px;display:flex;align-items:center;justify-content:center;background:#fff;margin:0 auto;overflow:hidden}
 .story-av div{width:100%;height:100%;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:20px}
+.story-av img{width:100%;height:100%;object-fit:cover;border-radius:50%}
 .av1{background:linear-gradient(135deg,#f9ce34,#ee2a7b)}
 .av2{background:linear-gradient(135deg,#667eea,#764ba2)}
 .av3{background:linear-gradient(135deg,#11998e,#38ef7d)}
@@ -62,19 +63,23 @@ body{background:#fff;display:flex;justify-content:center}
 .my-story .story-av{border-style:dashed;color:#009e4f;font-size:26px;font-weight:800}
 .post{background:#fff;margin:12px;border-radius:16px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.05)}
 .post-head{display:flex;align-items:center;gap:10px;padding:10px 12px}
-.mini-av{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800}
+.mini-av{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;flex:none;overflow:hidden}
+.mini-av img{width:100%;height:100%;object-fit:cover}
 .muted{color:#8a9299;font-size:12px}
-.dots{margin-left:auto;font-size:20px;color:#5b6167;cursor:pointer}
-.post-img{height:230px;display:flex;align-items:center;justify-content:center;font-size:74px;position:relative;cursor:pointer}
+.dots{margin-left:auto;font-size:20px;color:#5b6167;cursor:pointer;padding:0 4px}
+.post-img{height:230px;display:flex;align-items:center;justify-content:center;font-size:74px;position:relative;cursor:pointer;user-select:none}
 .p1{background:linear-gradient(135deg,#89f7fe,#66a6ff)}
 .p2{background:linear-gradient(135deg,#fddb92,#d1fdff)}
 .p3{background:linear-gradient(135deg,#a18cd1,#fbc2eb)}
-.big-heart{position:absolute;font-size:90px;animation:pop .8s ease}
+.post-media{position:relative;background:#000}
+.post-photo{width:100%;max-height:400px;object-fit:cover;display:block;cursor:pointer}
+.post-video{width:100%;max-height:400px;display:block;background:#000}
+.big-heart{position:absolute;font-size:90px;animation:pop .8s ease;pointer-events:none}
 @keyframes pop{0%{transform:scale(0);opacity:0}40%{transform:scale(1.2);opacity:1}100%{transform:scale(1);opacity:0}}
 .post-actions{display:flex;gap:16px;padding:10px 12px;font-size:20px}
 .icon-btn{background:none;border:none;font-size:20px;cursor:pointer}
 .save-btn{margin-left:auto}
-.caption{padding:0 12px 12px;font-size:14px}
+.caption{padding:0 12px 12px;font-size:14px;word-wrap:break-word}
 .reel{height:55vh;min-height:360px;border-radius:18px;margin:12px;position:relative;display:flex;align-items:flex-end;color:#fff;overflow:hidden}
 .r1{background:linear-gradient(160deg,#ff512f,#dd2476)}
 .r2{background:linear-gradient(160deg,#11998e,#38ef7d)}
@@ -88,7 +93,7 @@ body{background:#fff;display:flex;justify-content:center}
 .google-logo{text-align:center;font-size:40px;font-weight:800;margin:14px 0 20px}
 .l-red{color:#ea4335}.l-blue{color:#4285f4}.l-green{color:#34a853}.l-yellow{color:#fbbc05}
 .search-bar{display:flex;align-items:center;gap:10px;background:#fff;border:1.5px solid #dfe3e8;border-radius:999px;padding:13px 18px}
-.search-bar input{border:none;outline:none;flex:1;font-size:15px}
+.search-bar input{border:none;outline:none;flex:1;font-size:15px;min-width:0}
 .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
 .chip{background:#fff;border:1px solid #dfe3e8;border-radius:999px;padding:8px 14px;font-size:13px;cursor:pointer}
 .link-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:24px}
@@ -102,11 +107,13 @@ body{background:#fff;display:flex;justify-content:center}
 .btn-outline{margin-top:16px;padding:10px 30px;border:2px solid #009e4f;border-radius:999px;background:#fff;color:#009e4f;font-weight:700;cursor:pointer}
 .coming{margin-top:26px;background:#fff;border-radius:16px;padding:22px;box-shadow:0 2px 8px rgba(0,0,0,.05)}
 .profile-head{background:#fff;padding:24px 16px;text-align:center;border-bottom:1px solid #eceff2}
-.big-av{width:86px;height:86px;border-radius:50%;background:linear-gradient(135deg,#00d67e,#009e4f);color:#fff;font-size:36px;font-weight:800;display:flex;align-items:center;justify-content:center;margin:0 auto 10px}
+.big-av{width:86px;height:86px;border-radius:50%;background:linear-gradient(135deg,#00d67e,#009e4f);color:#fff;font-size:36px;font-weight:800;display:flex;align-items:center;justify-content:center;margin:0 auto 10px;overflow:hidden;cursor:pointer;border:2.5px solid #00b45a;position:relative}
+.big-av img{width:100%;height:100%;object-fit:cover}
+.dp-cam{position:absolute;bottom:0;right:0;background:#009e4f;color:#fff;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;border:2px solid #fff}
 .stats{display:flex;justify-content:center;gap:34px;margin:16px 0}
 .stats b{display:block;font-size:18px}
 .stats span{font-size:12px;color:#8a9299}
-.pill-row{display:flex;gap:10px;justify-content:center}
+.pill-row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
 .pill{padding:9px 22px;border-radius:999px;border:1.5px solid #dfe3e8;background:#fff;font-weight:700;cursor:pointer;font-size:14px}
 .pill.green{background:linear-gradient(135deg,#00d67e,#009e4f);color:#fff;border:none}
 .grid6{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;padding:4px}
@@ -116,12 +123,14 @@ body{background:#fff;display:flex;justify-content:center}
 .set-head{background:linear-gradient(140deg,#00e08a,#009e4f);color:#fff;padding:16px 18px 20px;display:flex;align-items:center;gap:14px}
 .back-btn{background:none;border:none;color:#fff;font-size:22px;cursor:pointer}
 .set-summary{background:#fff;margin:14px;border-radius:16px;padding:16px;display:flex;gap:14px;align-items:center}
+.set-av{width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#00d67e,#009e4f);color:#fff;font-size:24px;font-weight:800;display:flex;align-items:center;justify-content:center;overflow:hidden;flex:none}
+.set-av img{width:100%;height:100%;object-fit:cover}
 .set-group{background:#fff;margin:14px;border-radius:16px;overflow:hidden}
 .set-group h4{padding:12px 16px 4px;color:#009e4f;font-size:13px;text-transform:uppercase}
 .set-row{display:flex;align-items:center;gap:12px;padding:14px 16px;border-top:1px solid #f0f2f4;cursor:pointer;font-size:15px}
 .set-row .chev{margin-left:auto;color:#b3b9bf}
 .set-row.danger{color:#ed4956}
-#toast{position:fixed;bottom:95px;left:50%;transform:translateX(-50%);background:#222;color:#fff;padding:11px 20px;border-radius:999px;font-size:14px;opacity:0;pointer-events:none;transition:.3s;z-index:100}
+#toast{position:fixed;bottom:95px;left:50%;transform:translateX(-50%);background:#222;color:#fff;padding:11px 20px;border-radius:999px;font-size:14px;opacity:0;pointer-events:none;transition:.3s;z-index:110}
 #toast.show{opacity:1}
 #msgScreen{position:absolute;top:0;left:0;right:0;bottom:0;background:#fff;display:none;z-index:60;flex-direction:column}
 #msgScreen.active{display:flex}
@@ -133,7 +142,8 @@ body{background:#fff;display:flex;justify-content:center}
 .msg-list{flex:1;overflow-y:auto;display:none}
 .msg-list.active{display:block}
 .chat-row{display:flex;align-items:center;gap:12px;padding:12px 16px;cursor:pointer;border-bottom:1px solid #f3f4f6}
-.chat-av{width:52px;height:52px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:20px;flex:none}
+.chat-av{width:52px;height:52px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:20px;flex:none;overflow:hidden}
+.chat-av img{width:100%;height:100%;object-fit:cover}
 .chat-info{flex:1;min-width:0}
 .chat-info b{font-size:15px}
 .chat-info p{font-size:13px;color:#8a9299;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -143,12 +153,44 @@ body{background:#fff;display:flex;justify-content:center}
 #chatView{position:absolute;top:0;left:0;right:0;bottom:0;background:#fff;display:none;z-index:70;flex-direction:column}
 #chatView.active{display:flex}
 .chat-body{flex:1;overflow-y:auto;padding:16px;background:#f7f8fa;display:flex;flex-direction:column;gap:8px}
-.bubble{max-width:75%;padding:10px 14px;border-radius:18px;font-size:14px;line-height:1.4}
-.bubble.me{align-self:flex-end;background:linear-gradient(135deg,#00d67e,#009e4f);color:#fff;border-bottom-right-radius:4px}
-.bubble.them{align-self:flex-start;background:#e9ecef;color:#333;border-bottom-left-radius:4px}
+.bubble-row{display:flex;align-items:center;gap:6px}
+.bubble-row.me{align-self:flex-end;justify-content:flex-end}
+.bubble-row.them{align-self:flex-start}
+.bubble{max-width:75%;padding:10px 14px;border-radius:18px;font-size:14px;line-height:1.4;word-wrap:break-word}
+.bubble.me{background:linear-gradient(135deg,#00d67e,#009e4f);color:#fff;border-bottom-right-radius:4px}
+.bubble.them{background:#e9ecef;color:#333;border-bottom-left-radius:4px}
+.unsend-btn{background:none;border:none;color:#c7ccd1;font-size:12px;cursor:pointer;padding:2px}
+.sys-note{align-self:center;font-size:11px;color:#8a9299;font-style:italic;background:#e4e7ea;padding:4px 12px;border-radius:999px}
 .chat-input{display:flex;gap:8px;padding:10px;border-top:1px solid #eceff2;background:#fff}
-.chat-input input{flex:1;border:1.5px solid #dfe3e8;border-radius:999px;padding:11px 16px;font-size:14px;outline:none}
+.chat-input input{flex:1;border:1.5px solid #dfe3e8;border-radius:999px;padding:11px 16px;font-size:14px;outline:none;min-width:0}
 .chat-input button{width:44px;height:44px;border:none;border-radius:50%;background:linear-gradient(135deg,#00d67e,#009e4f);color:#fff;font-size:18px;cursor:pointer;flex:none}
+#createScreen{position:absolute;top:0;left:0;right:0;bottom:0;background:#fff;display:none;z-index:65;flex-direction:column}
+#createScreen.active{display:flex}
+.create-body{flex:1;overflow-y:auto;padding:20px}
+#pickArea{border:2px dashed #b8c4bc;border-radius:18px;padding:44px 20px;text-align:center;cursor:pointer;color:#5b6167;background:#fafbfa}
+#previewWrap{display:none}
+#previewWrap img{width:100%;max-height:300px;object-fit:cover;border-radius:14px;display:block}
+#previewWrap video{width:100%;max-height:300px;border-radius:14px;display:block;background:#000}
+#editScreen{position:absolute;top:0;left:0;right:0;bottom:0;background:#fff;display:none;z-index:75;flex-direction:column}
+#editScreen.active{display:flex}
+.edit-body{flex:1;overflow-y:auto;padding:20px;text-align:center}
+.dp-wrap{position:relative;width:110px;margin:14px auto}
+.dp-main{width:110px;height:110px;border-radius:50%;background:linear-gradient(135deg,#00d67e,#009e4f);color:#fff;font-size:44px;font-weight:800;display:flex;align-items:center;justify-content:center;overflow:hidden;cursor:pointer;border:3px solid #00b45a}
+.dp-main img{width:100%;height:100%;object-fit:cover}
+.dp-cam{position:absolute;bottom:0;right:0;background:#009e4f;color:#fff;width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;border:2px solid #fff;cursor:pointer}
+.edit-label{text-align:left;font-size:12px;color:#8a9299;margin:16px 0 6px;text-transform:uppercase;font-weight:700}
+.edit-input{width:100%;border:1.5px solid #dfe3e8;border-radius:12px;padding:12px 14px;font-size:15px;outline:none}
+.edit-input:focus{border-color:#00b45a}
+textarea.edit-input{resize:vertical;min-height:70px;font-family:inherit}
+.done-btn{background:none;border:none;color:#fff;font-size:15px;font-weight:700;cursor:pointer;margin-left:auto}
+#sheetBackdrop{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.45);display:none;z-index:80}
+#sheetBackdrop.active{display:block}
+#sheet{position:fixed;left:50%;bottom:-100%;transform:translateX(-50%);width:100%;max-width:430px;background:#fff;border-radius:20px 20px 0 0;z-index:81;transition:bottom .25s;padding:8px 0 18px}
+#sheet.active{bottom:0}
+.sheet-handle{width:40px;height:4px;background:#dfe3e8;border-radius:99px;margin:6px auto 10px}
+.sheet-item{padding:15px 24px;font-size:15px;cursor:pointer;border-top:1px solid #f3f4f6}
+.sheet-item.danger{color:#ed4956;font-weight:700}
+.sheet-item.cancel{color:#8a9299;text-align:center;font-weight:700}
 </style>
 </head>
 <body>
@@ -188,6 +230,7 @@ body{background:#fff;display:flex;justify-content:center}
   <div class="app-header">
     <div class="brand">HMF book</div>
     <div class="right-icons">
+      <span class="header-ico" onclick="openCreate()" title="Create Post">➕</span>
       <span class="header-ico" onclick="openMessages()">📩</span>
       <span class="header-ico" onclick="openSettings()">⚙️</span>
     </div>
@@ -195,28 +238,28 @@ body{background:#fff;display:flex;justify-content:center}
   <div class="content">
     <div id="pageHome" class="page active">
       <div class="stories">
-        <div class="story my-story"><div class="story-av"><div id="myStoryAvatar">+</div></div>Your story</div>
+        <div class="story my-story" onclick="openCreate()"><div class="story-av"><div id="myStoryAvatar">+</div></div>Your story</div>
         <div class="story"><div class="story-av"><div class="av1">A</div></div>Ahmed</div>
         <div class="story"><div class="story-av"><div class="av2">S</div></div>Sara</div>
         <div class="story"><div class="story-av"><div class="av3">B</div></div>Bilal</div>
         <div class="story"><div class="story-av"><div class="av4">Z</div></div>Zara</div>
       </div>
-      <div class="post">
-        <div class="post-head"><div class="mini-av av1">A</div><div><b>Ahmed</b><br><span class="muted">Hunza Valley</span></div><span class="dots">⋯</span></div>
+      <div class="post" id="postDemo1">
+        <div class="post-head"><div class="mini-av av1">A</div><div><b>Ahmed</b><br><span class="muted">Hunza Valley</span></div><span class="dots" onclick="openSheet(this.closest('.post'))">⋯</span></div>
         <div class="post-img p1" onclick="doubleLike(this)">🏔️</div>
-        <div class="post-actions"><button class="icon-btn like-btn" onclick="toggleLike(this)">🤍</button><button class="icon-btn" onclick="showToast('Comments')">💬</button><button class="icon-btn" onclick="showToast('Shared!')">✈️</button><button class="icon-btn save-btn" onclick="showToast('Saved')">🔖</button></div>
+        <div class="post-actions"><button class="icon-btn like-btn" onclick="toggleLike(this)">🤍</button><button class="icon-btn" onclick="showToast('Comments')">💬</button><button class="icon-btn" onclick="openSheet(this.closest('.post'))">🔗</button><button class="icon-btn save-btn" onclick="downloadPost(this.closest('.post'))">⬇️</button></div>
         <div class="caption"><b>Ahmed</b> Beautiful Pakistan 🇵🇰</div>
       </div>
-      <div class="post">
-        <div class="post-head"><div class="mini-av av2">S</div><div><b>Sara</b><br><span class="muted">Original audio</span></div><span class="dots">⋯</span></div>
+      <div class="post" id="postDemo2">
+        <div class="post-head"><div class="mini-av av2">S</div><div><b>Sara</b><br><span class="muted">Original audio</span></div><span class="dots" onclick="openSheet(this.closest('.post'))">⋯</span></div>
         <div class="post-img p2" onclick="doubleLike(this)">🎵</div>
-        <div class="post-actions"><button class="icon-btn like-btn" onclick="toggleLike(this)">🤍</button><button class="icon-btn" onclick="showToast('Comments')">💬</button><button class="icon-btn" onclick="showToast('Shared!')">✈️</button><button class="icon-btn save-btn" onclick="showToast('Saved')">🔖</button></div>
+        <div class="post-actions"><button class="icon-btn like-btn" onclick="toggleLike(this)">🤍</button><button class="icon-btn" onclick="showToast('Comments')">💬</button><button class="icon-btn" onclick="openSheet(this.closest('.post'))">🔗</button><button class="icon-btn save-btn" onclick="downloadPost(this.closest('.post'))">⬇️</button></div>
         <div class="caption"><b>Sara</b> New reel trend! 🔥</div>
       </div>
-      <div class="post">
-        <div class="post-head"><div class="mini-av av3">B</div><div><b>Bilal</b><br><span class="muted">Gaming</span></div><span class="dots">⋯</span></div>
+      <div class="post" id="postDemo3">
+        <div class="post-head"><div class="mini-av av3">B</div><div><b>Bilal</b><br><span class="muted">Gaming</span></div><span class="dots" onclick="openSheet(this.closest('.post'))">⋯</span></div>
         <div class="post-img p3" onclick="doubleLike(this)">🎮</div>
-        <div class="post-actions"><button class="icon-btn like-btn" onclick="toggleLike(this)">🤍</button><button class="icon-btn" onclick="showToast('Comments')">💬</button><button class="icon-btn" onclick="showToast('Shared!')">✈️</button><button class="icon-btn save-btn" onclick="showToast('Saved')">🔖</button></div>
+        <div class="post-actions"><button class="icon-btn like-btn" onclick="toggleLike(this)">🤍</button><button class="icon-btn" onclick="showToast('Comments')">💬</button><button class="icon-btn" onclick="openSheet(this.closest('.post'))">🔗</button><button class="icon-btn save-btn" onclick="downloadPost(this.closest('.post'))">⬇️</button></div>
         <div class="caption"><b>Bilal</b> Game night on HMF 🕹️</div>
       </div>
     </div>
@@ -268,11 +311,16 @@ body{background:#fff;display:flex;justify-content:center}
     </div>
     <div id="pageProfile" class="page">
       <div class="profile-head">
-        <div class="big-av" id="profileAvatar">H</div>
+        <div class="big-av" id="profileAvatar" onclick="openEdit()" title="Change DP">H<div class="dp-cam">📷</div></div>
         <h2 id="profileName">HMF User</h2>
         <p class="muted" id="profileHandle">@hmfuser</p>
-        <div class="stats"><div><b>12</b><span>Posts</span></div><div><b>1.2K</b><span>Followers</span></div><div><b>340</b><span>Following</span></div></div>
-        <div class="pill-row"><button class="pill green" onclick="showToast('Edit profile')">Edit Profile</button><button class="pill" onclick="openSettings()">Settings</button></div>
+        <p style="font-size:14px;margin-top:6px" id="profileBio"></p>
+        <div class="stats"><div><b id="postCount">12</b><span>Posts</span></div><div><b>1.2K</b><span>Followers</span></div><div><b>340</b><span>Following</span></div></div>
+        <div class="pill-row">
+          <button class="pill green" onclick="openCreate()">➕ New Post</button>
+          <button class="pill" onclick="openEdit()">✏️ Edit Profile</button>
+          <button class="pill" onclick="openSettings()">⚙️ Settings</button>
+        </div>
       </div>
       <div class="grid6">
         <div class="gtile p1">🏔️</div><div class="gtile av1">📷</div><div class="gtile p2">🎵</div>
@@ -289,12 +337,12 @@ body{background:#fff;display:flex;justify-content:center}
   </div>
   <div id="settingsScreen">
     <div class="set-head"><button class="back-btn" onclick="closeSettings()">←</button><h2>Settings</h2></div>
-    <div class="set-summary"><div class="big-av" style="width:56px;height:56px;font-size:24px" id="settingsAvatar">H</div><div><b id="settingsName">HMF User</b><br><span class="muted" id="settingsHandle">@hmfuser</span></div></div>
+    <div class="set-summary"><div class="set-av" id="settingsAvatar">H</div><div><b id="settingsName">HMF User</b><br><span class="muted" id="settingsHandle">@hmfuser</span></div></div>
     <div class="set-group">
-      <h4>How you use HMF</h4>
+      <h4>Account</h4>
+      <div class="set-row" onclick="openEdit()">✏️ Edit Profile / DP<span class="chev">›</span></div>
+      <div class="set-row" onclick="openCreate()">➕ Create New Post<span class="chev">›</span></div>
       <div class="set-row" onclick="openMessages()">📩 Messages<span class="chev">›</span></div>
-      <div class="set-row" onclick="showToast('Saved')">🔖 Saved<span class="chev">›</span></div>
-      <div class="set-row" onclick="showToast('Archive')">🗂️ Archive<span class="chev">›</span></div>
     </div>
     <div class="set-group">
       <h4>Who can see your content</h4>
@@ -311,10 +359,41 @@ body{background:#fff;display:flex;justify-content:center}
     <div class="set-group">
       <h4>About</h4>
       <div class="set-row" onclick="showToast('Help center')">❓ Help Center<span class="chev">›</span></div>
-      <div class="set-row" onclick="showToast('HMF Book v1.2')">ℹ️ About HMF Book<span class="chev">›</span></div>
+      <div class="set-row" onclick="showToast('HMF Book v3.0 Final')">ℹ️ About HMF Book<span class="chev">›</span></div>
       <div class="set-row danger" onclick="logout()">🚪 Log Out</div>
     </div>
     <div style="height:30px"></div>
+  </div>
+  <div id="createScreen">
+    <div class="msg-head"><button class="back-btn" onclick="closeCreate()">←</button><h2>Create New Post</h2></div>
+    <div class="create-body">
+      <input type="file" id="filePick" accept="image/*,video/*" style="display:none" onchange="fileChosen(this)">
+      <div id="pickArea" onclick="document.getElementById('filePick').click()">
+        <div style="font-size:54px">🖼️</div>
+        <p style="margin-top:8px"><b>Tap to select photo or video</b></p>
+        <p class="muted" style="margin-top:4px">Photo ya video choose karein (max 15MB)</p>
+      </div>
+      <div id="previewWrap"></div>
+      <div class="input-box" style="margin-top:14px">✏️<input id="postCaption" type="text" placeholder="Write a caption..."></div>
+      <button class="btn" onclick="publishPost()">Share Post</button>
+    </div>
+  </div>
+  <div id="editScreen">
+    <div class="msg-head"><button class="back-btn" onclick="closeEdit()">←</button><h2>Edit Profile</h2><button class="done-btn" onclick="saveProfile()">Done ✓</button></div>
+    <div class="edit-body">
+      <input type="file" id="dpPick" accept="image/*" style="display:none" onchange="dpChosen(this)">
+      <div class="dp-wrap">
+        <div class="dp-main" id="dpMain" onclick="document.getElementById('dpPick').click()">H</div>
+        <div class="dp-cam" onclick="document.getElementById('dpPick').click()">📷</div>
+      </div>
+      <p class="muted">Tap photo to change DP</p>
+      <div class="edit-label">Name</div>
+      <input class="edit-input" id="editName" type="text" placeholder="Your name">
+      <div class="edit-label">Username (ID)</div>
+      <input class="edit-input" id="editHandle" type="text" placeholder="username">
+      <div class="edit-label">Bio</div>
+      <textarea class="edit-input" id="editBio" placeholder="Write something about you..."></textarea>
+    </div>
   </div>
   <div id="msgScreen">
     <div class="msg-head"><button class="back-btn" onclick="closeMessages()">←</button><h2>Messages</h2></div>
@@ -349,35 +428,46 @@ body{background:#fff;display:flex;justify-content:center}
     </div>
   </div>
 </div>
+<div id="sheetBackdrop" onclick="closeSheet()"></div>
+<div id="sheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-item" onclick="sheetCopy()">🔗 Copy Link</div>
+  <div class="sheet-item" onclick="sheetSave()">⬇️ Save / Download</div>
+  <div class="sheet-item danger" onclick="sheetDelete()">🗑️ Delete Post</div>
+  <div class="sheet-item cancel" onclick="closeSheet()">Cancel</div>
+</div>
 <div id="toast"></div>
 </div>
 <script>
 function showScreen(id){document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});document.getElementById(id).classList.add('active');}
-function switchTab(btn,id){document.querySelectorAll('.nav-btn').forEach(function(b){b.classList.remove('active');});btn.classList.add('active');document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});document.getElementById(id).classList.add('active');closeSettings();closeMessages();}
-function openSettings(){closeMessages();document.getElementById('settingsScreen').classList.add('active');}
+function switchTab(btn,id){document.querySelectorAll('.nav-btn').forEach(function(b){b.classList.remove('active');});btn.classList.add('active');document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});document.getElementById(id).classList.add('active');closeSettings();closeMessages();closeCreate();closeEdit();}
+function openSettings(){closeMessages();closeCreate();closeEdit();document.getElementById('settingsScreen').classList.add('active');}
 function closeSettings(){document.getElementById('settingsScreen').classList.remove('active');}
-function openMessages(){document.getElementById('msgScreen').classList.add('active');}
+function openMessages(){closeSettings();closeCreate();closeEdit();document.getElementById('msgScreen').classList.add('active');}
 function closeMessages(){document.getElementById('msgScreen').classList.remove('active');closeChatView();}
 function switchMsgTab(btn,id){document.querySelectorAll('.msg-tab').forEach(function(b){b.classList.remove('active');});btn.classList.add('active');document.querySelectorAll('.msg-list').forEach(function(l){l.classList.remove('active');});document.getElementById(id).classList.add('active');}
-var replies=['Hi! 😊','Kya haal hai?','Sounds good! 👍','Haha 😄','Okay done!','Acha? Phir kya hua?','Interesting... tell me more','Main bhi soch raha tha yehi 🤔','Cool! 🎉'];
-function openChatView(name,avClass,letter){document.getElementById('chatUserName').textContent=name;var av=document.getElementById('chatUserAv');av.className='chat-av '+avClass;av.textContent=letter;document.getElementById('chatView').classList.add('active');document.getElementById('chatBody').innerHTML='';setTimeout(function(){addBubble('them','Hi! 👋');},400);}
-function closeChatView(){document.getElementById('chatView').classList.remove('active');}
-function addBubble(who,text){var b=document.createElement('div');b.className='bubble '+who;b.textContent=text;var body=document.getElementById('chatBody');body.appendChild(b);body.scrollTop=body.scrollHeight;}
-function sendMsg(){var inp=document.getElementById('msgInput');var t=inp.value.trim();if(!t)return;addBubble('me',t);inp.value='';setTimeout(function(){addBubble('them',replies[Math.floor(Math.random()*replies.length)]);},1000);}
 var toastTimer;
 function showToast(msg){var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(function(){t.classList.remove('show');},2500);}
 function togglePass(id,btn){var inp=document.getElementById(id);if(inp.type==='password'){inp.type='text';btn.textContent='🙈';}else{inp.type='password';btn.textContent='👁️';}}
 var hmfUser=null;
 try{hmfUser=JSON.parse(localStorage.getItem('hmfUser')||'null');}catch(e){hmfUser=null;}
 function saveUser(obj){hmfUser=obj;try{localStorage.setItem('hmfUser',JSON.stringify(obj));}catch(e){}}
-function signup(){var u=document.getElementById('suUser').value.trim();var e=document.getElementById('suEmail').value.trim();var p=document.getElementById('suPass').value;if(!u||!e||!p){showToast('Please fill all fields');return;}if(p.length<6){showToast('Password must be 6+ characters');return;}saveUser({u:u,e:e,p:p});enterApp(u);showToast('Welcome '+u+'!');}
-function login(){var e=document.getElementById('liEmail').value.trim();var p=document.getElementById('liPass').value;if(hmfUser&&hmfUser.e===e&&hmfUser.p===p){enterApp(hmfUser.u);showToast('Welcome back!');}else{showToast('Invalid email or password');}}
-function socialLogin(name){var u=name+' User';saveUser({u:u,e:name.toLowerCase()+'.user@demo.com',p:'demo123'});enterApp(u);showToast(name+' login successful');}
-function enterApp(name){var ini=name.charAt(0).toUpperCase();var handle='@'+name.toLowerCase().replace(/\s+/g,'');document.getElementById('profileName').textContent=name;document.getElementById('settingsName').textContent=name;document.getElementById('profileHandle').textContent=handle;document.getElementById('settingsHandle').textContent=handle;document.getElementById('profileAvatar').textContent=ini;document.getElementById('settingsAvatar').textContent=ini;document.getElementById('myStoryAvatar').textContent=ini;showScreen('app');}
-function logout(){closeSettings();closeMessages();showScreen('splash');showToast('Logged out');}
-function toggleLike(btn){if(btn.textContent==='🤍'){btn.textContent='❤️';}else{btn.textContent='🤍';}}
+var profile={name:'HMF User',handle:'hmfuser',bio:'',dp:null};
+function loadProfile(){try{var s=JSON.parse(localStorage.getItem('hmfProfile')||'null');if(s){profile=s;}}catch(e){}}
+function saveProfileStore(){try{localStorage.setItem('hmfProfile',JSON.stringify(profile));}catch(e){}}
+function setAvatar(el){if(!el)return;if(profile.dp){el.innerHTML='<img src="'+profile.dp+'">';}else{el.textContent=profile.name.charAt(0).toUpperCase();}}
+function applyProfileEverywhere(){document.getElementById('profileName').textContent=profile.name;document.getElementById('settingsName').textContent=profile.name;document.getElementById('profileHandle').textContent='@'+profile.handle;document.getElementById('settingsHandle').textContent='@'+profile.handle;var pb=document.getElementById('profileBio');pb.textContent=profile.bio;setAvatar(document.getElementById('profileAvatar'));setAvatar(document.getElementById('settingsAvatar'));setAvatar(document.getElementById('myStoryAvatar'));}
+function openEdit(){closeSettings();closeMessages();closeCreate();document.getElementById('editName').value=profile.name;document.getElementById('editHandle').value=profile.handle;document.getElementById('editBio').value=profile.bio;setAvatar(document.getElementById('dpMain'));document.getElementById('editScreen').classList.add('active');}
+function closeEdit(){document.getElementById('editScreen').classList.remove('active');}
+function dpChosen(inp){var f=inp.files&&inp.files[0];if(!f)return;if(f.size>5*1024*1024){showToast('DP 5MB se choti honi chahiye');inp.value='';return;}var r=new FileReader();r.onload=function(e){profile.dp=e.target.result;setAvatar(document.getElementById('dpMain'));saveProfileStore();applyProfileEverywhere();showToast('DP updated ✅');};r.readAsDataURL(f);}
+function saveProfile(){var n=document.getElementById('editName').value.trim();var h=document.getElementById('editHandle').value.trim();var b=document.getElementById('editBio').value.trim();if(!n){showToast('Name required');return;}profile.name=n;profile.handle=h?h.replace(/\s+/g,'').toLowerCase():'hmfuser';profile.bio=b;saveProfileStore();applyProfileEverywhere();closeEdit();showToast('Profile saved ✅');}
+function signup(){var u=document.getElementById('suUser').value.trim();var e=document.getElementById('suEmail').value.trim();var p=document.getElementById('suPass').value;if(!u||!e||!p){showToast('Please fill all fields');return;}if(p.length<6){showToast('Password must be 6+ characters');return;}saveUser({u:u,e:e,p:p});profile.name=u;profile.handle=u.toLowerCase().replace(/\s+/g,'');profile.bio='New on HMF Book 🌟';profile.dp=null;saveProfileStore();applyProfileEverywhere();showScreen('app');showToast('Welcome '+u+'!');}
+function login(){var e=document.getElementById('liEmail').value.trim();var p=document.getElementById('liPass').value;if(hmfUser&&hmfUser.e===e&&hmfUser.p===p){profile.name=hmfUser.u;profile.handle=hmfUser.u.toLowerCase().replace(/\s+/g,'');saveProfileStore();applyProfileEverywhere();showScreen('app');showToast('Welcome back!');}else{showToast('Invalid email or password');}}
+function socialLogin(name){var u=name+' User';saveUser({u:u,e:name.toLowerCase()+'.user@demo.com',p:'demo123'});profile.name=u;profile.handle=name.toLowerCase()+'user';saveProfileStore();applyProfileEverywhere();showScreen('app');showToast(name+' login successful');}
+function logout(){closeSettings();closeMessages();closeCreate();closeEdit();showScreen('splash');showToast('Logged out');}
+function toggleLike(btn){if(btn.textContent==='🤍'){btn.textContent='❤️';showToast('Liked ❤️');}else{btn.textContent='🤍';}}
 var lastTap=0;
-function doubleLike(el){var now=Date.now();if(now-lastTap<350){var btn=el.parentElement.querySelector('.like-btn');if(btn){btn.textContent='❤️';}var h=document.createElement('div');h.className='big-heart';h.textContent='❤️';el.appendChild(h);setTimeout(function(){h.remove();},800);}lastTap=now;}
+function doubleLike(el){var now=Date.now();if(now-lastTap<350){var post=el.closest('.post');if(post){var btn=post.querySelector('.like-btn');if(btn){btn.textContent='❤️';}}var h=document.createElement('div');h.className='big-heart';h.textContent='❤️';el.appendChild(h);setTimeout(function(){h.remove();},800);}lastTap=now;}
 function doSearch(){var q=document.getElementById('searchInput').value.trim();if(!q){showToast('Type something to search');return;}window.open('https://www.google.com/search?q='+encodeURIComponent(q),'_blank');}
 function setQuery(q){document.getElementById('searchInput').value=q;doSearch();}
 function openSite(url){window.open(url,'_blank');}
@@ -387,6 +477,28 @@ function playCell(i){if(gameOver||board[i]!=='')return;board[i]=current;renderBo
 function checkWin(){var lines=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];for(var i=0;i<lines.length;i++){var a=lines[i][0],b=lines[i][1],c=lines[i][2];if(board[a]!==''&&board[a]===board[b]&&board[a]===board[c])return board[a];}return board.indexOf('')===-1?'Draw':null;}
 function resetGame(){board=['','','','','','','','',''];current='X';gameOver=false;renderBoard();document.getElementById('gameStatus').textContent='Turn: X';}
 renderBoard();
+var replies=['Hi! 😊','Kya haal hai?','Sounds good! 👍','Haha 😄','Okay done!','Acha? Phir kya hua?','Interesting... batao aur','Main bhi soch raha tha yehi 🤔','Cool! 🎉'];
+function openChatView(name,avClass,letter){document.getElementById('chatUserName').textContent=name;var av=document.getElementById('chatUserAv');av.className='chat-av '+avClass;av.style.width='36px';av.style.height='36px';av.style.fontSize='15px';av.textContent=letter;document.getElementById('chatView').classList.add('active');document.getElementById('chatBody').innerHTML='';setTimeout(function(){addBubble('them','Hi! 👋');},400);}
+function closeChatView(){document.getElementById('chatView').classList.remove('active');}
+function addBubble(who,text){var wrap=document.createElement('div');wrap.className='bubble-row '+who;var b=document.createElement('div');b.className='bubble '+who;b.textContent=text;if(who==='me'){var x=document.createElement('button');x.className='unsend-btn';x.textContent='✕';x.title='Unsend';x.onclick=function(){unsendMsg(wrap);};wrap.appendChild(b);wrap.appendChild(x);}else{wrap.appendChild(b);}var body=document.getElementById('chatBody');body.appendChild(wrap);body.scrollTop=body.scrollHeight;}
+function unsendMsg(wrap){var n=document.createElement('div');n.className='sys-note';n.textContent='You unsent a message';wrap.parentNode.replaceChild(n,wrap);}
+function sendMsg(){var inp=document.getElementById('msgInput');var t=inp.value.trim();if(!t)return;addBubble('me',t);inp.value='';setTimeout(function(){addBubble('them',replies[Math.floor(Math.random()*replies.length)]);},1000);}
+var pendingMedia=null;
+function openCreate(){closeSettings();closeMessages();closeEdit();document.getElementById('createScreen').classList.add('active');document.getElementById('previewWrap').style.display='none';document.getElementById('previewWrap').innerHTML='';document.getElementById('pickArea').style.display='block';document.getElementById('postCaption').value='';document.getElementById('filePick').value='';pendingMedia=null;}
+function closeCreate(){document.getElementById('createScreen').classList.remove('active');}
+function fileChosen(inp){var f=inp.files&&inp.files[0];if(!f)return;if(f.size>15*1024*1024){showToast('File 15MB se choti honi chahiye');inp.value='';return;}var r=new FileReader();r.onload=function(e){var isVideo=f.type.indexOf('video')===0;pendingMedia={url:e.target.result,type:isVideo?'video':'image'};var w=document.getElementById('previewWrap');w.innerHTML='';if(isVideo){var v=document.createElement('video');v.src=pendingMedia.url;v.controls=true;w.appendChild(v);}else{var im=document.createElement('img');im.src=pendingMedia.url;w.appendChild(im);}w.style.display='block';document.getElementById('pickArea').style.display='none';};r.readAsDataURL(f);}
+function publishPost(){if(!pendingMedia){showToast('Pehle photo/video choose karein');return;}var cap=document.getElementById('postCaption').value.trim();if(!cap)cap='My new post ✨';var post=document.createElement('div');post.className='post';post.id='post'+Date.now();var head=document.createElement('div');head.className='post-head';var av=document.createElement('div');av.className='mini-av';setAvatar(av);var info=document.createElement('div');var b=document.createElement('b');b.textContent=profile.name;info.appendChild(b);info.appendChild(document.createElement('br'));var mu=document.createElement('span');mu.className='muted';mu.textContent='Just now';info.appendChild(mu);var dots=document.createElement('span');dots.className='dots';dots.textContent='⋯';dots.onclick=function(){openSheet(post);};head.appendChild(av);head.appendChild(info);head.appendChild(dots);var media=document.createElement('div');media.className='post-media';if(pendingMedia.type==='video'){var v=document.createElement('video');v.src=pendingMedia.url;v.controls=true;media.appendChild(v);}else{var im=document.createElement('img');im.className='post-photo';im.src=pendingMedia.url;im.onclick=function(){doubleLike(im);};media.appendChild(im);}var acts=document.createElement('div');acts.className='post-actions';var l=document.createElement('button');l.className='icon-btn like-btn';l.textContent='🤍';l.onclick=function(){toggleLike(l);};var c1=document.createElement('button');c1.className='icon-btn';c1.textContent='💬';c1.onclick=function(){showToast('Comments');};var c2=document.createElement('button');c2.className='icon-btn';c2.textContent='🔗';c2.onclick=function(){openSheet(post);};var sv=document.createElement('button');sv.className='icon-btn save-btn';sv.textContent='⬇️';sv.onclick=function(){downloadPost(post);};acts.appendChild(l);acts.appendChild(c1);acts.appendChild(c2);acts.appendChild(sv);var capEl=document.createElement('div');capEl.className='caption';var cb=document.createElement('b');cb.textContent=profile.name;capEl.appendChild(cb);capEl.appendChild(document.createTextNode(' '+cap));post.appendChild(head);post.appendChild(media);post.appendChild(acts);post.appendChild(capEl);var home=document.getElementById('pageHome');var first=home.querySelector('.post');if(first){home.insertBefore(post,first);}else{home.appendChild(post);}var pc=document.getElementById('postCount');pc.textContent=parseInt(pc.textContent)+1;closeCreate();showToast('Post shared ✅');}
+var menuPost=null;
+function openSheet(post){menuPost=post;document.getElementById('sheetBackdrop').classList.add('active');document.getElementById('sheet').classList.add('active');}
+function closeSheet(){document.getElementById('sheetBackdrop').classList.remove('active');document.getElementById('sheet').classList.remove('active');menuPost=null;}
+function copyText(t){function fb(){var ta=document.createElement('textarea');ta.value=t;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();try{document.execCommand('copy');showToast('Link copied 🔗');}catch(e){showToast('Copy not allowed');}ta.remove();}if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(function(){showToast('Link copied 🔗');}).catch(fb);}else{fb();}}
+function sheetCopy(){var pid=menuPost?menuPost.id:'post';copyText('https://hmfbook.app/p/'+pid);closeSheet();}
+function dl(url,name){var a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();setTimeout(function(){a.remove();},100);}
+function downloadPost(post){if(!post)return;var img=post.querySelector('img');if(img){dl(img.src,'hmf-photo.png');showToast('Saved to device ⬇️');return;}var vid=post.querySelector('video');if(vid&&vid.src){dl(vid.src,'hmf-video.mp4');showToast('Saved to device ⬇️');return;}var pe=post.querySelector('.post-img');var emoji=pe?pe.textContent.trim().charAt(0):'⭐';if(!emoji)emoji='⭐';var g=['#89f7fe','#66a6ff'];if(pe){if(pe.className.indexOf('p2')>-1){g=['#fddb92','#d1fdff'];}else if(pe.className.indexOf('p3')>-1){g=['#a18cd1','#fbc2eb'];}}var c=document.createElement('canvas');c.width=600;c.height=600;var x=c.getContext('2d');var gr=x.createLinearGradient(0,0,600,600);gr.addColorStop(0,g[0]);gr.addColorStop(1,g[1]);x.fillStyle=gr;x.fillRect(0,0,600,600);x.font='280px serif';x.textAlign='center';x.textBaseline='middle';x.fillText(emoji,300,320);dl(c.toDataURL('image/png'),'hmf-post.png');showToast('Saved to device ⬇️');}
+function sheetSave(){if(menuPost){downloadPost(menuPost);}closeSheet();}
+function sheetDelete(){if(menuPost){menuPost.remove();showToast('Post deleted 🗑️');}closeSheet();}
+loadProfile();
+applyProfileEverywhere();
 </script>
 </body>
 </html>
