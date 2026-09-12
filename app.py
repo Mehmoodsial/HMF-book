@@ -3,7 +3,12 @@ import streamlit.components.v1 as components
 
 st.set_page_config(page_title="HMF Book", page_icon="🟢", layout="wide")
 
-st.markdown("<style>#MainMenu{visibility:hidden}footer{visibility:hidden}header{visibility:hidden}</style>", unsafe_allow_html=True)
+st.markdown("""
+<style>
+#MainMenu{visibility:hidden}footer{visibility:hidden}header{visibility:hidden}
+.block-container{padding:0!important;margin:0!important;max-width:100%!important}
+</style>
+""", unsafe_allow_html=True)
 
 APP_HTML = r"""
 <!DOCTYPE html>
@@ -102,6 +107,13 @@ body{background:#fff;display:flex;justify-content:center}
 .link-card{background:#fff;border-radius:16px;padding:16px 6px;text-align:center;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.05)}
 .link-card div{width:44px;height:44px;border-radius:50%;margin:0 auto 8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;font-weight:900}
 .link-card p{font-size:12px;color:#333}
+.members-title{margin:26px 0 10px;font-size:18px;font-weight:800}
+.members-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+.member-card{background:#fff;border-radius:16px;padding:14px;display:flex;align-items:center;gap:10px;box-shadow:0 2px 8px rgba(0,0,0,.05)}
+.member-av{width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,#00d67e,#009e4f);color:#fff;font-weight:800;display:flex;align-items:center;justify-content:center;overflow:hidden;flex:none}
+.member-av img{width:100%;height:100%;object-fit:cover}
+.member-card b{font-size:13px;display:block}
+.member-card span{font-size:11px;color:#8a9299}
 .game-menu{padding:20px;text-align:center}
 .games-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:14px}
 .game-card{background:#fff;border-radius:16px;padding:24px 8px;text-align:center;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.05);font-size:40px}
@@ -156,7 +168,10 @@ canvas{max-width:100%;display:block;margin:0 auto;touch-action:none;border-radiu
 .pill{padding:9px 18px;border-radius:999px;border:1.5px solid #dfe3e8;background:#fff;font-weight:700;cursor:pointer;font-size:13px}
 .pill.green{background:linear-gradient(135deg,#00d67e,#009e4f);color:#fff;border:none}
 .grid6{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;padding:4px}
-.gtile{aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:38px;color:#fff}
+.gtile{aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:38px;color:#fff;overflow:hidden;cursor:pointer;position:relative}
+.gtile img{width:100%;height:100%;object-fit:cover}
+.gtile .del-x{position:absolute;top:4px;right:4px;background:rgba(0,0,0,.55);color:#fff;border:none;width:22px;height:22px;border-radius:50%;font-size:12px;cursor:pointer;display:none}
+.grid6.editing .del-x{display:block}
 #settingsScreen{position:absolute;top:0;left:0;right:0;bottom:0;background:#f3f4f6;overflow-y:auto;display:none;z-index:50}
 #settingsScreen.active{display:block}
 .set-head{background:linear-gradient(140deg,#00e08a,#009e4f);color:#fff;padding:16px 18px 20px;display:flex;align-items:center;gap:14px}
@@ -169,6 +184,16 @@ canvas{max-width:100%;display:block;margin:0 auto;touch-action:none;border-radiu
 .set-row{display:flex;align-items:center;gap:12px;padding:14px 16px;border-top:1px solid #f0f2f4;cursor:pointer;font-size:15px}
 .set-row .chev{margin-left:auto;color:#b3b9bf}
 .set-row.danger{color:#ed4956}
+.admin-badge{margin-left:8px;background:#ed4956;color:#fff;font-size:10px;font-weight:800;min-width:18px;height:18px;border-radius:99px;display:inline-flex;align-items:center;justify-content:center;padding:0 5px}
+#adminScreen{position:absolute;top:0;left:0;right:0;bottom:0;background:#f3f4f6;overflow-y:auto;display:none;z-index:85}
+#adminScreen.active{display:block}
+.rep-card{background:#fff;margin:14px;border-radius:16px;padding:14px;box-shadow:0 2px 6px rgba(0,0,0,.05)}
+.rep-card b{font-size:14px}
+.rep-actions{display:flex;gap:10px;margin-top:10px}
+.rep-actions button{flex:1;padding:9px;border:none;border-radius:999px;font-weight:700;cursor:pointer;font-size:13px}
+.rep-ok{background:linear-gradient(135deg,#00d67e,#009e4f);color:#fff}
+.rep-no{background:#e9ecef;color:#5b6167}
+.rep-empty{text-align:center;color:#8a9299;padding:40px 20px}
 #toast{position:fixed;bottom:95px;left:50%;transform:translateX(-50%);background:#222;color:#fff;padding:11px 20px;border-radius:999px;font-size:14px;opacity:0;pointer-events:none;transition:.3s;z-index:110;max-width:88%;text-align:center}
 #toast.show{opacity:1}
 #msgScreen{position:absolute;top:0;left:0;right:0;bottom:0;background:#fff;display:none;z-index:60;flex-direction:column}
@@ -205,7 +230,6 @@ canvas{max-width:100%;display:block;margin:0 auto;touch-action:none;border-radiu
 #emojiPad{display:none;background:#fff;border-top:1px solid #eceff2;padding:10px}
 #emojiPad.active{display:grid;grid-template-columns:repeat(8,1fr);gap:4px}
 #emojiPad button{font-size:22px;background:none;border:none;cursor:pointer;padding:6px;border-radius:8px}
-#emojiPad button:active{background:#f0f2f4}
 .chat-input{display:flex;gap:8px;padding:10px;border-top:1px solid #eceff2;background:#fff;align-items:center}
 .chat-input input{flex:1;border:1.5px solid #dfe3e8;border-radius:999px;padding:11px 16px;font-size:14px;outline:none;min-width:0}
 .chat-input button{width:44px;height:44px;border:none;border-radius:50%;background:linear-gradient(135deg,#00d67e,#009e4f);color:#fff;font-size:18px;cursor:pointer;flex:none}
@@ -228,7 +252,6 @@ canvas{max-width:100%;display:block;margin:0 auto;touch-action:none;border-radiu
 .dp-cam2{position:absolute;bottom:0;right:0;background:#009e4f;color:#fff;width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;border:2px solid #fff;cursor:pointer}
 .edit-label{text-align:left;font-size:12px;color:#8a9299;margin:16px 0 6px;text-transform:uppercase;font-weight:700}
 .edit-input{width:100%;border:1.5px solid #dfe3e8;border-radius:12px;padding:12px 14px;font-size:15px;outline:none}
-.edit-input:focus{border-color:#00b45a}
 textarea.edit-input{resize:vertical;min-height:70px;font-family:inherit}
 .done-btn{background:none;border:none;color:#fff;font-size:15px;font-weight:700;cursor:pointer;margin-left:auto}
 #sheetBackdrop{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.45);display:none;z-index:80}
@@ -236,7 +259,7 @@ textarea.edit-input{resize:vertical;min-height:70px;font-family:inherit}
 #sheet{position:fixed;left:50%;bottom:-100%;transform:translateX(-50%);width:100%;max-width:430px;background:#fff;border-radius:20px 20px 0 0;z-index:81;transition:bottom .25s;padding:8px 0 18px}
 #sheet.active{bottom:0}
 .sheet-handle{width:40px;height:4px;background:#dfe3e8;border-radius:99px;margin:6px auto 10px}
-.sheet-item{padding:15px 24px;font-size:15px;cursor:pointer;border-top:1px solid #f3f4f6}
+.sheet-item{padding:14px 24px;font-size:15px;cursor:pointer;border-top:1px solid #f3f4f6}
 .sheet-item.danger{color:#ed4956;font-weight:700}
 .sheet-item.cancel{color:#8a9299;text-align:center;font-weight:700}
 @media(min-width:768px){
@@ -246,14 +269,15 @@ textarea.edit-input{resize:vertical;min-height:70px;font-family:inherit}
   #splash .hmf-sub{font-size:34px}
   .auth-top{padding:80px 30px 110px}
   .auth-card{max-width:520px;margin:-45px auto 0;border-radius:28px;box-shadow:0 4px 30px rgba(0,0,0,.08)}
-  .page{max-width:720px;margin:0 auto}
+  .page{max-width:760px;margin:0 auto}
   .games-grid{grid-template-columns:repeat(3,1fr)}
+  .members-grid{grid-template-columns:repeat(3,1fr)}
   .post-img{height:400px}
   .reel{height:68vh}
-  .bottom-nav{max-width:720px;margin:0 auto;border-left:1px solid #dbdbdb;border-right:1px solid #dbdbdb}
-  #settingsScreen .set-summary,#settingsScreen .set-group{max-width:720px;margin-left:auto;margin-right:auto}
-  #msgScreen .msg-list{max-width:720px;margin:0 auto;width:100%}
-  #chatView .chat-body,#chatView #emojiPad,#chatView .chat-input{max-width:720px;margin-left:auto;margin-right:auto;width:100%}
+  .bottom-nav{max-width:760px;margin:0 auto;border-left:1px solid #dbdbdb;border-right:1px solid #dbdbdb}
+  #settingsScreen .set-summary,#settingsScreen .set-group{max-width:760px;margin-left:auto;margin-right:auto}
+  #msgScreen .msg-list{max-width:760px;margin:0 auto;width:100%}
+  #chatView .chat-body,#chatView #emojiPad,#chatView .chat-input{max-width:760px;margin-left:auto;margin-right:auto;width:100%}
   #createScreen .create-body,#editScreen .edit-body{max-width:560px;margin:0 auto;width:100%}
   .game-menu,.game-panel{max-width:640px;margin-left:auto;margin-right:auto}
   #sheet{max-width:420px;border-radius:20px}
@@ -309,7 +333,7 @@ textarea.edit-input{resize:vertical;min-height:70px;font-family:inherit}
   <div class="app-header">
     <div class="brand">HMF book</div>
     <div class="right-icons">
-      <span class="header-ico" onclick="openCreate()" title="Create Post">➕</span>
+      <span class="header-ico" onclick="openCreate()">➕</span>
       <span class="header-ico" onclick="openMessages()">📩</span>
       <span class="header-ico" onclick="openSettings()">⚙️</span>
     </div>
@@ -367,7 +391,6 @@ textarea.edit-input{resize:vertical;min-height:70px;font-family:inherit}
           <span class="chip" onclick="setQuery('TikTok trending')">TikTok trending</span>
           <span class="chip" onclick="setQuery('YouTube shorts')">YouTube shorts</span>
           <span class="chip" onclick="setQuery('Instagram reels')">Instagram reels</span>
-          <span class="chip" onclick="setQuery('Free online games')">Free online games</span>
         </div>
         <div class="link-grid">
           <div class="link-card" onclick="openSite('https://www.google.com')"><div style="background:#fff;border:2px solid #eee;color:#4285f4">G</div><p>Google</p></div>
@@ -377,6 +400,8 @@ textarea.edit-input{resize:vertical;min-height:70px;font-family:inherit}
           <div class="link-card" onclick="openSite('https://www.snapchat.com')"><div style="background:#fffc00">👻</div><p>Snapchat</p></div>
           <div class="link-card" onclick="openSite('https://www.facebook.com')"><div style="background:#1877f2">f</div><p>Facebook</p></div>
         </div>
+        <h3 class="members-title">👥 HMF Members (Sab ki IDs)</h3>
+        <div class="members-grid" id="membersGrid"></div>
       </div>
     </div>
     <div id="pageGames" class="page">
@@ -397,7 +422,6 @@ textarea.edit-input{resize:vertical;min-height:70px;font-family:inherit}
         <div class="center-wrap"><canvas id="raceCanvas" width="300" height="400" style="background:#2c3e50"></canvas></div>
         <div id="raceOver">💥 Crash! Tap Start again</div>
         <div class="race-ctrl"><button onclick="raceMove(-1)">◀</button><button onclick="startRace()">▶ Start</button><button onclick="raceMove(1)">▶</button></div>
-        <p class="game-hint">Keyboard: Left/Right arrows bhi chalte hain</p>
       </div>
       <div class="game-panel" id="gLudo">
         <div class="game-top"><button class="game-back" onclick="backToGames()">← Games</button><h3>🎲 Ludo Race</h3></div>
@@ -406,13 +430,12 @@ textarea.edit-input{resize:vertical;min-height:70px;font-family:inherit}
         <div class="dice" id="ludoDice">🎲</div>
         <div id="ludoMsg">Your turn — Roll!</div>
         <div class="ludo-btns"><button class="btn-outline" onclick="ludoRoll()">🎲 Roll</button><button class="btn-outline" onclick="ludoReset()">Reset</button></div>
-        <p class="game-hint">Pehle 30 tak pohnchne wala jeeta!</p>
       </div>
       <div class="game-panel" id="gSnk">
         <div class="game-top"><button class="game-back" onclick="backToGames()">← Games</button><h3>🎱 Snooker</h3></div>
         <div class="gstat" id="snkScore">Potted: 0 / 3</div>
         <div class="center-wrap"><canvas id="snkCanvas" width="300" height="480"></canvas></div>
-        <p class="game-hint">Drag karke peeche kheenchein (pull back) aur chhod dein — shot lagega!</p>
+        <p class="game-hint">Drag karke peeche kheenchein aur chhod dein — shot lagega!</p>
         <div class="ludo-btns"><button class="btn-outline" onclick="startSnooker()">🔄 Re-rack</button></div>
       </div>
       <div class="game-panel" id="gTTT">
@@ -440,7 +463,7 @@ textarea.edit-input{resize:vertical;min-height:70px;font-family:inherit}
     </div>
     <div id="pageProfile" class="page">
       <div class="profile-head">
-        <div class="big-av" id="profileAvatar" onclick="openEdit()" title="Change DP">H<div class="dp-cam">📷</div></div>
+        <div class="big-av" id="profileAvatar" onclick="openEdit()">H<div class="dp-cam">📷</div></div>
         <h2 id="profileName">HMF User</h2>
         <p class="muted" id="profileHandle">@hmfuser</p>
         <p style="font-size:14px;margin-top:6px" id="profileBio"></p>
@@ -448,6 +471,7 @@ textarea.edit-input{resize:vertical;min-height:70px;font-family:inherit}
         <div class="pill-row">
           <button class="pill green" onclick="openCreate()">➕ New Post</button>
           <button class="pill" onclick="openEdit()">✏️ Edit Profile</button>
+          <button class="pill" onclick="toggleGridEdit()">🗑️ Manage</button>
           <button class="pill" onclick="openSettings()">⚙️ Settings</button>
         </div>
       </div>
@@ -456,9 +480,8 @@ textarea.edit-input{resize:vertical;min-height:70px;font-family:inherit}
         <div class="mon-bar"><div class="mon-fill" id="monFill"></div></div>
         <div class="muted" id="monText">—</div>
         <div class="mon-earn" id="monEarn"></div>
-        <p class="muted" style="margin-top:8px;font-size:12px">Aapke posts ko likes milne par followers barhte hain. <b>1000 followers</b> poore karein aur kamai on karein! 🎉</p>
       </div>
-      <div class="grid6">
+      <div class="grid6" id="profGrid">
         <div class="gtile p1">🏔️</div><div class="gtile av1">📷</div><div class="gtile p2">🎵</div>
         <div class="gtile r2">🌳</div><div class="gtile p3">🎨</div><div class="gtile av2">🍛</div>
       </div>
@@ -480,6 +503,7 @@ textarea.edit-input{resize:vertical;min-height:70px;font-family:inherit}
       <div class="set-row" onclick="openCreate()">➕ Create New Post<span class="chev">›</span></div>
       <div class="set-row" onclick="openMessages()">📩 Messages<span class="chev">›</span></div>
       <div class="set-row" onclick="goMonetize()">💰 Monetization<span class="chev">›</span></div>
+      <div class="set-row" id="adminRow" style="display:none" onclick="openAdmin()">🚩 Report Requests (Admin)<span class="admin-badge" id="adminBadge">0</span><span class="chev">›</span></div>
     </div>
     <div class="set-group">
       <h4>Who can see your content</h4>
@@ -496,9 +520,14 @@ textarea.edit-input{resize:vertical;min-height:70px;font-family:inherit}
     <div class="set-group">
       <h4>About</h4>
       <div class="set-row" onclick="showToast('Help center')">❓ Help Center<span class="chev">›</span></div>
-      <div class="set-row" onclick="showToast('HMF Book v5.0 Final')">ℹ️ About HMF Book<span class="chev">›</span></div>
+      <div class="set-row" onclick="showToast('HMF Book v6.0 Final')">ℹ️ About HMF Book<span class="chev">›</span></div>
       <div class="set-row danger" onclick="logout()">🚪 Log Out</div>
     </div>
+    <div style="height:30px"></div>
+  </div>
+  <div id="adminScreen">
+    <div class="set-head"><button class="back-btn" onclick="closeAdmin()">←</button><h2>🚩 Report Requests</h2></div>
+    <div id="adminList"></div>
     <div style="height:30px"></div>
   </div>
   <div id="createScreen">
@@ -544,28 +573,25 @@ textarea.edit-input{resize:vertical;min-height:70px;font-family:inherit}
       <div class="chat-row" onclick="openChatView('Sara','av2','S')"><div class="chat-av av2">S</div><div class="chat-info"><b>Sara</b><p>Reacted ❤️ to your story</p></div><span class="chat-time">15m</span></div>
       <div class="chat-row" onclick="openChatView('Bilal','av3','B')"><div class="chat-av av3">B</div><div class="chat-info"><b>Bilal</b><p>Game khelo ge? 🎮</p></div><span class="chat-time">1h</span></div>
       <div class="chat-row" onclick="openChatView('Zara','av4','Z')"><div class="chat-av av4">Z</div><div class="chat-info"><b>Zara</b><p>Shared a reel 🎬</p></div><span class="chat-time">3h</span></div>
-      <div class="chat-row" onclick="openChatView('Usman','av1','U')"><div class="chat-av av1">U</div><div class="chat-info"><b>Usman</b><p>Salam! Kya haal hai?</p></div><span class="chat-time">1d</span></div>
     </div>
     <div class="msg-list" id="tiktokList">
       <div class="chat-row" onclick="openChatView('trendstar','r1','T')"><div class="chat-av r1">T</div><div class="chat-info"><b>trendstar</b><p>Sent you a video 🎵</p></div><span class="chat-time">5m</span></div>
       <div class="chat-row" onclick="openChatView('funny.pets','r2','F')"><div class="chat-av r2">F</div><div class="chat-info"><b>funny.pets</b><p>Haha dekho ye 😹</p></div><span class="chat-time">30m</span></div>
       <div class="chat-row" onclick="openChatView('dance.queen','r1','D')"><div class="chat-av r1">D</div><div class="chat-info"><b>dance.queen</b><p>New trend try karo! 💃</p></div><span class="chat-time">2h</span></div>
-      <div class="chat-row" onclick="openChatView('sports.hub','r3','S')"><div class="chat-av r3">S</div><div class="chat-info"><b>sports.hub</b><p>Match dekha? ⚽</p></div><span class="chat-time">5h</span></div>
     </div>
     <div class="msg-list" id="snapList">
       <div class="chat-row new-snap" onclick="openChatView('Ahmed','snap-av','👻')"><div class="chat-av snap-av">👻</div><div class="chat-info"><b>Ahmed</b><p>New Snap 🔴</p></div><span class="chat-time">🔥 56</span></div>
       <div class="chat-row" onclick="openChatView('Sara','snap-av','👻')"><div class="chat-av snap-av">👻</div><div class="chat-info"><b>Sara</b><p>Delivered</p></div><span class="chat-time">🔥 120</span></div>
-      <div class="chat-row" onclick="openChatView('Bilal','snap-av','👻')"><div class="chat-av snap-av">👻</div><div class="chat-info"><b>Bilal</b><p>Opened</p></div><span class="chat-time">🔥 34</span></div>
       <div class="chat-row new-snap" onclick="openChatView('Bestie','snap-av','👻')"><div class="chat-av snap-av">👻</div><div class="chat-info"><b>Bestie</b><p>New Snap 🔴</p></div><span class="chat-time">🔥 365</span></div>
     </div>
     <div id="chatView">
       <div class="msg-head"><button class="back-btn" onclick="closeChatView()">←</button><div class="chat-av" id="chatUserAv" style="width:36px;height:36px;font-size:15px">A</div><h2 id="chatUserName">Chat</h2></div>
       <div class="chat-body" id="chatBody"></div>
       <div id="emojiPad">
-        <button onclick="insEmoji('😀')">😀</button><button onclick="insEmoji('😁')">😁</button><button onclick="insEmoji('😂')">😂</button><button onclick="insEmoji('🤣')">🤣</button><button onclick="insEmoji('😊')">😊</button><button onclick="insEmoji('😍')">😍</button><button onclick="insEmoji('😘')">😘</button><button onclick="insEmoji('😎')">😎</button>
-        <button onclick="insEmoji('🤩')">🤩</button><button onclick="insEmoji('😢')">😢</button><button onclick="insEmoji('😡')">😡</button><button onclick="insEmoji('🤔')">🤔</button><button onclick="insEmoji('👍')">👍</button><button onclick="insEmoji('👏')">👏</button><button onclick="insEmoji('🙏')">🙏</button><button onclick="insEmoji('🔥')">🔥</button>
-        <button onclick="insEmoji('❤️')">❤️</button><button onclick="insEmoji('💚')">💚</button><button onclick="insEmoji('💔')">💔</button><button onclick="insEmoji('🎉')">🎉</button><button onclick="insEmoji('🎂')">🎂</button><button onclick="insEmoji('⚽')">⚽</button><button onclick="insEmoji('🏆')">🏆</button><button onclick="insEmoji('🎮')">🎮</button>
-        <button onclick="insEmoji('🌹')">🌹</button><button onclick="insEmoji('🌸')">🌸</button><button onclick="insEmoji('☕')">☕</button><button onclick="insEmoji('🍕')">🍕</button><button onclick="insEmoji('🇵🇰')">🇵🇰</button><button onclick="insEmoji('😴')">😴</button><button onclick="insEmoji('🤝')">🤝</button><button onclick="insEmoji('✨')">✨</button>
+        <button onclick="insEmoji('😀')">😀</button><button onclick="insEmoji('😂')">😂</button><button onclick="insEmoji('🤣')">🤣</button><button onclick="insEmoji('😊')">😊</button><button onclick="insEmoji('😍')">😍</button><button onclick="insEmoji('😘')">😘</button><button onclick="insEmoji('😎')">😎</button><button onclick="insEmoji('🤩')">🤩</button>
+        <button onclick="insEmoji('😢')">😢</button><button onclick="insEmoji('😡')">😡</button><button onclick="insEmoji('🤔')">🤔</button><button onclick="insEmoji('👍')">👍</button><button onclick="insEmoji('👏')">👏</button><button onclick="insEmoji('🙏')">🙏</button><button onclick="insEmoji('🔥')">🔥</button><button onclick="insEmoji('❤️')">❤️</button>
+        <button onclick="insEmoji('💚')">💚</button><button onclick="insEmoji('💔')">💔</button><button onclick="insEmoji('🎉')">🎉</button><button onclick="insEmoji('🎂')">🎂</button><button onclick="insEmoji('⚽')">⚽</button><button onclick="insEmoji('🏆')">🏆</button><button onclick="insEmoji('🎮')">🎮</button><button onclick="insEmoji('🌹')">🌹</button>
+        <button onclick="insEmoji('🌸')">🌸</button><button onclick="insEmoji('☕')">☕</button><button onclick="insEmoji('🍕')">🍕</button><button onclick="insEmoji('🇵🇰')">🇵🇰</button><button onclick="insEmoji('😴')">😴</button><button onclick="insEmoji('🤝')">🤝</button><button onclick="insEmoji('✨')">✨</button><button onclick="insEmoji('💯')">💯</button>
       </div>
       <div class="chat-input">
         <button class="tool-btn" onclick="toggleEmoji()">😊</button>
@@ -581,6 +607,7 @@ textarea.edit-input{resize:vertical;min-height:70px;font-family:inherit}
   <div class="sheet-handle"></div>
   <div class="sheet-item" onclick="sheetCopy()">🔗 Copy Link</div>
   <div class="sheet-item" onclick="sheetSave()">⬇️ Save / Download</div>
+  <div class="sheet-item" onclick="sheetReport()">🚩 Report Post</div>
   <div class="sheet-item danger" onclick="sheetDelete()">🗑️ Delete Post</div>
   <div class="sheet-item cancel" onclick="closeSheet()">Cancel</div>
 </div>
@@ -588,77 +615,97 @@ textarea.edit-input{resize:vertical;min-height:70px;font-family:inherit}
 </div>
 <script>
 function showScreen(id){document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});document.getElementById(id).classList.add('active');}
-function switchTab(btn,id){document.querySelectorAll('.nav-btn').forEach(function(b){b.classList.remove('active');});btn.classList.add('active');document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});document.getElementById(id).classList.add('active');closeSettings();closeMessages();closeCreate();closeEdit();backToGames();}
-function openSettings(){closeMessages();closeCreate();closeEdit();document.getElementById('settingsScreen').classList.add('active');}
+function switchTab(btn,id){document.querySelectorAll('.nav-btn').forEach(function(b){b.classList.remove('active');});btn.classList.add('active');document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});document.getElementById(id).classList.add('active');closeSettings();closeMessages();closeCreate();closeEdit();closeAdmin();backToGames();if(id==='pageSearch')renderMembers();if(id==='pageProfile')renderProfGrid();}
+function openSettings(){closeMessages();closeCreate();closeEdit();closeAdmin();refreshAdminRow();document.getElementById('settingsScreen').classList.add('active');}
 function closeSettings(){document.getElementById('settingsScreen').classList.remove('active');}
-function openMessages(){closeSettings();closeCreate();closeEdit();document.getElementById('msgScreen').classList.add('active');}
+function openAdmin(){closeSettings();renderAdmin();document.getElementById('adminScreen').classList.add('active');}
+function closeAdmin(){document.getElementById('adminScreen').classList.remove('active');}
+function openMessages(){closeSettings();closeCreate();closeEdit();closeAdmin();document.getElementById('msgScreen').classList.add('active');}
 function closeMessages(){document.getElementById('msgScreen').classList.remove('active');closeChatView();}
 function switchMsgTab(btn,id){document.querySelectorAll('.msg-tab').forEach(function(b){b.classList.remove('active');});btn.classList.add('active');document.querySelectorAll('.msg-list').forEach(function(l){l.classList.remove('active');});document.getElementById(id).classList.add('active');}
 function goMonetize(){closeSettings();document.querySelectorAll('.nav-btn')[4].click();}
 var toastTimer;
 function showToast(msg){var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(function(){t.classList.remove('show');},2500);}
 function togglePass(id,btn){var inp=document.getElementById(id);if(inp.type==='password'){inp.type='text';btn.textContent='🙈';}else{inp.type='password';btn.textContent='👁️';}}
-function loadUsers(){try{return JSON.parse(localStorage.getItem('hmfUsers')||'{}');}catch(e){return {};}}
-function saveUsers(u){try{localStorage.setItem('hmfUsers',JSON.stringify(u));}catch(e){}}
-function loadProfiles(){try{return JSON.parse(localStorage.getItem('hmfProfiles')||'{}');}catch(e){return {};}}
-function saveProfiles(p){try{localStorage.setItem('hmfProfiles',JSON.stringify(p));}catch(e){}}
+function LS(k){try{return localStorage.getItem(k);}catch(e){return null;}}
+function LSS(k,v){try{localStorage.setItem(k,v);}catch(e){}}
+function LSR(k){try{localStorage.removeItem(k);}catch(e){}}
+function JGet(k,d){try{return JSON.parse(LS(k)||d);}catch(e){return JSON.parse(d);}}
+function JSet(k,v){LSS(k,JSON.stringify(v));}
+function loadUsers(){return JGet('hmfUsers','{}');}
+function loadProfiles(){return JGet('hmfProfiles','{}');}
 var currentUser=null;
 var profile={name:'HMF User',handle:'hmfuser',bio:'',dp:null,followers:856};
-function persistProfile(){if(!currentUser)return;var all=loadProfiles();all[currentUser]=profile;saveProfiles(all);}
+function myPostsKey(){return 'hmfPosts_'+currentUser;}
+function myPosts(){return currentUser?JGet(myPostsKey(),'[]'):[];}
+function saveMyPosts(a){if(currentUser)JSet(myPostsKey(),a);}
+function persistProfile(){if(!currentUser)return;var all=loadProfiles();all[currentUser]=profile;JSet('hmfProfiles',all);}
+function isAdmin(){return currentUser&&LS('hmfAdmin')===currentUser;}
+function refreshAdminRow(){var r=document.getElementById('adminRow');var reps=JGet('hmfReports','[]');if(isAdmin()){r.style.display='flex';document.getElementById('adminBadge').textContent=reps.length;}else{r.style.display='none';}}
 function setAvatar(el){if(!el)return;if(profile.dp){el.innerHTML='<img src="'+profile.dp+'">';}else{el.textContent=profile.name.charAt(0).toUpperCase();}}
-function monUpdate(){var f=profile.followers||0;var fill=document.getElementById('monFill');if(!fill)return;var txt=document.getElementById('monText');var badge=document.getElementById('monBadge');var earn=document.getElementById('monEarn');fill.style.width=Math.min(100,f/10)+'%';var fc=document.getElementById('followerCount');if(f>=1000){badge.textContent='✅ Active';badge.className='mon-badge on';txt.textContent=f+' followers — Monetized!';earn.style.display='block';earn.innerHTML='<b>💰 Estimated earnings: $'+(f*0.05).toFixed(0)+' / month</b><br><span class="muted">Posts, reels aur stories se kamai on hai!</span>';if(fc)fc.textContent=(f/1000).toFixed(1)+'K';}else{badge.textContent=(1000-f)+' to go';badge.className='mon-badge off';txt.textContent=f+' / 1000 followers';earn.style.display='none';if(fc)fc.textContent=f;}}
+function monUpdate(){var f=profile.followers||0;var fill=document.getElementById('monFill');if(!fill)return;var txt=document.getElementById('monText');var badge=document.getElementById('monBadge');var earn=document.getElementById('monEarn');fill.style.width=Math.min(100,f/10)+'%';var fc=document.getElementById('followerCount');if(f>=1000){badge.textContent='✅ Active';badge.className='mon-badge on';txt.textContent=f+' followers — Monetized!';earn.style.display='block';earn.innerHTML='<b>💰 Estimated earnings: $'+(f*0.05).toFixed(0)+' / month</b>';if(fc)fc.textContent=(f/1000).toFixed(1)+'K';}else{badge.textContent=(1000-f)+' to go';badge.className='mon-badge off';txt.textContent=f+' / 1000 followers';earn.style.display='none';if(fc)fc.textContent=f;}}
 function addFollowers(n){profile.followers=(profile.followers||0)+n;persistProfile();monUpdate();if(profile.followers>=1000&&profile.followers-n<1000){showToast('🎉 1000 Followers! MONETIZATION ON! 💰');}else{showToast('+'+n+' new followers! 🎉');}}
-function applyProfileEverywhere(){if(!profile.followers)profile.followers=856;document.getElementById('profileName').textContent=profile.name;document.getElementById('settingsName').textContent=profile.name;document.getElementById('profileHandle').textContent='@'+profile.handle;document.getElementById('settingsHandle').textContent='@'+profile.handle;document.getElementById('profileBio').textContent=profile.bio;setAvatar(document.getElementById('profileAvatar'));setAvatar(document.getElementById('settingsAvatar'));setAvatar(document.getElementById('myStoryAvatar'));monUpdate();}
-function openEdit(){closeSettings();closeMessages();closeCreate();document.getElementById('editName').value=profile.name;document.getElementById('editHandle').value=profile.handle;document.getElementById('editBio').value=profile.bio;setAvatar(document.getElementById('dpMain'));document.getElementById('editScreen').classList.add('active');}
+function applyProfileEverywhere(){if(!profile.followers)profile.followers=856;document.getElementById('profileName').textContent=profile.name;document.getElementById('settingsName').textContent=profile.name;document.getElementById('profileHandle').textContent='@'+profile.handle;document.getElementById('settingsHandle').textContent='@'+profile.handle;document.getElementById('profileBio').textContent=profile.bio;setAvatar(document.getElementById('profileAvatar'));setAvatar(document.getElementById('settingsAvatar'));setAvatar(document.getElementById('myStoryAvatar'));monUpdate();refreshAdminRow();renderProfGrid();renderMembers();}
+function openEdit(){closeSettings();closeMessages();closeCreate();closeAdmin();document.getElementById('editName').value=profile.name;document.getElementById('editHandle').value=profile.handle;document.getElementById('editBio').value=profile.bio;setAvatar(document.getElementById('dpMain'));document.getElementById('editScreen').classList.add('active');}
 function closeEdit(){document.getElementById('editScreen').classList.remove('active');}
-function dpChosen(inp){var f=inp.files&&inp.files[0];if(!f)return;if(f.size>5*1024*1024){showToast('DP 5MB se choti honi chahiye');inp.value='';return;}var r=new FileReader();r.onload=function(e){profile.dp=e.target.result;setAvatar(document.getElementById('dpMain'));persistProfile();applyProfileEverywhere();showToast('DP updated ✅');};r.readAsDataURL(f);}
+function dpChosen(inp){var f=inp.files&&inp.files[0];if(!f)return;if(f.size>5*1024*1024){showToast('DP 5MB se choti honi chahiye');inp.value='';return;}compressFile(f,300,function(url){profile.dp=url;setAvatar(document.getElementById('dpMain'));persistProfile();applyProfileEverywhere();showToast('DP updated ✅');});}
 function saveProfile(){var n=document.getElementById('editName').value.trim();var h=document.getElementById('editHandle').value.trim();var b=document.getElementById('editBio').value.trim();if(!n){showToast('Name required');return;}profile.name=n;profile.handle=h?h.replace(/\s+/g,'').toLowerCase():'hmfuser';profile.bio=b;persistProfile();applyProfileEverywhere();closeEdit();showToast('Profile saved ✅');}
-function signup(){var u=document.getElementById('suUser').value.trim();var e=document.getElementById('suEmail').value.trim().toLowerCase();var p=document.getElementById('suPass').value;if(!u||!e||!p){showToast('Please fill all fields');return;}if(p.length<6){showToast('Password must be 6+ characters');return;}var users=loadUsers();if(users[e]){showToast('Email already registered — Log in karein');return;}users[e]={u:u,e:e,p:p};saveUsers(users);var profiles=loadProfiles();if(!profiles[e]){profiles[e]={name:u,handle:u.toLowerCase().replace(/\s+/g,''),bio:'New on HMF Book 🌟',dp:null,followers:856};saveProfiles(profiles);}currentUser=e;try{localStorage.setItem('hmfSession',e);}catch(err){}profile=profiles[e];applyProfileEverywhere();showScreen('app');showToast('Welcome '+u+'!');}
-function login(){var e=document.getElementById('liEmail').value.trim().toLowerCase();var p=document.getElementById('liPass').value;var users=loadUsers();if(users[e]&&users[e].p===p){currentUser=e;try{localStorage.setItem('hmfSession',e);}catch(err){}var profiles=loadProfiles();profile=profiles[e]||{name:users[e].u,handle:'hmfuser',bio:'',dp:null,followers:856};if(!profile.followers)profile.followers=856;applyProfileEverywhere();showScreen('app');showToast('Welcome back '+profile.name+'!');}else{showToast('Invalid email or password');}}
+function signup(){var u=document.getElementById('suUser').value.trim();var e=document.getElementById('suEmail').value.trim().toLowerCase();var p=document.getElementById('suPass').value;if(!u||!e||!p){showToast('Please fill all fields');return;}if(p.length<6){showToast('Password must be 6+ characters');return;}var users=loadUsers();if(users[e]){showToast('Email already registered — Log in karein');return;}users[e]={u:u,e:e,p:p};JSet('hmfUsers',users);if(!LS('hmfAdmin')){LSS('hmfAdmin',e);showToast('👑 Aap pehle member hain — Admin ban gaye!');}var profiles=loadProfiles();if(!profiles[e]){profiles[e]={name:u,handle:u.toLowerCase().replace(/\s+/g,''),bio:'New on HMF Book 🌟',dp:null,followers:856};JSet('hmfProfiles',profiles);}currentUser=e;LSS('hmfSession',e);profile=profiles[e];applyProfileEverywhere();restoreMyPosts();showScreen('app');showToast('Welcome '+u+'!');}
+function login(){var e=document.getElementById('liEmail').value.trim().toLowerCase();var p=document.getElementById('liPass').value;var users=loadUsers();if(users[e]&&users[e].p===p){currentUser=e;LSS('hmfSession',e);var profiles=loadProfiles();profile=profiles[e]||{name:users[e].u,handle:'hmfuser',bio:'',dp:null,followers:856};if(!profile.followers)profile.followers=856;applyProfileEverywhere();restoreMyPosts();showScreen('app');showToast('Welcome back '+profile.name+'!');}else{showToast('Invalid email or password');}}
 function openForgot(){document.getElementById('forgotBox').style.display='block';document.getElementById('fpReset').style.display='none';fpUser=null;}
 var fpUser=null;
 function findAccount(){var e=document.getElementById('fpEmail').value.trim().toLowerCase();var users=loadUsers();if(users[e]){fpUser=e;document.getElementById('fpReset').style.display='block';showToast('Account mila! Ab naya password set karein');}else{showToast('Is email se koi account nahi');}}
-function resetPassword(){if(!fpUser){showToast('Pehle email verify karein');return;}var p=document.getElementById('fpNew').value;if(p.length<6){showToast('Password 6+ characters');return;}var users=loadUsers();users[fpUser].p=p;saveUsers(users);showToast('Password reset ✅ Ab login karein');document.getElementById('forgotBox').style.display='none';}
-function socialLogin(name){var u=name+' User';var e=name.toLowerCase()+'.user@demo.com';var users=loadUsers();if(!users[e]){users[e]={u:u,e:e,p:'demo123'};saveUsers(users);}var profiles=loadProfiles();if(!profiles[e]){profiles[e]={name:u,handle:name.toLowerCase()+'user',bio:'Using '+name+' 👋',dp:null,followers:856};saveProfiles(profiles);}currentUser=e;try{localStorage.setItem('hmfSession',e);}catch(err){}profile=profiles[e];applyProfileEverywhere();showScreen('app');showToast(name+' login successful');}
-function logout(){try{localStorage.removeItem('hmfSession');}catch(e){}currentUser=null;closeSettings();closeMessages();closeCreate();closeEdit();showScreen('splash');showToast('Logged out');}
-function tryAutoLogin(){var s=null;try{s=localStorage.getItem('hmfSession');}catch(e){}if(!s)return;var users=loadUsers();if(users[s]){currentUser=s;var profiles=loadProfiles();profile=profiles[s]||{name:users[s].u,handle:'hmfuser',bio:'',dp:null,followers:856};if(!profile.followers)profile.followers=856;applyProfileEverywhere();showScreen('app');}}
+function resetPassword(){if(!fpUser){showToast('Pehle email verify karein');return;}var p=document.getElementById('fpNew').value;if(p.length<6){showToast('Password 6+ characters');return;}var users=loadUsers();users[fpUser].p=p;JSet('hmfUsers',users);showToast('Password reset ✅ Ab login karein');document.getElementById('forgotBox').style.display='none';}
+function socialLogin(name){var u=name+' User';var e=name.toLowerCase()+'.user@demo.com';var users=loadUsers();if(!users[e]){users[e]={u:u,e:e,p:'demo123'};JSet('hmfUsers',users);}if(!LS('hmfAdmin')){LSS('hmfAdmin',e);}var profiles=loadProfiles();if(!profiles[e]){profiles[e]={name:u,handle:name.toLowerCase()+'user',bio:'Using '+name+' 👋',dp:null,followers:856};JSet('hmfProfiles',profiles);}currentUser=e;LSS('hmfSession',e);profile=profiles[e];applyProfileEverywhere();restoreMyPosts();showScreen('app');showToast(name+' login successful');}
+function logout(){LSR('hmfSession');currentUser=null;closeSettings();closeMessages();closeCreate();closeEdit();closeAdmin();showScreen('splash');showToast('Logged out');}
+function tryAutoLogin(){var s=LS('hmfSession');if(!s)return;var users=loadUsers();if(users[s]){currentUser=s;var profiles=loadProfiles();profile=profiles[s]||{name:users[s].u,handle:'hmfuser',bio:'',dp:null,followers:856};if(!profile.followers)profile.followers=856;applyProfileEverywhere();restoreMyPosts();showScreen('app');}}
 function toggleLike(btn){if(btn.textContent==='🤍'){btn.textContent='❤️';addFollowers(2);}else{btn.textContent='🤍';}}
 var lastTap=0;
 function doubleLike(el){var now=Date.now();if(now-lastTap<350){var post=el.closest('.post');if(post){var btn=post.querySelector('.like-btn');if(btn&&btn.textContent==='🤍'){btn.textContent='❤️';addFollowers(2);}}var h=document.createElement('div');h.className='big-heart';h.textContent='❤️';el.appendChild(h);setTimeout(function(){h.remove();},800);}lastTap=now;}
 function doSearch(){var q=document.getElementById('searchInput').value.trim();if(!q){showToast('Type something to search');return;}window.open('https://www.google.com/search?q='+encodeURIComponent(q),'_blank');}
 function setQuery(q){document.getElementById('searchInput').value=q;doSearch();}
 function openSite(url){window.open(url,'_blank');}
-var replies=['Hi! 😊','Kya haal hai?','Sounds good! 👍','Haha 😄','Okay done!','Acha? Phir kya hua?','Interesting... batao aur','Main bhi soch raha tha yehi 🤔','Cool! 🎉'];
-function openChatView(name,avClass,letter){document.getElementById('chatUserName').textContent=name;var av=document.getElementById('chatUserAv');av.className='chat-av '+avClass;av.style.width='36px';av.style.height='36px';av.style.fontSize='15px';av.textContent=letter;document.getElementById('chatView').classList.add('active');document.getElementById('chatBody').innerHTML='';document.getElementById('emojiPad').classList.remove('active');setTimeout(function(){addBubble('them','Hi! 👋');},400);}
-function closeChatView(){document.getElementById('chatView').classList.remove('active');}
-function addBubble(who,text){var wrap=document.createElement('div');wrap.className='bubble-row '+who;var b=document.createElement('div');b.className='bubble '+who;b.textContent=text;if(who==='me'){var x=document.createElement('button');x.className='unsend-btn';x.textContent='✕';x.title='Unsend';x.onclick=function(){unsendMsg(wrap);};wrap.appendChild(b);wrap.appendChild(x);}else{wrap.appendChild(b);}var body=document.getElementById('chatBody');body.appendChild(wrap);body.scrollTop=body.scrollHeight;}
-function addVoiceBubble(who,url,dur){var wrap=document.createElement('div');wrap.className='bubble-row '+who;var b=document.createElement('div');b.className='bubble voice '+who;var ic=document.createElement('span');ic.textContent='🎙️';var au=document.createElement('audio');au.controls=true;au.src=url;var t=document.createElement('span');t.textContent=dur+'s';t.style.fontSize='11px';b.appendChild(ic);b.appendChild(au);b.appendChild(t);if(who==='me'){var x=document.createElement('button');x.className='unsend-btn';x.textContent='✕';x.onclick=function(){unsendMsg(wrap);};wrap.appendChild(b);wrap.appendChild(x);}else{wrap.appendChild(b);}var body=document.getElementById('chatBody');body.appendChild(wrap);body.scrollTop=body.scrollHeight;}
-function unsendMsg(wrap){var n=document.createElement('div');n.className='sys-note';n.textContent='You unsent a message';wrap.parentNode.replaceChild(n,wrap);}
-function sendMsg(){var inp=document.getElementById('msgInput');var t=inp.value.trim();if(!t)return;addBubble('me',t);inp.value='';setTimeout(function(){addBubble('them',replies[Math.floor(Math.random()*replies.length)]);},1000);}
-function toggleEmoji(){document.getElementById('emojiPad').classList.toggle('active');}
-function insEmoji(ch){var i=document.getElementById('msgInput');i.value+=ch;i.focus();}
-var mediaRec=null,recChunks=[],recStart=0;
-function toggleVoice(){var btn=document.getElementById('micBtn');if(mediaRec&&mediaRec.state==='recording'){mediaRec.stop();return;}if(!navigator.mediaDevices||!window.MediaRecorder){showToast('Voice recording is device par supported nahi');return;}navigator.mediaDevices.getUserMedia({audio:true}).then(function(stream){mediaRec=new MediaRecorder(stream);recChunks=[];recStart=Date.now();mediaRec.ondataavailable=function(e){if(e.data&&e.data.size)recChunks.push(e.data);};mediaRec.onstop=function(){stream.getTracks().forEach(function(t){t.stop();});btn.classList.remove('rec');btn.textContent='🎤';try{var blob=new Blob(recChunks,{type:mediaRec.mimeType||'audio/webm'});var dur=Math.max(1,Math.round((Date.now()-recStart)/1000));var url=URL.createObjectURL(blob);addVoiceBubble('me',url,dur);showToast('Voice message sent 🎙️');}catch(e){showToast('Recording failed');}};mediaRec.start();btn.classList.add('rec');btn.textContent='⏹';showToast('Recording... tap ⏹ to send');}).catch(function(){showToast('Mic permission nahi mili');});}
+function renderMembers(){var g=document.getElementById('membersGrid');if(!g)return;var profiles=loadProfiles();var users=loadUsers();g.innerHTML='';var keys=Object.keys(profiles);if(!keys.length){g.innerHTML='<p class="muted" style="grid-column:1/-1;text-align:center;padding:10px">Abhi koi member nahi. Pehle aap join karein!</p>';return;}keys.forEach(function(k){var p=profiles[k];var d=document.createElement('div');d.className='member-card';var av=document.createElement('div');av.className='member-av';if(p.dp){av.innerHTML='<img src="'+p.dp+'">';}else{av.textContent=(p.name||'U').charAt(0).toUpperCase();}var info=document.createElement('div');var b=document.createElement('b');b.textContent=p.name||'User';var s=document.createElement('span');s.textContent='@'+(p.handle||'user');info.appendChild(b);info.appendChild(s);d.appendChild(av);d.appendChild(info);d.onclick=function(){showToast((p.name||'User')+' — @'+(p.handle||'user'));};g.appendChild(d);});}
+var gridEdit=false;
+function toggleGridEdit(){gridEdit=!gridEdit;document.getElementById('profGrid').classList.toggle('editing',gridEdit);showToast(gridEdit?'Manage mode ON — ✕ se delete karein':'Manage mode OFF');}
+function renderProfGrid(){var g=document.getElementById('profGrid');if(!g)return;var mine=myPosts();g.innerHTML='';if(!mine.length){g.innerHTML='<div class="gtile p1">🏔️</div><div class="gtile av1">📷</div><div class="gtile p2">🎵</div><div class="gtile r2">🌳</div><div class="gtile p3">🎨</div><div class="gtile av2">🍛</div>';var pc=document.getElementById('postCount');if(pc&&!pc.dataset.custom)pc.textContent='12';return;}var pc=document.getElementById('postCount');if(pc){pc.textContent=mine.length;pc.dataset.custom='1';}mine.slice().reverse().forEach(function(p){var t=document.createElement('div');t.className='gtile';if(p.src){t.innerHTML='<img src="'+p.src+'">';}else{t.textContent=p.emoji||'⭐';t.style.background='linear-gradient(135deg,#89f7fe,#66a6ff)';}var x=document.createElement('button');x.className='del-x';x.textContent='✕';x.onclick=function(ev){ev.stopPropagation();deleteMyPost(p.id);};t.appendChild(x);t.onclick=function(){showToast(p.cap||'Post');};g.appendChild(t);});}
+function deleteMyPost(id){saveMyPosts(myPosts().filter(function(p){return p.id!==id;}));renderProfGrid();var el=document.getElementById(id);if(el)el.remove();showToast('Post deleted 🗑️');}
+function restoreMyPosts(){var mine=myPosts();var home=document.getElementById('pageHome');mine.forEach(function(p){if(document.getElementById(p.id))return;buildPost(p);});renderProfGrid();}
+function buildPost(p){var post=document.createElement('div');post.className='post';post.id=p.id;var head=document.createElement('div');head.className='post-head';var av=document.createElement('div');av.className='mini-av';setAvatar(av);var info=document.createElement('div');var b=document.createElement('b');b.textContent=profile.name;info.appendChild(b);info.appendChild(document.createElement('br'));var mu=document.createElement('span');mu.className='muted';mu.textContent=p.t||'Just now';info.appendChild(mu);var dots=document.createElement('span');dots.className='dots';dots.textContent='⋯';dots.onclick=function(){openSheet(post);};head.appendChild(av);head.appendChild(info);head.appendChild(dots);var media=document.createElement('div');media.className='post-media';if(p.src){var im=document.createElement('img');im.className='post-photo';im.src=p.src;im.onclick=function(){doubleLike(im);};media.appendChild(im);}else{var pe=document.createElement('div');pe.className='post-img p1';pe.textContent=p.emoji||'⭐';media.appendChild(pe);}var acts=document.createElement('div');acts.className='post-actions';var l=document.createElement('button');l.className='icon-btn like-btn';l.textContent='🤍';l.onclick=function(){toggleLike(l);};var c1=document.createElement('button');c1.className='icon-btn';c1.textContent='💬';c1.onclick=function(){showToast('Comments');};var c2=document.createElement('button');c2.className='icon-btn';c2.textContent='🔗';c2.onclick=function(){openSheet(post);};var sv=document.createElement('button');sv.className='icon-btn save-btn';sv.textContent='⬇️';sv.onclick=function(){downloadPost(post);};acts.appendChild(l);acts.appendChild(c1);acts.appendChild(c2);acts.appendChild(sv);var capEl=document.createElement('div');capEl.className='caption';var cb=document.createElement('b');cb.textContent=profile.name;capEl.appendChild(cb);capEl.appendChild(document.createTextNode(' '+(p.cap||'')));post.appendChild(head);post.appendChild(media);post.appendChild(acts);post.appendChild(capEl);var home=document.getElementById('pageHome');var first=home.querySelector('.post');if(first){home.insertBefore(post,first);}else{home.appendChild(post);}}
+function compressFile(file,max,cb){if(file.type&&file.type.indexOf('image')!==0){var r2=new FileReader();r2.onload=function(e){cb(e.target.result);};r2.readAsDataURL(file);return;}var r=new FileReader();r.onload=function(e){var img=new Image();img.onload=function(){var c=document.createElement('canvas');var sc=Math.min(1,max/Math.max(img.width,img.height));c.width=img.width*sc;c.height=img.height*sc;c.getContext('2d').drawImage(img,0,0,c.width,c.height);cb(c.toDataURL('image/jpeg',0.7));};img.src=e.target.result;};r.readAsDataURL(file);}
 var pendingMedia=null;
-function openCreate(){closeSettings();closeMessages();closeEdit();document.getElementById('createScreen').classList.add('active');document.getElementById('previewWrap').style.display='none';document.getElementById('previewWrap').innerHTML='';document.getElementById('pickArea').style.display='block';document.getElementById('postCaption').value='';document.getElementById('filePick').value='';pendingMedia=null;}
+function openCreate(){closeSettings();closeMessages();closeEdit();closeAdmin();document.getElementById('createScreen').classList.add('active');document.getElementById('previewWrap').style.display='none';document.getElementById('previewWrap').innerHTML='';document.getElementById('pickArea').style.display='block';document.getElementById('postCaption').value='';document.getElementById('filePick').value='';pendingMedia=null;}
 function closeCreate(){document.getElementById('createScreen').classList.remove('active');}
-function fileChosen(inp){var f=inp.files&&inp.files[0];if(!f)return;if(f.size>15*1024*1024){showToast('File 15MB se choti honi chahiye');inp.value='';return;}var r=new FileReader();r.onload=function(e){var isVideo=f.type.indexOf('video')===0;pendingMedia={url:e.target.result,type:isVideo?'video':'image'};var w=document.getElementById('previewWrap');w.innerHTML='';if(isVideo){var v=document.createElement('video');v.src=pendingMedia.url;v.controls=true;w.appendChild(v);}else{var im=document.createElement('img');im.src=pendingMedia.url;w.appendChild(im);}w.style.display='block';document.getElementById('pickArea').style.display='none';};r.readAsDataURL(f);}
-function publishPost(){if(!pendingMedia){showToast('Pehle photo/video choose karein');return;}var cap=document.getElementById('postCaption').value.trim();if(!cap)cap='My new post ✨';var post=document.createElement('div');post.className='post';post.id='post'+Date.now();var head=document.createElement('div');head.className='post-head';var av=document.createElement('div');av.className='mini-av';setAvatar(av);var info=document.createElement('div');var b=document.createElement('b');b.textContent=profile.name;info.appendChild(b);info.appendChild(document.createElement('br'));var mu=document.createElement('span');mu.className='muted';mu.textContent='Just now';info.appendChild(mu);var dots=document.createElement('span');dots.className='dots';dots.textContent='⋯';dots.onclick=function(){openSheet(post);};head.appendChild(av);head.appendChild(info);head.appendChild(dots);var media=document.createElement('div');media.className='post-media';if(pendingMedia.type==='video'){var v=document.createElement('video');v.src=pendingMedia.url;v.controls=true;media.appendChild(v);}else{var im=document.createElement('img');im.className='post-photo';im.src=pendingMedia.url;im.onclick=function(){doubleLike(im);};media.appendChild(im);}var acts=document.createElement('div');acts.className='post-actions';var l=document.createElement('button');l.className='icon-btn like-btn';l.textContent='🤍';l.onclick=function(){toggleLike(l);};var c1=document.createElement('button');c1.className='icon-btn';c1.textContent='💬';c1.onclick=function(){showToast('Comments');};var c2=document.createElement('button');c2.className='icon-btn';c2.textContent='🔗';c2.onclick=function(){openSheet(post);};var sv=document.createElement('button');sv.className='icon-btn save-btn';sv.textContent='⬇️';sv.onclick=function(){downloadPost(post);};acts.appendChild(l);acts.appendChild(c1);acts.appendChild(c2);acts.appendChild(sv);var capEl=document.createElement('div');capEl.className='caption';var cb=document.createElement('b');cb.textContent=profile.name;capEl.appendChild(cb);capEl.appendChild(document.createTextNode(' '+cap));post.appendChild(head);post.appendChild(media);post.appendChild(acts);post.appendChild(capEl);var home=document.getElementById('pageHome');var first=home.querySelector('.post');if(first){home.insertBefore(post,first);}else{home.appendChild(post);}var pc=document.getElementById('postCount');pc.textContent=parseInt(pc.textContent)+1;closeCreate();showToast('Post shared ✅');}
+function fileChosen(inp){var f=inp.files&&inp.files[0];if(!f)return;if(f.size>15*1024*1024){showToast('File 15MB se choti honi chahiye');inp.value='';return;}compressFile(f,900,function(url){var isVideo=f.type.indexOf('video')===0;pendingMedia={url:url,type:isVideo?'video':'image'};var w=document.getElementById('previewWrap');w.innerHTML='';if(isVideo){var v=document.createElement('video');v.src=pendingMedia.url;v.controls=true;w.appendChild(v);}else{var im=document.createElement('img');im.src=pendingMedia.url;w.appendChild(im);}w.style.display='block';document.getElementById('pickArea').style.display='none';});}
+function publishPost(){if(!pendingMedia){showToast('Pehle photo/video choose karein');return;}var cap=document.getElementById('postCaption').value.trim();if(!cap)cap='My new post ✨';var rec={id:'post'+Date.now(),cap:cap,t:'Just now'};if(pendingMedia.type==='image'){rec.src=pendingMedia.url;}else{rec.emoji='🎬';rec.videoUrl=pendingMedia.url;}buildPost(rec);var mine=myPosts();var store={id:rec.id,cap:rec.cap,t:rec.t};if(rec.src){store.src=rec.src;}else{store.emoji=rec.emoji;}mine.push(store);saveMyPosts(mine);renderProfGrid();if(rec.videoUrl){var vid=document.querySelector('#'+rec.id+' video');if(vid)vid.src=rec.videoUrl;}closeCreate();showToast('Post shared ✅ — Profile mein bhi show hogi');}
 var menuPost=null;
 function openSheet(post){menuPost=post;document.getElementById('sheetBackdrop').classList.add('active');document.getElementById('sheet').classList.add('active');}
 function closeSheet(){document.getElementById('sheetBackdrop').classList.remove('active');document.getElementById('sheet').classList.remove('active');menuPost=null;}
 function copyText(t){function fb(){var ta=document.createElement('textarea');ta.value=t;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();try{document.execCommand('copy');showToast('Link copied 🔗');}catch(e){showToast('Copy not allowed');}ta.remove();}if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(function(){showToast('Link copied 🔗');}).catch(fb);}else{fb();}}
 function sheetCopy(){var pid=menuPost?menuPost.id:'post';copyText('https://hmfbook.app/p/'+pid);closeSheet();}
 function dl(url,name){var a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();setTimeout(function(){a.remove();},100);}
-function downloadPost(post){if(!post)return;var img=post.querySelector('img');if(img){dl(img.src,'hmf-photo.png');showToast('Saved to device ⬇️');return;}var vid=post.querySelector('video');if(vid&&vid.src){dl(vid.src,'hmf-video.mp4');showToast('Saved to device ⬇️');return;}var pe=post.querySelector('.post-img');var emoji=pe?pe.textContent.trim().charAt(0):'⭐';if(!emoji)emoji='⭐';var g=['#89f7fe','#66a6ff'];if(pe){if(pe.className.indexOf('p2')>-1){g=['#fddb92','#d1fdff'];}else if(pe.className.indexOf('p3')>-1){g=['#a18cd1','#fbc2eb'];}}var c=document.createElement('canvas');c.width=600;c.height=600;var x=c.getContext('2d');var gr=x.createLinearGradient(0,0,600,600);gr.addColorStop(0,g[0]);gr.addColorStop(1,g[1]);x.fillStyle=gr;x.fillRect(0,0,600,600);x.font='280px serif';x.textAlign='center';x.textBaseline='middle';x.fillText(emoji,300,320);dl(c.toDataURL('image/png'),'hmf-post.png');showToast('Saved to device ⬇️');}
+function downloadPost(post){if(!post)return;var img=post.querySelector('img');if(img){dl(img.src,'hmf-photo.png');showToast('Saved to device ⬇️');return;}var vid=post.querySelector('video');if(vid&&vid.src){dl(vid.src,'hmf-video.mp4');showToast('Saved to device ⬇️');return;}var pe=post.querySelector('.post-img');var emoji=pe?pe.textContent.trim().charAt(0):'⭐';if(!emoji)emoji='⭐';var c=document.createElement('canvas');c.width=600;c.height=600;var x=c.getContext('2d');var gr=x.createLinearGradient(0,0,600,600);gr.addColorStop(0,'#89f7fe');gr.addColorStop(1,'#66a6ff');x.fillStyle=gr;x.fillRect(0,0,600,600);x.font='280px serif';x.textAlign='center';x.textBaseline='middle';x.fillText(emoji,300,320);dl(c.toDataURL('image/png'),'hmf-post.png');showToast('Saved to device ⬇️');}
 function sheetSave(){if(menuPost){downloadPost(menuPost);}closeSheet();}
-function sheetDelete(){if(menuPost){menuPost.remove();showToast('Post deleted 🗑️');}closeSheet();}
+function sheetDelete(){if(menuPost){deleteMyPost(menuPost.id);}closeSheet();}
+function sheetReport(){if(menuPost){var reps=JGet('hmfReports','[]');reps.push({by:profile.name,byHandle:profile.handle,postId:menuPost.id,cap:(menuPost.querySelector('.caption')||{textContent:''}).textContent.slice(0,60),time:new Date().toLocaleString()});JSet('hmfReports',reps);refreshAdminRow();showToast('🚩 Report admin ko bhej diya ✅');}closeSheet();}
+function renderAdmin(){var list=document.getElementById('adminList');var reps=JGet('hmfReports','[]');list.innerHTML='';if(!reps.length){list.innerHTML='<div class="rep-empty"><div style="font-size:44px">✅</div><p>Koi report nahi aayi</p></div>';return;}reps.slice().reverse().forEach(function(r){var d=document.createElement('div');d.className='rep-card';var b=document.createElement('b');b.textContent='🚩 '+r.by+' (@'+r.byHandle+')';var p=document.createElement('p');p.className='muted';p.style.marginTop='4px';p.textContent='Post: '+(r.cap||r.postId);var t=document.createElement('p');t.className='muted';t.style.fontSize='11px';t.textContent=r.time;var acts=document.createElement('div');acts.className='rep-actions';var ok=document.createElement('button');ok.className='rep-ok';ok.textContent='✅ Accept (Remove Post)';ok.onclick=function(){var el=document.getElementById(r.postId);if(el){el.remove();}saveMyPosts(myPosts().filter(function(pp){return pp.id!==r.postId;}));renderProfGrid();JSet('hmfReports',reps.filter(function(x){return x!==r;}));refreshAdminRow();renderAdmin();showToast('Post remove ho gaya ✅');};var no=document.createElement('button');no.className='rep-no';no.textContent='✖ Dismiss';no.onclick=function(){JSet('hmfReports',reps.filter(function(x){return x!==r;}));refreshAdminRow();renderAdmin();showToast('Report dismissed');};acts.appendChild(ok);acts.appendChild(no);d.appendChild(b);d.appendChild(p);d.appendChild(t);d.appendChild(acts);list.appendChild(d);});}
+var replies=['Hi! 😊','Kya haal hai?','Sounds good! 👍','Haha 😄','Okay done!','Acha? Phir kya hua?','Interesting... batao aur','Cool! 🎉'];
+function openChatView(name,avClass,letter){document.getElementById('chatUserName').textContent=name;var av=document.getElementById('chatUserAv');av.className='chat-av '+avClass;av.style.width='36px';av.style.height='36px';av.style.fontSize='15px';av.textContent=letter;document.getElementById('chatView').classList.add('active');document.getElementById('chatBody').innerHTML='';document.getElementById('emojiPad').classList.remove('active');setTimeout(function(){addBubble('them','Hi! 👋');},400);}
+function closeChatView(){document.getElementById('chatView').classList.remove('active');}
+function addBubble(who,text){var wrap=document.createElement('div');wrap.className='bubble-row '+who;var b=document.createElement('div');b.className='bubble '+who;b.textContent=text;if(who==='me'){var x=document.createElement('button');x.className='unsend-btn';x.textContent='✕';x.onclick=function(){unsendMsg(wrap);};wrap.appendChild(b);wrap.appendChild(x);}else{wrap.appendChild(b);}var body=document.getElementById('chatBody');body.appendChild(wrap);body.scrollTop=body.scrollHeight;}
+function addVoiceBubble(who,url,dur){var wrap=document.createElement('div');wrap.className='bubble-row '+who;var b=document.createElement('div');b.className='bubble voice '+who;var ic=document.createElement('span');ic.textContent='🎙️';var au=document.createElement('audio');au.controls=true;au.src=url;var t=document.createElement('span');t.textContent=dur+'s';t.style.fontSize='11px';b.appendChild(ic);b.appendChild(au);b.appendChild(t);if(who==='me'){var x=document.createElement('button');x.className='unsend-btn';x.textContent='✕';x.onclick=function(){unsendMsg(wrap);};wrap.appendChild(b);wrap.appendChild(x);}else{wrap.appendChild(b);}var body=document.getElementById('chatBody');body.appendChild(wrap);body.scrollTop=body.scrollHeight;}
+function unsendMsg(wrap){var n=document.createElement('div');n.className='sys-note';n.textContent='You unsent a message';wrap.parentNode.replaceChild(n,wrap);}
+function sendMsg(){var inp=document.getElementById('msgInput');var t=inp.value.trim();if(!t)return;addBubble('me',t);inp.value='';setTimeout(function(){addBubble('them',replies[Math.floor(Math.random()*replies.length)]);},1000);}
+function toggleEmoji(){document.getElementById('emojiPad').classList.toggle('active');}
+function insEmoji(ch){var i=document.getElementById('msgInput');i.value+=ch;i.focus();}
+var mediaRec=null,recChunks=[],recStart=0;
+function toggleVoice(){var btn=document.getElementById('micBtn');if(mediaRec&&mediaRec.state==='recording'){mediaRec.stop();return;}if(!navigator.mediaDevices||!window.MediaRecorder){showToast('Voice recording supported nahi');return;}navigator.mediaDevices.getUserMedia({audio:true}).then(function(stream){mediaRec=new MediaRecorder(stream);recChunks=[];recStart=Date.now();mediaRec.ondataavailable=function(e){if(e.data&&e.data.size)recChunks.push(e.data);};mediaRec.onstop=function(){stream.getTracks().forEach(function(t){t.stop();});btn.classList.remove('rec');btn.textContent='🎤';try{var blob=new Blob(recChunks,{type:mediaRec.mimeType||'audio/webm'});var dur=Math.max(1,Math.round((Date.now()-recStart)/1000));var url=URL.createObjectURL(blob);addVoiceBubble('me',url,dur);showToast('Voice message sent 🎙️');}catch(e){showToast('Recording failed');}};mediaRec.start();btn.classList.add('rec');btn.textContent='⏹';showToast('Recording... tap ⏹ to send');}).catch(function(){showToast('Mic permission nahi mili');});}
 function showGame(id){document.getElementById('gameMenu').style.display='none';document.querySelectorAll('.game-panel').forEach(function(p){p.classList.remove('active');});document.getElementById(id).classList.add('active');if(id==='gTTT')resetGame();if(id==='gMem')startMemory();if(id==='gRace')startRace();if(id==='gSnk')startSnooker();if(id==='gLudo')ludoReset();}
 function backToGames(){document.querySelectorAll('.game-panel').forEach(function(p){p.classList.remove('active');});var m=document.getElementById('gameMenu');if(m)m.style.display='block';if(raceState.running){clearInterval(raceState.loop);raceState.running=false;}if(snk.timer){clearInterval(snk.timer);snk.timer=null;}}
 var board=['','','','','','','','',''];var current='X';var gameOver=false;
 function renderBoard(){var c=document.getElementById('ttt');c.innerHTML='';for(var i=0;i<9;i++){(function(i){var d=document.createElement('div');d.className='cell';d.textContent=board[i];d.onclick=function(){playCell(i);};c.appendChild(d);})(i);}}
 function playCell(i){if(gameOver||board[i]!=='')return;board[i]=current;renderBoard();var w=checkWin();if(w){gameOver=true;document.getElementById('gameStatus').textContent=(w==='Draw')?'Draw! 🤝':(w+' wins! 🎉');return;}current=(current==='X')?'O':'X';document.getElementById('gameStatus').textContent='Turn: '+current;}
-function checkWin(){var lines=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];for(var i=0;i<lines.length;i++){var a=lines[i][0],b=lines[i][1],c=lines[i][2];if(board[a]!==''&&board[a]===board[b]&&board[a]===board[c])return board[a];}return board.indexOf('')===-1?'Draw':null;}
+function checkWin(){var lines=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];for(var i=0;i<lines.length;i++){var a=lines[i][0],b2=lines[i][1],c=lines[i][2];if(board[a]!==''&&board[a]===board[b2]&&board[a]===board[c])return board[a];}return board.indexOf('')===-1?'Draw':null;}
 function resetGame(){board=['','','','','','','','',''];current='X';gameOver=false;renderBoard();document.getElementById('gameStatus').textContent='Turn: X';}
 renderBoard();
 var raceState={running:false,score:0,carX:130,obs:[],loop:null,tick:0};
@@ -689,4 +736,4 @@ applyProfileEverywhere();
 </html>
 """
 
-components.html(APP_HTML, height=880, scrolling=True)
+components.html(APP_HTML, height=940, scrolling=True)
