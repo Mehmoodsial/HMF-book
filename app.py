@@ -137,8 +137,14 @@ canvas{max-width:100%;display:block;margin:0 auto;touch-action:none;border-radiu
 .rps-vs{font-size:18px;font-weight:800;color:#8a9299}
 .rps-btns{display:flex;gap:12px;justify-content:center}
 .rps-btns button{font-size:28px;width:62px;height:62px;border-radius:50%;border:2px solid #dfe3e8;background:#fff;cursor:pointer}
-.rps-btns button:active{background:#eafaf2}
 #rpsResult{text-align:center;font-weight:800;margin-top:12px;min-height:22px}
+.mon-card{background:#fff;margin:12px;border-radius:16px;padding:16px;box-shadow:0 2px 8px rgba(0,0,0,.05)}
+.mon-top{display:flex;align-items:center;gap:10px;font-weight:800;font-size:16px}
+.mon-badge{margin-left:auto;background:#fff4e5;color:#e67e22;font-size:11px;font-weight:800;padding:4px 10px;border-radius:999px}
+.mon-badge.on{background:#eafaf2;color:#009e4f}
+.mon-bar{height:10px;background:#e9ecef;border-radius:99px;overflow:hidden;margin:12px 0 6px}
+.mon-fill{height:100%;width:0;background:linear-gradient(135deg,#00d67e,#009e4f);transition:width .4s}
+.mon-earn{display:none;margin-top:10px;padding:12px;background:#eafaf2;border-radius:12px;font-size:14px}
 .profile-head{background:#fff;padding:24px 16px;text-align:center;border-bottom:1px solid #eceff2}
 .big-av{width:86px;height:86px;border-radius:50%;background:linear-gradient(135deg,#00d67e,#009e4f);color:#fff;font-size:36px;font-weight:800;display:flex;align-items:center;justify-content:center;margin:0 auto 10px;overflow:hidden;cursor:pointer;border:2.5px solid #00b45a;position:relative}
 .big-av img{width:100%;height:100%;object-fit:cover}
@@ -192,11 +198,20 @@ canvas{max-width:100%;display:block;margin:0 auto;touch-action:none;border-radiu
 .bubble{max-width:75%;padding:10px 14px;border-radius:18px;font-size:14px;line-height:1.4;word-wrap:break-word}
 .bubble.me{background:linear-gradient(135deg,#00d67e,#009e4f);color:#fff;border-bottom-right-radius:4px}
 .bubble.them{background:#e9ecef;color:#333;border-bottom-left-radius:4px}
+.bubble.voice{display:flex;align-items:center;gap:8px;min-width:190px}
+.bubble.voice audio{height:36px;max-width:200px}
 .unsend-btn{background:none;border:none;color:#c7ccd1;font-size:12px;cursor:pointer;padding:2px}
 .sys-note{align-self:center;font-size:11px;color:#8a9299;font-style:italic;background:#e4e7ea;padding:4px 12px;border-radius:999px}
-.chat-input{display:flex;gap:8px;padding:10px;border-top:1px solid #eceff2;background:#fff}
+#emojiPad{display:none;background:#fff;border-top:1px solid #eceff2;padding:10px}
+#emojiPad.active{display:grid;grid-template-columns:repeat(8,1fr);gap:4px}
+#emojiPad button{font-size:22px;background:none;border:none;cursor:pointer;padding:6px;border-radius:8px}
+#emojiPad button:active{background:#f0f2f4}
+.chat-input{display:flex;gap:8px;padding:10px;border-top:1px solid #eceff2;background:#fff;align-items:center}
 .chat-input input{flex:1;border:1.5px solid #dfe3e8;border-radius:999px;padding:11px 16px;font-size:14px;outline:none;min-width:0}
 .chat-input button{width:44px;height:44px;border:none;border-radius:50%;background:linear-gradient(135deg,#00d67e,#009e4f);color:#fff;font-size:18px;cursor:pointer;flex:none}
+.chat-input .tool-btn{background:#f0f2f4;color:#333}
+.mic-btn.rec{background:#ed4956;color:#fff;animation:pulse 1s infinite}
+@keyframes pulse{50%{opacity:.6}}
 #createScreen{position:absolute;top:0;left:0;right:0;bottom:0;background:#fff;display:none;z-index:65;flex-direction:column}
 #createScreen.active{display:flex}
 .create-body{flex:1;overflow-y:auto;padding:20px}
@@ -224,6 +239,27 @@ textarea.edit-input{resize:vertical;min-height:70px;font-family:inherit}
 .sheet-item{padding:15px 24px;font-size:15px;cursor:pointer;border-top:1px solid #f3f4f6}
 .sheet-item.danger{color:#ed4956;font-weight:700}
 .sheet-item.cancel{color:#8a9299;text-align:center;font-weight:700}
+@media(min-width:768px){
+  body{background:#eef1f4}
+  .phone{max-width:100%;box-shadow:none}
+  #splash .hmf-logo{font-size:120px}
+  #splash .hmf-sub{font-size:34px}
+  .auth-top{padding:80px 30px 110px}
+  .auth-card{max-width:520px;margin:-45px auto 0;border-radius:28px;box-shadow:0 4px 30px rgba(0,0,0,.08)}
+  .page{max-width:720px;margin:0 auto}
+  .games-grid{grid-template-columns:repeat(3,1fr)}
+  .post-img{height:400px}
+  .reel{height:68vh}
+  .bottom-nav{max-width:720px;margin:0 auto;border-left:1px solid #dbdbdb;border-right:1px solid #dbdbdb}
+  #settingsScreen .set-summary,#settingsScreen .set-group{max-width:720px;margin-left:auto;margin-right:auto}
+  #msgScreen .msg-list{max-width:720px;margin:0 auto;width:100%}
+  #chatView .chat-body,#chatView #emojiPad,#chatView .chat-input{max-width:720px;margin-left:auto;margin-right:auto;width:100%}
+  #createScreen .create-body,#editScreen .edit-body{max-width:560px;margin:0 auto;width:100%}
+  .game-menu,.game-panel{max-width:640px;margin-left:auto;margin-right:auto}
+  #sheet{max-width:420px;border-radius:20px}
+  #sheet.active{bottom:12%}
+  .app-header{padding:14px 26px}
+}
 </style>
 </head>
 <body>
@@ -408,12 +444,19 @@ textarea.edit-input{resize:vertical;min-height:70px;font-family:inherit}
         <h2 id="profileName">HMF User</h2>
         <p class="muted" id="profileHandle">@hmfuser</p>
         <p style="font-size:14px;margin-top:6px" id="profileBio"></p>
-        <div class="stats"><div><b id="postCount">12</b><span>Posts</span></div><div><b>1.2K</b><span>Followers</span></div><div><b>340</b><span>Following</span></div></div>
+        <div class="stats"><div><b id="postCount">12</b><span>Posts</span></div><div><b id="followerCount">856</b><span>Followers</span></div><div><b>340</b><span>Following</span></div></div>
         <div class="pill-row">
           <button class="pill green" onclick="openCreate()">➕ New Post</button>
           <button class="pill" onclick="openEdit()">✏️ Edit Profile</button>
           <button class="pill" onclick="openSettings()">⚙️ Settings</button>
         </div>
+      </div>
+      <div class="mon-card">
+        <div class="mon-top">💰 Monetization<span class="mon-badge off" id="monBadge">—</span></div>
+        <div class="mon-bar"><div class="mon-fill" id="monFill"></div></div>
+        <div class="muted" id="monText">—</div>
+        <div class="mon-earn" id="monEarn"></div>
+        <p class="muted" style="margin-top:8px;font-size:12px">Aapke posts ko likes milne par followers barhte hain. <b>1000 followers</b> poore karein aur kamai on karein! 🎉</p>
       </div>
       <div class="grid6">
         <div class="gtile p1">🏔️</div><div class="gtile av1">📷</div><div class="gtile p2">🎵</div>
@@ -436,6 +479,7 @@ textarea.edit-input{resize:vertical;min-height:70px;font-family:inherit}
       <div class="set-row" onclick="openEdit()">✏️ Edit Profile / DP<span class="chev">›</span></div>
       <div class="set-row" onclick="openCreate()">➕ Create New Post<span class="chev">›</span></div>
       <div class="set-row" onclick="openMessages()">📩 Messages<span class="chev">›</span></div>
+      <div class="set-row" onclick="goMonetize()">💰 Monetization<span class="chev">›</span></div>
     </div>
     <div class="set-group">
       <h4>Who can see your content</h4>
@@ -452,7 +496,7 @@ textarea.edit-input{resize:vertical;min-height:70px;font-family:inherit}
     <div class="set-group">
       <h4>About</h4>
       <div class="set-row" onclick="showToast('Help center')">❓ Help Center<span class="chev">›</span></div>
-      <div class="set-row" onclick="showToast('HMF Book v4.0 Final')">ℹ️ About HMF Book<span class="chev">›</span></div>
+      <div class="set-row" onclick="showToast('HMF Book v5.0 Final')">ℹ️ About HMF Book<span class="chev">›</span></div>
       <div class="set-row danger" onclick="logout()">🚪 Log Out</div>
     </div>
     <div style="height:30px"></div>
@@ -517,7 +561,18 @@ textarea.edit-input{resize:vertical;min-height:70px;font-family:inherit}
     <div id="chatView">
       <div class="msg-head"><button class="back-btn" onclick="closeChatView()">←</button><div class="chat-av" id="chatUserAv" style="width:36px;height:36px;font-size:15px">A</div><h2 id="chatUserName">Chat</h2></div>
       <div class="chat-body" id="chatBody"></div>
-      <div class="chat-input"><input id="msgInput" type="text" placeholder="Message..." onkeydown="if(event.key==='Enter')sendMsg()"><button onclick="sendMsg()">➤</button></div>
+      <div id="emojiPad">
+        <button onclick="insEmoji('😀')">😀</button><button onclick="insEmoji('😁')">😁</button><button onclick="insEmoji('😂')">😂</button><button onclick="insEmoji('🤣')">🤣</button><button onclick="insEmoji('😊')">😊</button><button onclick="insEmoji('😍')">😍</button><button onclick="insEmoji('😘')">😘</button><button onclick="insEmoji('😎')">😎</button>
+        <button onclick="insEmoji('🤩')">🤩</button><button onclick="insEmoji('😢')">😢</button><button onclick="insEmoji('😡')">😡</button><button onclick="insEmoji('🤔')">🤔</button><button onclick="insEmoji('👍')">👍</button><button onclick="insEmoji('👏')">👏</button><button onclick="insEmoji('🙏')">🙏</button><button onclick="insEmoji('🔥')">🔥</button>
+        <button onclick="insEmoji('❤️')">❤️</button><button onclick="insEmoji('💚')">💚</button><button onclick="insEmoji('💔')">💔</button><button onclick="insEmoji('🎉')">🎉</button><button onclick="insEmoji('🎂')">🎂</button><button onclick="insEmoji('⚽')">⚽</button><button onclick="insEmoji('🏆')">🏆</button><button onclick="insEmoji('🎮')">🎮</button>
+        <button onclick="insEmoji('🌹')">🌹</button><button onclick="insEmoji('🌸')">🌸</button><button onclick="insEmoji('☕')">☕</button><button onclick="insEmoji('🍕')">🍕</button><button onclick="insEmoji('🇵🇰')">🇵🇰</button><button onclick="insEmoji('😴')">😴</button><button onclick="insEmoji('🤝')">🤝</button><button onclick="insEmoji('✨')">✨</button>
+      </div>
+      <div class="chat-input">
+        <button class="tool-btn" onclick="toggleEmoji()">😊</button>
+        <input id="msgInput" type="text" placeholder="Message..." onkeydown="if(event.key==='Enter')sendMsg()">
+        <button class="tool-btn mic-btn" id="micBtn" onclick="toggleVoice()">🎤</button>
+        <button onclick="sendMsg()">➤</button>
+      </div>
     </div>
   </div>
 </div>
@@ -539,6 +594,7 @@ function closeSettings(){document.getElementById('settingsScreen').classList.rem
 function openMessages(){closeSettings();closeCreate();closeEdit();document.getElementById('msgScreen').classList.add('active');}
 function closeMessages(){document.getElementById('msgScreen').classList.remove('active');closeChatView();}
 function switchMsgTab(btn,id){document.querySelectorAll('.msg-tab').forEach(function(b){b.classList.remove('active');});btn.classList.add('active');document.querySelectorAll('.msg-list').forEach(function(l){l.classList.remove('active');});document.getElementById(id).classList.add('active');}
+function goMonetize(){closeSettings();document.querySelectorAll('.nav-btn')[4].click();}
 var toastTimer;
 function showToast(msg){var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(function(){t.classList.remove('show');},2500);}
 function togglePass(id,btn){var inp=document.getElementById(id);if(inp.type==='password'){inp.type='text';btn.textContent='🙈';}else{inp.type='password';btn.textContent='👁️';}}
@@ -547,35 +603,42 @@ function saveUsers(u){try{localStorage.setItem('hmfUsers',JSON.stringify(u));}ca
 function loadProfiles(){try{return JSON.parse(localStorage.getItem('hmfProfiles')||'{}');}catch(e){return {};}}
 function saveProfiles(p){try{localStorage.setItem('hmfProfiles',JSON.stringify(p));}catch(e){}}
 var currentUser=null;
-var profile={name:'HMF User',handle:'hmfuser',bio:'',dp:null};
+var profile={name:'HMF User',handle:'hmfuser',bio:'',dp:null,followers:856};
 function persistProfile(){if(!currentUser)return;var all=loadProfiles();all[currentUser]=profile;saveProfiles(all);}
 function setAvatar(el){if(!el)return;if(profile.dp){el.innerHTML='<img src="'+profile.dp+'">';}else{el.textContent=profile.name.charAt(0).toUpperCase();}}
-function applyProfileEverywhere(){document.getElementById('profileName').textContent=profile.name;document.getElementById('settingsName').textContent=profile.name;document.getElementById('profileHandle').textContent='@'+profile.handle;document.getElementById('settingsHandle').textContent='@'+profile.handle;document.getElementById('profileBio').textContent=profile.bio;setAvatar(document.getElementById('profileAvatar'));setAvatar(document.getElementById('settingsAvatar'));setAvatar(document.getElementById('myStoryAvatar'));}
+function monUpdate(){var f=profile.followers||0;var fill=document.getElementById('monFill');if(!fill)return;var txt=document.getElementById('monText');var badge=document.getElementById('monBadge');var earn=document.getElementById('monEarn');fill.style.width=Math.min(100,f/10)+'%';var fc=document.getElementById('followerCount');if(f>=1000){badge.textContent='✅ Active';badge.className='mon-badge on';txt.textContent=f+' followers — Monetized!';earn.style.display='block';earn.innerHTML='<b>💰 Estimated earnings: $'+(f*0.05).toFixed(0)+' / month</b><br><span class="muted">Posts, reels aur stories se kamai on hai!</span>';if(fc)fc.textContent=(f/1000).toFixed(1)+'K';}else{badge.textContent=(1000-f)+' to go';badge.className='mon-badge off';txt.textContent=f+' / 1000 followers';earn.style.display='none';if(fc)fc.textContent=f;}}
+function addFollowers(n){profile.followers=(profile.followers||0)+n;persistProfile();monUpdate();if(profile.followers>=1000&&profile.followers-n<1000){showToast('🎉 1000 Followers! MONETIZATION ON! 💰');}else{showToast('+'+n+' new followers! 🎉');}}
+function applyProfileEverywhere(){if(!profile.followers)profile.followers=856;document.getElementById('profileName').textContent=profile.name;document.getElementById('settingsName').textContent=profile.name;document.getElementById('profileHandle').textContent='@'+profile.handle;document.getElementById('settingsHandle').textContent='@'+profile.handle;document.getElementById('profileBio').textContent=profile.bio;setAvatar(document.getElementById('profileAvatar'));setAvatar(document.getElementById('settingsAvatar'));setAvatar(document.getElementById('myStoryAvatar'));monUpdate();}
 function openEdit(){closeSettings();closeMessages();closeCreate();document.getElementById('editName').value=profile.name;document.getElementById('editHandle').value=profile.handle;document.getElementById('editBio').value=profile.bio;setAvatar(document.getElementById('dpMain'));document.getElementById('editScreen').classList.add('active');}
 function closeEdit(){document.getElementById('editScreen').classList.remove('active');}
 function dpChosen(inp){var f=inp.files&&inp.files[0];if(!f)return;if(f.size>5*1024*1024){showToast('DP 5MB se choti honi chahiye');inp.value='';return;}var r=new FileReader();r.onload=function(e){profile.dp=e.target.result;setAvatar(document.getElementById('dpMain'));persistProfile();applyProfileEverywhere();showToast('DP updated ✅');};r.readAsDataURL(f);}
 function saveProfile(){var n=document.getElementById('editName').value.trim();var h=document.getElementById('editHandle').value.trim();var b=document.getElementById('editBio').value.trim();if(!n){showToast('Name required');return;}profile.name=n;profile.handle=h?h.replace(/\s+/g,'').toLowerCase():'hmfuser';profile.bio=b;persistProfile();applyProfileEverywhere();closeEdit();showToast('Profile saved ✅');}
-function signup(){var u=document.getElementById('suUser').value.trim();var e=document.getElementById('suEmail').value.trim().toLowerCase();var p=document.getElementById('suPass').value;if(!u||!e||!p){showToast('Please fill all fields');return;}if(p.length<6){showToast('Password must be 6+ characters');return;}var users=loadUsers();if(users[e]){showToast('Email already registered — Log in karein');return;}users[e]={u:u,e:e,p:p};saveUsers(users);var profiles=loadProfiles();if(!profiles[e]){profiles[e]={name:u,handle:u.toLowerCase().replace(/\s+/g,''),bio:'New on HMF Book 🌟',dp:null};saveProfiles(profiles);}currentUser=e;try{localStorage.setItem('hmfSession',e);}catch(err){}profile=profiles[e];applyProfileEverywhere();showScreen('app');showToast('Welcome '+u+'!');}
-function login(){var e=document.getElementById('liEmail').value.trim().toLowerCase();var p=document.getElementById('liPass').value;var users=loadUsers();if(users[e]&&users[e].p===p){currentUser=e;try{localStorage.setItem('hmfSession',e);}catch(err){}var profiles=loadProfiles();profile=profiles[e]||{name:users[e].u,handle:'hmfuser',bio:'',dp:null};applyProfileEverywhere();showScreen('app');showToast('Welcome back '+profile.name+'!');}else{showToast('Invalid email or password');}}
+function signup(){var u=document.getElementById('suUser').value.trim();var e=document.getElementById('suEmail').value.trim().toLowerCase();var p=document.getElementById('suPass').value;if(!u||!e||!p){showToast('Please fill all fields');return;}if(p.length<6){showToast('Password must be 6+ characters');return;}var users=loadUsers();if(users[e]){showToast('Email already registered — Log in karein');return;}users[e]={u:u,e:e,p:p};saveUsers(users);var profiles=loadProfiles();if(!profiles[e]){profiles[e]={name:u,handle:u.toLowerCase().replace(/\s+/g,''),bio:'New on HMF Book 🌟',dp:null,followers:856};saveProfiles(profiles);}currentUser=e;try{localStorage.setItem('hmfSession',e);}catch(err){}profile=profiles[e];applyProfileEverywhere();showScreen('app');showToast('Welcome '+u+'!');}
+function login(){var e=document.getElementById('liEmail').value.trim().toLowerCase();var p=document.getElementById('liPass').value;var users=loadUsers();if(users[e]&&users[e].p===p){currentUser=e;try{localStorage.setItem('hmfSession',e);}catch(err){}var profiles=loadProfiles();profile=profiles[e]||{name:users[e].u,handle:'hmfuser',bio:'',dp:null,followers:856};if(!profile.followers)profile.followers=856;applyProfileEverywhere();showScreen('app');showToast('Welcome back '+profile.name+'!');}else{showToast('Invalid email or password');}}
 function openForgot(){document.getElementById('forgotBox').style.display='block';document.getElementById('fpReset').style.display='none';fpUser=null;}
 var fpUser=null;
 function findAccount(){var e=document.getElementById('fpEmail').value.trim().toLowerCase();var users=loadUsers();if(users[e]){fpUser=e;document.getElementById('fpReset').style.display='block';showToast('Account mila! Ab naya password set karein');}else{showToast('Is email se koi account nahi');}}
 function resetPassword(){if(!fpUser){showToast('Pehle email verify karein');return;}var p=document.getElementById('fpNew').value;if(p.length<6){showToast('Password 6+ characters');return;}var users=loadUsers();users[fpUser].p=p;saveUsers(users);showToast('Password reset ✅ Ab login karein');document.getElementById('forgotBox').style.display='none';}
-function socialLogin(name){var u=name+' User';var e=name.toLowerCase()+'.user@demo.com';var users=loadUsers();if(!users[e]){users[e]={u:u,e:e,p:'demo123'};saveUsers(users);}var profiles=loadProfiles();if(!profiles[e]){profiles[e]={name:u,handle:name.toLowerCase()+'user',bio:'Using '+name+' 👋',dp:null};saveProfiles(profiles);}currentUser=e;try{localStorage.setItem('hmfSession',e);}catch(err){}profile=profiles[e];applyProfileEverywhere();showScreen('app');showToast(name+' login successful');}
+function socialLogin(name){var u=name+' User';var e=name.toLowerCase()+'.user@demo.com';var users=loadUsers();if(!users[e]){users[e]={u:u,e:e,p:'demo123'};saveUsers(users);}var profiles=loadProfiles();if(!profiles[e]){profiles[e]={name:u,handle:name.toLowerCase()+'user',bio:'Using '+name+' 👋',dp:null,followers:856};saveProfiles(profiles);}currentUser=e;try{localStorage.setItem('hmfSession',e);}catch(err){}profile=profiles[e];applyProfileEverywhere();showScreen('app');showToast(name+' login successful');}
 function logout(){try{localStorage.removeItem('hmfSession');}catch(e){}currentUser=null;closeSettings();closeMessages();closeCreate();closeEdit();showScreen('splash');showToast('Logged out');}
-function tryAutoLogin(){var s=null;try{s=localStorage.getItem('hmfSession');}catch(e){}if(!s)return;var users=loadUsers();if(users[s]){currentUser=s;var profiles=loadProfiles();profile=profiles[s]||{name:users[s].u,handle:'hmfuser',bio:'',dp:null};applyProfileEverywhere();showScreen('app');}}
-function toggleLike(btn){if(btn.textContent==='🤍'){btn.textContent='❤️';showToast('Liked ❤️');}else{btn.textContent='🤍';}}
+function tryAutoLogin(){var s=null;try{s=localStorage.getItem('hmfSession');}catch(e){}if(!s)return;var users=loadUsers();if(users[s]){currentUser=s;var profiles=loadProfiles();profile=profiles[s]||{name:users[s].u,handle:'hmfuser',bio:'',dp:null,followers:856};if(!profile.followers)profile.followers=856;applyProfileEverywhere();showScreen('app');}}
+function toggleLike(btn){if(btn.textContent==='🤍'){btn.textContent='❤️';addFollowers(2);}else{btn.textContent='🤍';}}
 var lastTap=0;
-function doubleLike(el){var now=Date.now();if(now-lastTap<350){var post=el.closest('.post');if(post){var btn=post.querySelector('.like-btn');if(btn){btn.textContent='❤️';}}var h=document.createElement('div');h.className='big-heart';h.textContent='❤️';el.appendChild(h);setTimeout(function(){h.remove();},800);}lastTap=now;}
+function doubleLike(el){var now=Date.now();if(now-lastTap<350){var post=el.closest('.post');if(post){var btn=post.querySelector('.like-btn');if(btn&&btn.textContent==='🤍'){btn.textContent='❤️';addFollowers(2);}}var h=document.createElement('div');h.className='big-heart';h.textContent='❤️';el.appendChild(h);setTimeout(function(){h.remove();},800);}lastTap=now;}
 function doSearch(){var q=document.getElementById('searchInput').value.trim();if(!q){showToast('Type something to search');return;}window.open('https://www.google.com/search?q='+encodeURIComponent(q),'_blank');}
 function setQuery(q){document.getElementById('searchInput').value=q;doSearch();}
 function openSite(url){window.open(url,'_blank');}
 var replies=['Hi! 😊','Kya haal hai?','Sounds good! 👍','Haha 😄','Okay done!','Acha? Phir kya hua?','Interesting... batao aur','Main bhi soch raha tha yehi 🤔','Cool! 🎉'];
-function openChatView(name,avClass,letter){document.getElementById('chatUserName').textContent=name;var av=document.getElementById('chatUserAv');av.className='chat-av '+avClass;av.style.width='36px';av.style.height='36px';av.style.fontSize='15px';av.textContent=letter;document.getElementById('chatView').classList.add('active');document.getElementById('chatBody').innerHTML='';setTimeout(function(){addBubble('them','Hi! 👋');},400);}
+function openChatView(name,avClass,letter){document.getElementById('chatUserName').textContent=name;var av=document.getElementById('chatUserAv');av.className='chat-av '+avClass;av.style.width='36px';av.style.height='36px';av.style.fontSize='15px';av.textContent=letter;document.getElementById('chatView').classList.add('active');document.getElementById('chatBody').innerHTML='';document.getElementById('emojiPad').classList.remove('active');setTimeout(function(){addBubble('them','Hi! 👋');},400);}
 function closeChatView(){document.getElementById('chatView').classList.remove('active');}
 function addBubble(who,text){var wrap=document.createElement('div');wrap.className='bubble-row '+who;var b=document.createElement('div');b.className='bubble '+who;b.textContent=text;if(who==='me'){var x=document.createElement('button');x.className='unsend-btn';x.textContent='✕';x.title='Unsend';x.onclick=function(){unsendMsg(wrap);};wrap.appendChild(b);wrap.appendChild(x);}else{wrap.appendChild(b);}var body=document.getElementById('chatBody');body.appendChild(wrap);body.scrollTop=body.scrollHeight;}
+function addVoiceBubble(who,url,dur){var wrap=document.createElement('div');wrap.className='bubble-row '+who;var b=document.createElement('div');b.className='bubble voice '+who;var ic=document.createElement('span');ic.textContent='🎙️';var au=document.createElement('audio');au.controls=true;au.src=url;var t=document.createElement('span');t.textContent=dur+'s';t.style.fontSize='11px';b.appendChild(ic);b.appendChild(au);b.appendChild(t);if(who==='me'){var x=document.createElement('button');x.className='unsend-btn';x.textContent='✕';x.onclick=function(){unsendMsg(wrap);};wrap.appendChild(b);wrap.appendChild(x);}else{wrap.appendChild(b);}var body=document.getElementById('chatBody');body.appendChild(wrap);body.scrollTop=body.scrollHeight;}
 function unsendMsg(wrap){var n=document.createElement('div');n.className='sys-note';n.textContent='You unsent a message';wrap.parentNode.replaceChild(n,wrap);}
 function sendMsg(){var inp=document.getElementById('msgInput');var t=inp.value.trim();if(!t)return;addBubble('me',t);inp.value='';setTimeout(function(){addBubble('them',replies[Math.floor(Math.random()*replies.length)]);},1000);}
+function toggleEmoji(){document.getElementById('emojiPad').classList.toggle('active');}
+function insEmoji(ch){var i=document.getElementById('msgInput');i.value+=ch;i.focus();}
+var mediaRec=null,recChunks=[],recStart=0;
+function toggleVoice(){var btn=document.getElementById('micBtn');if(mediaRec&&mediaRec.state==='recording'){mediaRec.stop();return;}if(!navigator.mediaDevices||!window.MediaRecorder){showToast('Voice recording is device par supported nahi');return;}navigator.mediaDevices.getUserMedia({audio:true}).then(function(stream){mediaRec=new MediaRecorder(stream);recChunks=[];recStart=Date.now();mediaRec.ondataavailable=function(e){if(e.data&&e.data.size)recChunks.push(e.data);};mediaRec.onstop=function(){stream.getTracks().forEach(function(t){t.stop();});btn.classList.remove('rec');btn.textContent='🎤';try{var blob=new Blob(recChunks,{type:mediaRec.mimeType||'audio/webm'});var dur=Math.max(1,Math.round((Date.now()-recStart)/1000));var url=URL.createObjectURL(blob);addVoiceBubble('me',url,dur);showToast('Voice message sent 🎙️');}catch(e){showToast('Recording failed');}};mediaRec.start();btn.classList.add('rec');btn.textContent='⏹';showToast('Recording... tap ⏹ to send');}).catch(function(){showToast('Mic permission nahi mili');});}
 var pendingMedia=null;
 function openCreate(){closeSettings();closeMessages();closeEdit();document.getElementById('createScreen').classList.add('active');document.getElementById('previewWrap').style.display='none';document.getElementById('previewWrap').innerHTML='';document.getElementById('pickArea').style.display='block';document.getElementById('postCaption').value='';document.getElementById('filePick').value='';pendingMedia=null;}
 function closeCreate(){document.getElementById('createScreen').classList.remove('active');}
@@ -620,6 +683,7 @@ function startMemory(){var deck=memEmojis.concat(memEmojis).sort(function(){retu
 function memFlip(d){if(memLock||d.classList.contains('open')||d.classList.contains('done'))return;d.textContent=d.dataset.val;d.classList.add('open');memOpen.push(d);if(memOpen.length===2){memMoves++;document.getElementById('memMoves').textContent='Moves: '+memMoves;if(memOpen[0].dataset.val===memOpen[1].dataset.val){memOpen[0].classList.add('done');memOpen[1].classList.add('done');memOpen=[];if(document.querySelectorAll('.mem-card.done').length===16){showToast('You won! 🎉');}}else{memLock=true;var a=memOpen[0],b2=memOpen[1];setTimeout(function(){a.textContent='';a.classList.remove('open');b2.textContent='';b2.classList.remove('open');memOpen=[];memLock=false;},700);}}}
 function rpsPlay(ch){var em={rock:'✊',paper:'✋',scissors:'✌️'};var opts=['rock','paper','scissors'];var cc=opts[Math.floor(Math.random()*3)];document.getElementById('rpsYou').textContent=em[ch];document.getElementById('rpsComp').textContent=em[cc];var res;if(ch===cc){res='Draw! 🤝';}else if((ch==='rock'&&cc==='scissors')||(ch==='paper'&&cc==='rock')||(ch==='scissors'&&cc==='paper')){res='You win! 🎉';}else{res='Computer wins! 🤖';}document.getElementById('rpsResult').textContent=res;}
 tryAutoLogin();
+applyProfileEverywhere();
 </script>
 </body>
 </html>
